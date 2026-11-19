@@ -8,11 +8,12 @@ function renderHome() {
   const plus = (n) => { const d = new Date(td + 'T00:00'); d.setDate(d.getDate() + n); return todayStr(d); };
   const in7 = plus(7);
   const mine = data.tasks.filter((x) => inScope(x) && (!ui.person || isPendingWith(x, ui.person)));
-  const open = mine.filter(isOpen);
+  const open = mine.filter(isActive);
+  const scheduled = mine.filter((x) => statusOf(x) === 'scheduled');
 
   const overdue = open.filter((x) => statusOf(x) === 'overdue');
   const dueToday = open.filter((x) => statusOf(x) === 'today');
-  const week = open.filter((x) => x.due && x.due > td && x.due <= in7).sort((a, b) => a.due.localeCompare(b.due) || byPriorityThenDue(a, b));
+  const week = [...open, ...scheduled].filter((x) => x.due && x.due > td && x.due <= in7).sort((a, b) => a.due.localeCompare(b.due) || byPriorityThenDue(a, b));
   const withOthers = open.filter((x) => pendingOf(x).length);
   const closedWeek = mine.filter((x) => x.closure && x.closure >= weekStart());
 

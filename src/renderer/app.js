@@ -61,9 +61,9 @@ const VIEWS = [
   { id: 'home', test: isOpen, noCount: true, lead: true },
   { id: 'today', test: (x) => isOpen(x) && ((x.due && x.due <= todayStr()) || x.starred),
     cls: () => (data.tasks.some((x) => inScope(x) && statusOf(x) === 'overdue') ? 'danger' : '') },
-  { id: 'pending', test: isOpen, cls: () => 'warn' },
+  { id: 'pending', test: isActive, cls: () => 'warn' },
   { id: 'closed', test: (x) => !!x.closure, noCount: true },
-  { id: 'matrix', test: isOpen, noCount: true, board: true },
+  { id: 'matrix', test: isActive, noCount: true, board: true },
   { id: 'calendar', test: () => true, noCount: true, board: true },
   { id: 'report', test: () => true, noCount: true, board: true }
 ];
@@ -77,7 +77,8 @@ function inScope(x, scope = ui.scope) {
 function currentTasks() {
   const v = VIEWS.find((v) => v.id === ui.view);
   let list = data.tasks.filter((x) => inScope(x) && v.test(x) && (!ui.person || isPendingWith(x, ui.person)));
-  if (ui.view === 'pending' && ui.pendingSub !== 'all') list = list.filter((x) => (pendingOf(x).length > 0) === (ui.pendingSub === 'others'));
+  if (ui.view === 'pending' && ui.pendingSub === 'later') list = data.tasks.filter((x) => inScope(x) && statusOf(x) === 'scheduled' && (!ui.person || isPendingWith(x, ui.person)));
+  else if (ui.view === 'pending' && ui.pendingSub !== 'all') list = list.filter((x) => (pendingOf(x).length > 0) === (ui.pendingSub === 'others'));
   const q = ui.search.trim().toLowerCase();
   if (q) {
     list = list.filter((x) => [x.title, x.notes, ...peopleNames(x), ...(x.subtasks || []).map((s) => s.title), ...(x.log || []).map((l) => l.text)]
@@ -167,7 +168,7 @@ function toggleExpanded(id) {
 }
 
 function renderSidebar() {
-  const openCount = (scope) => data.tasks.filter((x) => isOpen(x) && inScope(x, scope)).length;
+  const openCount = (scope) => data.tasks.filter((x) => isActive(x) && inScope(x, scope)).length;
   const item = (scope, inner, extra = '') =>
     `<div class="nav-item ${extra} ${ui.scope === scope ? 'active' : ''}" data-scope="${scope}">${inner}<span class="count">${openCount(scope) || ''}</span></div>`;
 
@@ -199,6 +200,7 @@ function renderSidebar() {
 
 function statusPill(x) {
   const s = statusOf(x);
+  if (s === 'scheduled') return `<span class="pill scheduled">${icon('calendar')} ${t('stScheduled')} ${fmtDate(x.start, lang())}</span>`;
   const key = { pending: 'stPending', overdue: 'stOverdue', closed: 'stClosed', today: 'stDueToday' }[s];
   return `<span class="pill ${s}">${t(key)}</span>`;
 }
@@ -266,10 +268,14 @@ function renderList() {
 }
 
 function pendingSubBar() {
-  const open = data.tasks.filter((x) => isOpen(x) && inScope(x) && (!ui.person || isPendingWith(x, ui.person)));
-  const n = { all: open.length, mine: open.filter((x) => !pendingOf(x).length).length, others: open.filter((x) => pendingOf(x).length).length };
+  const mineAll = data.tasks.filter((x) => inScope(x) && (!ui.person || isPendingWith(x, ui.person)));
+  const open = mineAll.filter(isActive);
+  const n = { all: open.length, mine: open.filter((x) => !pendingOf(x).length).length, others: open.filter((x) => pendingOf(x).length).length,
+    later: mineAll.filter((x) => statusOf(x) === 'scheduled').length };
   const b = (k, label) => `<button class="${ui.pendingSub === k ? 'on' : ''}" data-psub="${k}">${label} <span class="n">${n[k]}</span></button>`;
-  return `<div class="sub-bar"><span class="seg-joined">${b('all', t('all'))}${b('mine', t('mine'))}${b('others', t('withOthers'))}</span></div>`;
+  return `<div class="sub-bar"><span class="seg-joined">${b('all', t('all'))}${b('mine', t('mine'))}${b('others', t('withOthers'))}</span>
+    ${n.later || ui.pendingSub === 'later' ? `<span class="seg-joined later">${b('later', `${icon('calendar')} ${t('later')}`)}</span>` : ''}</div>
+    ${ui.pendingSub === 'later' ? `<p class="small muted sub-hint">${t('scheduledHint')}</p>` : ''}`;
 }
 
 function renderCalendar() {
@@ -410,27 +416,30 @@ function renderDetail() {
   renderDetail.shown = x.id;
   work.classList.add('has-detail');
   const subs = x.subtasks || [];
-  const span = x.start ? (x.closure ? `${t('tookDays')} ${daysBetween(x.start, x.closure)} ${t('days')}` : `${t('openedFor')} ${Math.max(0, daysBetween(x.start, todayStr()))} ${t('days')}`) : '';
+  const span = statusOf(x) === 'scheduled' ? '' : x.start ? (x.closure ? `${t('tookDays')} ${daysBetween(x.start, x.closure)} ${t('days')}` : `${t('openedFor')} ${Math.max(0, daysBetween(x.start, todayStr()))} ${t('days')}`) : '';
   const urls = (x.notes || '').match(/https?:\/\/[^\s]+/g) || [];
   el.innerHTML = `<div class="inner">
     <div class="d-top">
       ${statusPill(x)} <span class="small muted">${span}</span>
       <span class="spacer"></span>
-      <button class="ghost" id="dStar" title="${t('star')}">${x.starred ? '<span class="star">★</span>' : '☆'}</button>
-      ${x.closure ? `<button id="dReopen">${t('reopen')}</button>` : `<button class="primary" id="dClose">✓ ${t('closeToday')}</button>`}
-      <button class="ghost danger" id="dDelete" title="${t('del')}">🗑</button>
-      <button class="ghost d-close" id="dHide" title="${t('closeBtn')} (Esc)">✕</button>
+      <div class="d-acts">
+        ${x.closure ? `<button id="dReopen">${t('reopen')}</button>` : `<button class="primary" id="dClose">✓ ${t('closeToday')}</button>`}
+        <button class="d-act ${x.starred ? 'on' : ''}" id="dStar" title="${t('star')}">${x.starred ? '★' : '☆'}</button>
+        <button class="d-act del" id="dDelete" title="${t('del')}">${icon('trash')}</button>
+        <button class="d-act" id="dHide" title="${t('closeBtn')} (Esc)">✕</button>
+      </div>
     </div>
-    <input type="text" class="d-title" id="dTitle" dir="auto" value="${esc(x.title)}" placeholder="${t('title')}">
+    <textarea class="d-title" id="dTitle" dir="auto" rows="1" placeholder="${t('title')}">${esc(x.title)}</textarea>
     ${x.pinnedNote ? `<div class="pinned-note"><span>📌</span><span dir="auto">${linkify(x.pinnedNote)}</span><button class="icon" id="dUnpin" title="${t('done')}">✓</button></div>` : ''}
     <div class="d-grid">
-      <div class="d-field"><label>${t('start')}</label><input type="date" id="dStart" value="${x.start || ''}"></div>
-      <div class="d-field"><label>${t('due')}</label><div class="due-row"><input type="date" id="dDue" value="${x.due || ''}"><input type="time" id="dDueTime" value="${x.dueTime || ''}" title="${t('dueTime')}"></div></div>
-      <div class="d-field"><label>${t('closure')}</label><input type="date" id="dClosure" value="${x.closure || ''}"></div>
+      <div class="d-field"><label>${icon('today')} ${t('start')}</label><input type="date" id="dStart" value="${x.start || ''}"></div>
+      <div class="d-field"><label>${icon('calendar')} ${t('due')}</label><input type="date" id="dDue" value="${x.due || ''}"></div>
+      <div class="d-field"><label>${icon('pending')} ${t('dueTimeShort')}</label><input type="time" id="dDueTime" value="${x.dueTime || ''}" title="${t('dueTime')}"></div>
+      <div class="d-field"><label>${icon('closed')} ${t('closure')}</label><input type="date" id="dClosure" value="${x.closure || ''}"></div>
     </div>
     ${reminderFieldHtml(x)}
     <div class="d-row">
-      <div class="d-field grow"><label>${t('area')}</label><select id="dArea">${areaOptions(x.areaId)}</select></div>
+      <div class="d-field grow"><label>${icon('all')} ${t('area')}</label><select id="dArea">${areaOptions(x.areaId)}</select></div>
       <div class="d-field grow"><label>${icon('repeat')} ${t('repeat')}</label><select id="dRepeat">${repeatOptions(x.repeat, x.due)}</select></div>
     </div>
     <div class="d-field">
@@ -460,7 +469,7 @@ function renderDetail() {
       </div>
     </div>
 
-    <div class="d-sec"><h3>${t('subtasks')} <span class="muted small">${subs.filter((s) => s.done).length}/${subs.length}</span></h3>
+    <div class="d-sec"><h3>${icon('list')} ${t('subtasks')} <span class="muted small">${subs.filter((s) => s.done).length}/${subs.length}</span></h3>
       ${subs.map((s) => `<div class="sub ${s.done ? 'done' : ''}">
         <input type="checkbox" data-sub-toggle="${s.id}" ${s.done ? 'checked' : ''}>
         <input type="text" dir="auto" data-sub-title="${s.id}" value="${esc(s.title)}">
@@ -472,12 +481,12 @@ function renderDetail() {
       <textarea id="dNextNote" dir="auto" rows="2" placeholder="${t('nextNotePh')}">${esc(x.nextNote || '')}</textarea></div>` : ''}
     ${attachmentsHtml(x)}
 
-    <div class="d-sec"><h3>${t('notes')}</h3>
+    <div class="d-sec"><h3>${icon('note')} ${t('notes')}</h3>
       <textarea class="notes" id="dNotes" dir="auto" placeholder="${t('notesPh')}">${esc(x.notes || '')}</textarea>
       <div class="links" id="dLinks">${urls.map((u) => linkify(u)).join('<br>')}</div>
     </div>
 
-    <div class="d-sec"><h3>${t('log')}</h3>
+    <div class="d-sec"><h3>${icon('log')} ${t('log')}</h3>
       ${timelineHtml(x)}
       <div class="log-add">
         <input type="text" id="dAddLog" dir="auto" placeholder="＋ ${t('addLog')}">
@@ -497,8 +506,17 @@ function renderDetail() {
       }).join('')}
     </div>
   </div>`;
+  fitTitle();
   if (swap) { el.scrollTop = 0; animateIn(el.firstElementChild); }
 }
+
+// The title wraps onto more lines instead of running out of the box.
+function fitTitle() {
+  const el = $('dTitle'); if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+if (window.ResizeObserver) new ResizeObserver(() => fitTitle()).observe(document.getElementById('detail'));
 
 // Reminder: one dropdown (none / before due with the exact time / a specific time).
 // The date-time box only appears for "specific time", so the dropdown never contradicts it.
@@ -965,7 +983,7 @@ async function openSettings() {
   const [login, info, displays, folder, backups] = await Promise.all([
     window.api.loginItem(), window.api.appInfo(), window.api.displays(), window.api.dataFolder(), window.api.listBackups()
   ]);
-  const filterOpts = [['focus', t('focus')], ['pending', t('pending')], ['starred', t('starred')]]
+  const filterOpts = [['focus', t('focus')], ['overdue', t('overdue')], ['week', t('hWeek')], ['others', t('hOthers')], ['pending', t('pending')], ['starred', t('starred')]]
     .concat(topAreas().map((a) => ['area:' + a.id, a.name]))
     .concat(data.people.map((p) => ['person:' + p.id, `${t('waiting')}: ${p.name}`]));
   const zoom = Math.round((s.zoom || 1) * 100);
@@ -1205,7 +1223,7 @@ function bind() {
       if (picked && data.people.some((p) => p.name.toLowerCase() === el.value.trim().toLowerCase())) addPending(x, el.value);
       return;
     }
-    if (el.id === 'dTitle') x.title = el.value;
+    if (el.id === 'dTitle') { x.title = el.value.replace(/\s*\n\s*/g, ' '); fitTitle(); }
     else if (el.id === 'dNextNote') x.nextNote = el.value;
     else if (el.id === 'dNotes') {
       x.notes = el.value;
@@ -1259,6 +1277,7 @@ function bind() {
       e.preventDefault();
       addPending(x, e.target.value);
     } else if (e.target.id === 'dTitle') {
+      e.preventDefault();
       $('dAddSub').focus();
     }
   };
@@ -1278,9 +1297,22 @@ function bind() {
   bindAttachments();
 }
 
+// 1.2: the next round of a repeating task used to start on the day the last one closed.
+// Rounds made that way now start on their own day instead.
+function migrateRepeatStarts() {
+  if (data.settings.repeatStartsFixed) return;
+  for (const parent of data.tasks) {
+    const next = parent.spawned && taskById(parent.spawned);
+    if (next && !next.closure && next.due && next.start === parent.closure && next.start < next.due && next.due > todayStr()) next.start = next.due;
+  }
+  data.settings.repeatStartsFixed = true;
+  save();
+}
+
 (async function init() {
   data = await window.api.getData();
   if (data.settings.sort) ui.sort = data.settings.sort;
+  migrateRepeatStarts();
   bind();
   bindSplitters();
   renderAll();

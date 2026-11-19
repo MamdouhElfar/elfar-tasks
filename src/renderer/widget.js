@@ -4,23 +4,53 @@ const t = (k) => (I18N[data.settings.lang] || I18N.ar)[k] || k;
 
 function save() { window.api.saveData(data); }
 
+const in7 = () => { const d = new Date(); d.setDate(d.getDate() + 7); return todayStr(d); };
+const hasPeople = (x) => (x.pendingWith || []).some((pw) => data.people.some((p) => p.id === pw.personId));
+
 function filterInfo() {
   const f = data.settings.widget.filter || 'focus';
   const td = todayStr();
-  if (f === 'pending') return { title: t('pending'), test: (x) => !x.closure };
-  if (f === 'starred') return { title: t('starred'), test: (x) => !x.closure && x.starred };
+  if (f === 'overdue') return { title: t('overdue'), test: (x) => statusOf(x) === 'overdue' };
+  if (f === 'dueToday') return { title: t('stDueToday'), today: true, test: (x) => statusOf(x) === 'today' };
+  if (f === 'week') return { title: t('hWeek'), test: (x) => !x.closure && x.due && x.due > td && x.due <= in7() };
+  if (f === 'others') return { title: t('hOthers'), test: (x) => isActive(x) && hasPeople(x) };
+  if (f === 'pending') return { title: t('pending'), test: isActive };
+  if (f === 'starred') return { title: t('starred'), test: (x) => isActive(x) && x.starred };
   if (f.startsWith('person:')) {
     const p = data.people.find((y) => y.id === f.slice(7));
-    if (p) return { title: `${t('waiting')}: ${p.name}`, personId: p.id, test: (x) => !x.closure && (x.pendingWith || []).some((pw) => pw.personId === p.id) };
+    if (p) return { title: `${t('waiting')}: ${p.name}`, personId: p.id, test: (x) => isActive(x) && (x.pendingWith || []).some((pw) => pw.personId === p.id) };
   }
   if (f.startsWith('area:')) {
     const id = f.slice(5);
     const a = data.areas.find((y) => y.id === id);
     const ids = [id, ...data.areas.filter((y) => y.parentId === id).map((y) => y.id)];
-    return { title: a ? a.name : t('pending'), areaId: a ? id : null, test: (x) => !x.closure && (!a || ids.includes(x.areaId)) };
+    return { title: a ? a.name : t('pending'), areaId: a ? id : null, test: (x) => isActive(x) && (!a || ids.includes(x.areaId)) };
   }
   return { title: t('today'), today: true, test: (x) => !x.closure && ((x.due && x.due <= td) || x.starred) };
 }
+
+// The four numbers on top. Clicking one shows those tasks; clicking it again goes back
+// to what the widget showed before (picked in Settings).
+function renderStats() {
+  const td = todayStr();
+  const open = data.tasks.filter((x) => !x.closure);
+  const cards = [
+    ['overdue', open.filter((x) => statusOf(x) === 'overdue').length, t('overdue'), 'danger'],
+    ['dueToday', open.filter((x) => statusOf(x) === 'today').length, t('stDueToday'), 'warn'],
+    ['week', open.filter((x) => x.due && x.due > td && x.due <= in7()).length, t('wWeek'), 'info'],
+    ['others', open.filter((x) => isActive(x) && hasPeople(x)).length, t('wOthers'), 'violet']
+  ];
+  const cur = data.settings.widget.filter;
+  $('wStats').innerHTML = cards.map(([k, n, label, cls]) =>
+    `<button class="w-stat ${cls} ${n ? '' : 'zero'} ${cur === k ? 'on' : ''}" data-stat="${k}" title="${esc(label)}"><b>${n}</b><span>${esc(label)}</span></button>`).join('');
+}
+$('wStats').onclick = (e) => {
+  const b = e.target.closest('[data-stat]'); if (!b) return;
+  const w = data.settings.widget;
+  if (w.filter === b.dataset.stat) w.filter = w.prevFilter || 'focus';
+  else { if (!['overdue', 'dueToday', 'week', 'others'].includes(w.filter)) w.prevFilter = w.filter; w.filter = b.dataset.stat; }
+  save(); render();
+};
 
 function render() {
   applyLang(data.settings.lang);
@@ -31,6 +61,7 @@ function render() {
   $('wHide').title = t('hide');
   $('wAdd').placeholder = '＋ ' + t('addTask');
 
+  renderStats();
   const edge = w.edge || 'off';
   // Two modes, exactly one active: always on top / hide at the edge.
   const side = edge !== 'off' ? edge : (w.lastEdge || 'right');
@@ -71,7 +102,8 @@ $('wList').onclick = (e) => {
     const x = data.tasks.find((y) => y.id === c.dataset.check);
     c.classList.add('on');
     setTimeout(() => c.closest('.w-item')?.classList.add('leaving'), 120);
-    setTimeout(() => { x.closure = todayStr(); x.updated = Date.now(); save(); render(); }, 350);
+    // Same as closing in the app: a repeating task gets its next round.
+    setTimeout(() => { x.closure = todayStr(); x.updated = Date.now(); spawnNext(x); save(); render(); }, 350);
     return;
   }
   const o = e.target.closest('[data-open]');

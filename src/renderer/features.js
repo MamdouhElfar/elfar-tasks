@@ -21,7 +21,8 @@ function spawnNext(x) {
   const offset = x.due ? daysBetween(x.due, due) : null;
   const next = {
     ...JSON.parse(JSON.stringify(x)),
-    id: uid(), start: todayStr(), due, closure: null, spawned: null, reminded: undefined,
+    // Each round stands on its own: the next one starts on its own day, not today.
+    id: uid(), start: due > todayStr() ? due : todayStr(), due, closure: null, spawned: null, reminded: undefined,
     subtasks: (x.subtasks || []).map((s) => ({ ...s, id: uid(), done: false })),
     log: [], pendingWith: [], created: Date.now(), updated: Date.now(),
     title: x.title
@@ -346,6 +347,10 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.2.0': {
+    ar: ['الويدجت فيه كروت أرقام زي الرئيسية: متأخرة، النهارده، 7 أيام، عند ناس تانية. دوس على أي كارت يعرض تاسكاته', 'التاسك المتكررة: كل مرة مستقلة، والمرة الجاية بتبدأ يوم ميعادها مش يوم ما قفلت اللي قبلها. ولحد ما ييجي يومها بتبقى "مجدولة" ومش بتتحسب في Pending', 'صفحة التاسك: العنوان بينزل سطر جديد بدل ما يتقص، والتواريخ والوقت مبقتش بتدخل في بعض', 'الضغط في أي حتة على خانة التاريخ أو الوقت بيفتح الاختيار على طول', 'زرار الحذف بقى مربع أحمر واضح، والعناوين كلها بقت بنفس الشكل'],
+    en: ['The widget has number cards like Home: overdue, today, 7 days, with others. Click a card to see those tasks', 'Repeating tasks: each round stands on its own, and the next one starts on its own day, not the day you closed the last one. Until then it is "scheduled" and not counted in Pending', 'Task page: the title wraps instead of being cut off, and the dates and time no longer run into each other', 'Clicking anywhere on a date or time box opens the picker', 'The delete button is now a clear red square, and all headings share one style']
+  },
   '1.1.0': {
     ar: ['اسم التطبيق بقى Elfar Tasks', 'صفحة رئيسية جديدة: المتأخر، النهارده، الأسبوع الجاي، مستني رد من مين، والأقسام', 'التابات اتبسّطت: المتأخر بقى جوه "النهارده"، و"معلّق عند" بقى جوه Pending (الكل / عندي أنا / عند حد تاني)', 'الحذف بقى بيسأل الأول، بشكل التطبيق نفسه', 'التذكير: اختيار واحد واضح، وكل اختيار مكتوب جنبه هيفكّرك إمتى بالظبط', 'إضافة تاسك: تقدر تحدد وقت الـ Due', 'التقويم: أسهم أوضح جنب اسم الشهر، زرار ＋ أوضح، والفلاتر متقسمة'],
     en: ['The app is now called Elfar Tasks', 'A new Home page: overdue, today, the next 7 days, who you are waiting on, and your areas', 'Simpler tabs: overdue is now inside Today, and "Pending with" is inside Pending (All / On me / With others)', 'Deleting now asks first, in a dialog that matches the app', 'Reminders: one clear choice, and each option shows exactly when it will fire', 'Quick add: you can set a due time', 'Calendar: clearer arrows next to the month, a clearer ＋ button, and grouped filters']

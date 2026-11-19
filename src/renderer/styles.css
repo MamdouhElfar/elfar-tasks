@@ -608,3 +608,44 @@ button.danger-solid:hover { background: #ad2f2f; }
 .h-foot { margin: 14px 4px 0; }
 .h-title, .h-an { text-align: match-parent; }
 .modal.confirm h3, .modal.confirm .cf-text { text-align: center; }
+
+/* ---------- 1.2: task page ---------- */
+/* Top bar: status on one side, one tidy row of square action buttons on the other. */
+.d-top { flex-wrap: wrap; row-gap: 8px; }
+.d-acts { display: flex; align-items: center; gap: 6px; margin-inline-start: auto; }
+.d-act { width: 32px; height: 32px; padding: 0; display: grid; place-items: center; border: 1px solid var(--border-2); border-radius: var(--radius); background: var(--panel); color: var(--text-2); font-size: 15px; line-height: 1; }
+.d-act:hover { background: var(--hover); color: var(--text); }
+.d-act .ico { width: 16px; height: 16px; }
+.d-act.on { color: #c98a00; border-color: #e5b84c; background: #fdf4dc; }
+.d-act.del { color: #c63b3b; background: var(--danger-bg); border-color: color-mix(in srgb, #c63b3b 35%, transparent); }
+.d-act.del:hover { background: #c63b3b; border-color: #c63b3b; color: #fff; }
+.d-acts .primary { height: 32px; }
+
+/* Title wraps onto more lines instead of running out of the box. */
+textarea.d-title { display: block; resize: none; overflow: hidden; line-height: 1.35; font-family: inherit; min-height: 0; }
+
+/* Dates: each box gets its own cell and wraps to a new row when the page is narrow. */
+.d-grid { grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); }
+.d-field { min-width: 0; }
+.d-field input[type=date], .d-field input[type=time], .d-field input[type=datetime-local] { min-width: 0; cursor: pointer; }
+input[type=date], input[type=time], input[type=datetime-local] { cursor: pointer; }
+
+/* One heading style everywhere on the task page: small, bold, with an icon. */
+.d-field label, .d-sec h3 { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--text-2); letter-spacing: .01em; margin: 0 0 5px; }
+.d-field label .ico, .d-sec h3 .ico { width: 13px; height: 13px; color: var(--text-3); flex: none; }
+.d-field label a { font-weight: 400; }
+.d-field input, .d-field select, .d-field textarea { color: var(--text); font-size: 13.5px; }
+/* Sections are cards, the same as the fields above them. */
+.d-sec { background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px 10px; margin-top: 8px; }
+.d-sec h3 .muted { font-weight: 400; }
+.d-sec .notes { background: transparent; }
+
+/* Scheduled (not started yet) */
+.pill.scheduled { background: var(--accent-bg); color: var(--accent-text); display: inline-flex; align-items: center; gap: 3px; }
+.pill.scheduled .ico { width: 11px; height: 11px; }
+.task-row:has(.pill.scheduled) { opacity: .8; }
+.sub-bar { gap: 8px; flex-wrap: wrap; }
+.seg-joined.later button { display: inline-flex; align-items: center; gap: 4px; }
+.seg-joined.later .ico { width: 12px; height: 12px; }
+.sub-hint { margin: -4px 4px 10px; }
+.cal-cell .ev.scheduled { background: var(--accent-bg); color: var(--accent-text); }

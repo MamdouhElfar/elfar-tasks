@@ -46,6 +46,7 @@ const I18N = {
     q1: 'مهم ومستعجل', q2: 'مهم ومش مستعجل', q3: 'مستعجل ومش مهم', q4: 'لا مهم ولا مستعجل',
     q1a: 'اعملها دلوقتي', q2a: 'خطط لها', q3a: 'فوّضها', q4a: 'استغنى عنها', matrixHint: 'اسحب أي تاسك لمربع تاني عشان تغيّر تصنيفها، أو من "مش متصنفة" لأي مربع.',
     allAreas: 'كل التاسكات', dragHint: 'سيب التاسك على قسم عشان تنقله', movedTo: 'اتنقلت إلى',
+    stScheduled: 'يبدأ', later: 'مجدولة', scheduledHint: 'دي تاسكات لسه ميعادها مجاش (زي المرة الجاية من تاسك متكررة). هتظهر في Pending يوم ما تبدأ.', wWeek: '7 أيام', wOthers: 'عند غيري',
     calHint: 'اضغط ＋ في أي يوم تضيف تاسك عليه · اسحب تاسك ليوم تاني يغيّر الـ Due · الباهت = المرات الجاية من تاسك متكررة.',
     ok: 'تمام', home: 'الرئيسية', mine: 'عندي أنا', withOthers: 'عند حد تاني', show: 'عرض', remindCustom: 'وقت محدد…', remindNeedsDue: 'حط Due عشان تقدر تتفكّر قبله بوقت', remindAt9: 'الـ Due من غير وقت، فالتذكير محسوب على 9 الصبح', dueTimeShort: 'الوقت',
     gMorning: 'صباح الخير', gAfternoon: 'مساء الخير', gEvening: 'مساء الخير', hWeek: 'الـ 7 أيام الجايين', hOthers: 'عند ناس تانية', hClosedWeek: 'اتقفلت الأسبوع ده',
@@ -97,6 +98,7 @@ const I18N = {
     q1: 'Important and urgent', q2: 'Important, not urgent', q3: 'Urgent, not important', q4: 'Not important, not urgent',
     q1a: 'Do it now', q2a: 'Schedule it', q3a: 'Delegate it', q4a: 'Drop it', matrixHint: 'Drag a task to another box to change its priority, or from Unclassified into any box.',
     allAreas: 'All tasks', dragHint: 'Drop a task on an area to move it', movedTo: 'Moved to',
+    stScheduled: 'Starts', later: 'Scheduled', scheduledHint: "Tasks that haven't started yet (like the next round of a repeating task). They move to Pending on their start day.", wWeek: '7 days', wOthers: 'Others',
     calHint: 'Click ＋ on a day to add a task there · drag a task to another day to change its due · faded = upcoming repeats.',
     ok: 'OK', home: 'Home', mine: 'On me', withOthers: 'With others', show: 'Show', remindCustom: 'Specific time…', remindNeedsDue: 'Set a due date to be reminded before it', remindAt9: 'No due time set, so this counts from 9:00 AM', dueTimeShort: 'Time',
     gMorning: 'Good morning', gAfternoon: 'Good afternoon', gEvening: 'Good evening', hWeek: 'Next 7 days', hOthers: 'With others', hClosedWeek: 'Closed this week',
@@ -115,6 +117,9 @@ const ICONS = {
   inbox: '<path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 2h6l1-2h5"/>',
   all: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  list: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',
+  note: '<path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/>',
+  log: '<path d="M12 7v5l3 2"/><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 4v4h4"/>',
   trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17v.01"/>',
   home: '<path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/><path d="M10 20v-5h4v5"/>',
@@ -180,13 +185,26 @@ function daysBetween(a, b) {
 }
 
 // Status is derived, never stored: no closure date => Pending (or Overdue once due has passed).
+// A task whose start date is still ahead (like the next round of a repeating task) is
+// "scheduled": it isn't Pending yet and shows up on its own day.
 function statusOf(t) {
   if (t.closure) return 'closed';
   const td = todayStr();
+  if (t.start && t.start > td && !(t.due && t.due <= td)) return 'scheduled';
   if (t.due && t.due < td) return 'overdue';
   if (t.due && t.due === td) return 'today';
   return 'pending';
 }
+
+// Open and already started (scheduled ones don't count yet).
+const isActive = (x) => !x.closure && statusOf(x) !== 'scheduled';
+
+// Clicking anywhere on a date / time box opens its picker, not just on the small icon.
+document.addEventListener('click', (e) => {
+  const el = e.target;
+  if (!el.matches || !el.matches('input[type=date], input[type=time], input[type=datetime-local]') || el.disabled || el.readOnly) return;
+  try { el.showPicker(); } catch { /* picker already open */ }
+});
 
 function fmtDate(s, lang) {
   if (!s) return '';
