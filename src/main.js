@@ -13,7 +13,9 @@ const prettyKey = (k) => (k || '').replace('CommandOrControl', 'Ctrl');
 
 // Keep the data folder stable under the new name, and bring over data saved under the old name.
 app.setName(APP_NAME);
-const USER_DIR = path.join(app.getPath('appData'), APP_NAME);
+// ELFAR_DATA_DIR: for test runs only — a separate data folder, so a test copy can run next to
+// the real app without touching its data.
+const USER_DIR = process.env.ELFAR_DATA_DIR || path.join(app.getPath('appData'), APP_NAME);
 app.setPath('userData', USER_DIR);
 // The app was called "Elfar Notes" (and "Desktop Notes" before that). The newest old folder
 // that has data is copied over once: tasks, backups, and config.json (which may point at a
@@ -21,7 +23,7 @@ app.setPath('userData', USER_DIR);
 (function migrateOldName() {
   const has = (dir) => fs.existsSync(path.join(dir, 'data.json')) || fs.existsSync(path.join(dir, 'config.json'));
   try {
-    if (has(USER_DIR)) return;
+    if (has(USER_DIR) || process.env.ELFAR_DATA_DIR) return;
     const oldDir = ['Elfar Notes', 'Desktop Notes'].map((n) => path.join(app.getPath('appData'), n)).find(has);
     if (!oldDir) return;
     fs.mkdirSync(USER_DIR, { recursive: true });
@@ -165,14 +167,71 @@ function applyWidgetMode() {
       widgetWin.setBounds({ x: w.x ?? area.x + area.width - 340, y: w.y ?? area.y + 20, width: w.width || 320, height: w.height || 420 });
     }
   } else {
-    const W = (w.width || 320) + 12, H = w.height || 420;
     widgetWin.setResizable(false);
-    widgetWin.setBounds({ x: edgeOf() === 'right' ? area.x + area.width - W : area.x, y: area.y + INCH, width: W, height: H });
+    widgetWin.setBounds(edgeBounds(edgeOf(), area, w.edgeOffset));
     // Tucked away: clicks pass through to the apps underneath until you hover the tab.
     widgetWin.setIgnoreMouseEvents(true, { forward: true });
   }
   widgetWin.__edge = edgeOf() !== 'off';
 }
+
+// Where the tucked-away widget sits. Sides: offset = distance from the top of the screen.
+// Top: offset = distance from the left. No offset yet = about an inch down / near the right.
+function edgeBounds(edge, area, offset) {
+  const w = store.get().settings.widget;
+  const clamp = (v, max) => Math.round(Math.max(0, Math.min(max, v)));
+  if (edge === 'top') {
+    const W = w.width || 320, H = (w.height || 420) + 6;
+    return { x: area.x + clamp(offset ?? area.width - W - 40, area.width - W), y: area.y, width: W, height: H };
+  }
+  const W = (w.width || 320) + 12, H = w.height || 420;
+  return { x: edge === 'right' ? area.x + area.width - W : area.x, y: area.y + clamp(offset ?? INCH, area.height - H), width: W, height: H };
+}
+
+// Drag the mouse by its tail: it follows the cursor along the edge, and docks to whichever
+// edge is nearest (top of the screen, or the left / right half). Saved when you let go.
+let tailDrag = null;
+function tailDragTick() {
+  if (!tailDrag || !widgetWin) return;
+  if (Date.now() > tailDrag.until) return endTailDrag();
+  const p = screen.getCursorScreenPoint();
+  const disp = screen.getDisplayNearestPoint(p);
+  const area = disp.workArea;
+  const w = store.get().settings.widget;
+  const edge = p.y - area.y < 70 ? 'top' : p.x < area.x + area.width / 2 ? 'left' : 'right';
+  if (edge !== tailDrag.edge) { tailDrag.edge = edge; widgetWin.webContents.send('widget:dock', edge); }
+  const offset = edge === 'top'
+    ? p.x - area.x - (w.width || 320) / 2
+    : p.y - area.y - (tailDrag.startEdge === edge ? tailDrag.grabY : 110);
+  const b = edgeBounds(edge, area, offset);
+  tailDrag.offset = edge === 'top' ? b.x - area.x : b.y - area.y;
+  tailDrag.display = disp.id;
+  widgetWin.setBounds(b);
+}
+function endTailDrag() {
+  if (!tailDrag) return;
+  clearInterval(tailDrag.timer);
+  const { edge, offset, display, moved } = tailDrag;
+  tailDrag = null;
+  if (!moved) return;
+  store.updateSettings({ widget: { ...store.get().settings.widget, edge, lastEdge: edge, edgeOffset: offset, display } });
+  broadcast();
+}
+ipcMain.on('widget:tail-drag', (e, phase) => {
+  if (!widgetWin || edgeOf() === 'off') return;
+  if (phase === 'start') {
+    stopHoverWatch();
+    const p = screen.getCursorScreenPoint(), b = widgetWin.getBounds();
+    tailDrag = { grabY: p.y - b.y, startEdge: edgeOf(), edge: edgeOf(), offset: null, display: widgetDisplay().id, moved: false, until: Date.now() + 60000, start: p };
+    tailDrag.timer = setInterval(() => {
+      if (!tailDrag) return;
+      const q = screen.getCursorScreenPoint();
+      if (!tailDrag.moved && Math.abs(q.x - tailDrag.start.x) + Math.abs(q.y - tailDrag.start.y) < 4) return;
+      tailDrag.moved = true;
+      tailDragTick();
+    }, 16);
+  } else endTailDrag();
+});
 
 // While the edge widget is out, watch the real cursor position. Windows doesn't always tell a
 // transparent window that the mouse left, which made it stick open; this never misses.

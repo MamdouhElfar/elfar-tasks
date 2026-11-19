@@ -1052,7 +1052,8 @@ async function openSettings(section) {
         row(t('widgetMode'), t('widgetModeDesc'), `<select id="sEdge">
           <option value="off" ${(w.edge || 'off') === 'off' ? 'selected' : ''}>${t('onTop')}</option>
           <option value="right" ${w.edge === 'right' ? 'selected' : ''}>${t('autoHide')} · ${t('edgeRight')}</option>
-          <option value="left" ${w.edge === 'left' ? 'selected' : ''}>${t('autoHide')} · ${t('edgeLeft')}</option></select>`) +
+          <option value="left" ${w.edge === 'left' ? 'selected' : ''}>${t('autoHide')} · ${t('edgeLeft')}</option>
+          <option value="top" ${w.edge === 'top' ? 'selected' : ''}>${t('autoHide')} · ${t('edgeTop')}</option></select>`) +
         row(t('widgetShows'), t('widgetShowsDesc'), `<select id="sFilter">${filterOpts.map(([v, l]) => `<option value="${v}" ${w.filter === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`) +
         (displays.length > 1 ? row(t('screen'), '', `<select id="sDisplay">${displays.map((d) => `<option value="${d.id}" ${w.display === d.id ? 'selected' : ''}>${d.label}</option>`).join('')}</select>`) : '') +
         row(t('opacity'), '', `<input type="range" id="sOpacity" min="0.4" max="1" step="0.05" value="${w.opacity || 1}">`)
@@ -1150,7 +1151,7 @@ async function openSettings(section) {
   $('sSumTime').onchange = (e) => { if (timeValue(e.target)) { data.settings.summary = { ...data.settings.summary, time: timeValue(e.target) }; save(); } };
   $('sNudge').onchange = (e) => { data.settings.nudgeDays = Math.max(1, Math.min(30, Number(e.target.value) || 3)); save(); };
   $('sWidget').onchange = (e) => setW({ visible: e.target.checked });
-  $('sEdge').onchange = (e) => setW(e.target.value === 'off' ? { edge: 'off' } : { edge: e.target.value, lastEdge: e.target.value, visible: true });
+  $('sEdge').onchange = (e) => setW(e.target.value === 'off' ? { edge: 'off' } : { edge: e.target.value, lastEdge: e.target.value, edgeOffset: null, visible: true });
   if ($('sDisplay')) $('sDisplay').onchange = (e) => setW({ display: Number(e.target.value) });
   $('sOpacity').oninput = (e) => setW({ opacity: Number(e.target.value) });
   $('sFilter').onchange = (e) => setW({ filter: e.target.value });

@@ -380,6 +380,10 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.6.0': {
+    ar: ['امسك ديل الفار اللي على جنب الشاشة واسحب: الفار بيمشي معاك لفوق ولتحت', 'اسحبه لفوق خالص يتثبت أعلى الشاشة وديله نازل لتحت، أو اسحبه للنص التاني يروح الجنب التاني', 'دوسة على الديل من غير سحب بتفتح الويدجت'],
+    en: ['Hold the tail of the mouse at the screen edge and drag: the mouse follows you up and down', 'Drag it to the very top to dock it there with its tail hanging down, or to the other half of the screen to switch sides', 'A click on the tail without dragging opens the widget']
+  },
   '1.5.0': {
     ar: ['شكل جديد للإعدادات: الأقسام على الجنب، وكل اختيار مكتوب تحته بيعمل إيه', 'البيانات والنسخ الاحتياطية بقت أوضح: حفظ نسخة، فتح نسخة، النسخ التلقائية، وExcel، وكل واحدة مكتوب دورها', 'قبل أي استرجاع أو فتح نسخة، التطبيق بيحفظ "نسخة أمان" من بياناتك الحالية تقدر ترجعلها'],
     en: ['A new Settings layout: sections on the side, and every option says what it does', 'Data & backups is clearer: save a copy, load a copy, automatic backups and Excel, each with its job explained', 'Before any restore or loaded copy, the app keeps a "safety copy" of your current data that you can go back to']

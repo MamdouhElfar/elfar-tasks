@@ -15,6 +15,8 @@ contextBridge.exposeInMainWorld('api', {
 
   setWidgetVisible: (v) => ipcRenderer.invoke('widget:set-visible', v),
   widgetIgnoreMouse: (ignore) => ipcRenderer.send('widget:ignore-mouse', ignore),
+  tailDrag: (phase) => ipcRenderer.send('widget:tail-drag', phase),
+  onWidgetDock: (cb) => ipcRenderer.on('widget:dock', (e, edge) => cb(edge)),
   onWidgetCollapse: (cb) => ipcRenderer.on('widget:collapse', () => cb()),
   displays: () => ipcRenderer.invoke('app:displays'),
 

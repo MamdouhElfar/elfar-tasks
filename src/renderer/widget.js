@@ -70,17 +70,18 @@ function render() {
   $('wPin').classList.toggle('on', edge === 'off');
   $('wPin').setAttribute('aria-pressed', edge === 'off');
   $('wPin').title = t('onTop') + (edge === 'off' ? ' ✓' : '');
-  $('wEdge').innerHTML = icon(side === 'left' ? 'edgeLeft' : 'edgeRight');
+  $('wEdge').innerHTML = icon(side === 'left' ? 'edgeLeft' : side === 'top' ? 'edgeTop' : 'edgeRight');
   $('wEdge').classList.toggle('on', edge !== 'off');
   $('wEdge').setAttribute('aria-pressed', edge !== 'off');
-  $('wEdge').title = `${t('autoHide')} · ${t(side === 'left' ? 'edgeLeft' : 'edgeRight')}` + (edge !== 'off' ? ' ✓' : '');
+  $('wEdge').title = `${t('autoHide')} · ${t(side === 'left' ? 'edgeLeft' : side === 'top' ? 'edgeTop' : 'edgeRight')}` + (edge !== 'off' ? ' ✓' : '');
 
   // Same order as the app: priority (matrix box) first, then nearest due date.
   const list = data.tasks.filter(f.test).sort(byPriorityThenDue);
   // The edge tab shows how many tasks are waiting, red if any are "do it now".
   // The edge tab is a little mouse peeking in, with its tail hanging below 🐭
   $('peek').innerHTML = `<span class="pk-face">${mouseLogo()}</span><span class="pk-count">${list.length}</span>
-    <svg class="pk-tail" viewBox="0 0 30 100" aria-hidden="true"><path d="M15 0 C 3 16, 27 28, 15 46 S 3 74, 18 88 Q 24 94, 20 99"/></svg>`;
+    <svg class="pk-tail" viewBox="0 0 30 100" aria-hidden="true"><path d="M15 0 C 3 16, 27 28, 15 46 S 3 74, 18 88 Q 24 94, 20 99"/></svg>
+    <span class="pk-grab" id="pkGrab" title="${esc(t('dragTail'))}"></span>`;
   $('peek').classList.toggle('q1', list.some((x) => x.priority === 'q1' || statusOf(x) === 'overdue'));
   applyEdge(edge);
   if (!list.length) { $('wList').innerHTML = `<div class="w-empty">${f.today ? t('nothingToday') : t('emptyList')}</div>`; return; }
@@ -128,7 +129,7 @@ $('wEdge').onclick = () => {
 // (To keep it visible, switch to the 📌 always-on-top mode.)
 let curEdge = null, collapsed = false;
 function applyEdge(edge) {
-  if (edge === curEdge) return;
+  if (edge === curEdge || tailDragging) return;
   curEdge = edge;
   document.body.classList.toggle('edge', edge !== 'off');
   document.body.dataset.edge = edge;
@@ -146,14 +147,52 @@ function setCollapsed(c) {
     window.api.widgetIgnoreMouse(false);
   }
 }
-// While tucked away, mouse moves are still forwarded to us; hovering the tab slides the card out.
+// While tucked away, mouse moves are still forwarded to us.
+// Hovering the mouse's face slides the card out. Hovering the tail makes it grabbable:
+// hold and drag to move the mouse along the edge, or to another edge (top, left, right).
+let tailHot = false, tailDragging = false;
+const inRect = (e, r, pad = 4) => e.clientX >= r.left - pad && e.clientX <= r.right + pad && e.clientY >= r.top - pad && e.clientY <= r.bottom + pad;
+function setTailHot(hot) {
+  if (hot === tailHot) return;
+  tailHot = hot;
+  document.body.classList.toggle('tail-hot', hot);
+  window.api.widgetIgnoreMouse(!hot);
+}
 document.addEventListener('mousemove', (e) => {
-  if (curEdge === 'off' || !collapsed) return;
-  const r = $('peek').getBoundingClientRect();
-  if (e.clientX >= r.left - 4 && e.clientX <= r.right + 4 && e.clientY >= r.top && e.clientY <= r.bottom) setCollapsed(false);
+  if (curEdge === 'off' || !collapsed || tailDragging) return;
+  const grab = $('pkGrab');
+  if (grab && inRect(e, grab.getBoundingClientRect(), 2)) return setTailHot(true);
+  if (inRect(e, $('peek').getBoundingClientRect())) { tailHot = false; document.body.classList.remove('tail-hot'); return setCollapsed(false); }
+  setTailHot(false);
 });
+document.addEventListener('pointerdown', (e) => {
+  if (!e.target.closest || !e.target.closest('#pkGrab') || curEdge === 'off') return;
+  e.preventDefault();
+  e.target.setPointerCapture(e.pointerId);
+  tailDragging = true;
+  const x0 = e.screenX, y0 = e.screenY;
+  document.body.classList.add('tail-drag');
+  window.api.tailDrag('start');
+  const up = (ev) => {
+    e.target.removeEventListener('pointerup', up);
+    e.target.removeEventListener('pointercancel', up);
+    window.api.tailDrag('end');
+    tailDragging = false;
+    document.body.classList.remove('tail-drag');
+    // A click without dragging opens the card.
+    if (Math.abs(ev.screenX - x0) + Math.abs(ev.screenY - y0) < 4) { tailHot = false; document.body.classList.remove('tail-hot'); setCollapsed(false); }
+  };
+  e.target.addEventListener('pointerup', up);
+  e.target.addEventListener('pointercancel', up);
+});
+// While dragging, the main process tells us which edge we're on, so the tab turns to face it.
+window.api.onWidgetDock((edge) => { document.body.dataset.edge = edge; curEdge = edge; });
 // The main process watches the real cursor and tells us when it has left the widget.
-window.api.onWidgetCollapse(() => { if (curEdge !== 'off' && !collapsed) setCollapsed(true); });
+window.api.onWidgetCollapse(() => {
+  if (curEdge === 'off' || tailDragging) return;
+  if (!collapsed) setCollapsed(true);
+  else setTailHot(false);
+});
 $('wHide').onclick = () => window.api.setWidgetVisible(false);
 $('wAdd').onkeydown = (e) => {
   if (e.key !== 'Enter' || !e.target.value.trim()) return;

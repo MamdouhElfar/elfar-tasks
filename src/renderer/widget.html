@@ -38,6 +38,7 @@
     .note { transition: transform var(--dur) var(--ease), opacity var(--dur) var(--ease); }
     body.edge.collapsed[data-edge=right] .note { transform: translateX(105%); opacity: 0; }
     body.edge.collapsed[data-edge=left] .note { transform: translateX(-105%); opacity: 0; }
+    body.edge.collapsed[data-edge=top] .note { transform: translateY(-105%); opacity: 0; }
     body.edge .w-head { -webkit-app-region: no-drag; }
     /* Mode switch: exactly one is active, shown filled */
     .mode-seg { -webkit-app-region: no-drag; display: inline-flex; background: var(--hover); border-radius: 8px; padding: 2px; gap: 2px; }
@@ -66,6 +67,16 @@
     body.edge:not(.collapsed) .peek { opacity: 0; pointer-events: none; }
     body[data-edge=right].edge:not(.collapsed) .peek { transform: translateX(100%); }
     body[data-edge=left].edge:not(.collapsed) .peek { transform: translateX(-100%); }
+    /* Docked at the top: the tab hangs from the top edge, tail dangling down. */
+    body[data-edge=top] .peek { top: 0; left: 50%; width: 86px; height: 38px; margin-left: -43px; flex-direction: row; gap: 6px; border-top: none; border-radius: 0 0 12px 12px; }
+    body[data-edge=top] .peek .pk-face, body[data-edge=top] .peek .pk-face svg { width: 26px; height: 26px; }
+    body[data-edge=top].edge:not(.collapsed) .peek { transform: translateY(-100%); }
+    /* The tail is a handle: hover it, hold and drag. */
+    .peek .pk-grab { position: absolute; top: calc(100% - 2px); left: 50%; width: 30px; height: 80px; margin-left: -15px; cursor: grab; }
+    body.tail-hot .peek .pk-tail { animation-duration: .6s; }
+    body.tail-hot .peek .pk-tail path { stroke: #ec8aa2; stroke-width: 3.8; }
+    body.tail-drag, body.tail-drag .peek .pk-grab { cursor: grabbing; }
+    body.tail-drag .peek .pk-tail { animation-duration: .35s; }
   </style>
 </head>
 <body>
