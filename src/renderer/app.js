@@ -19,12 +19,26 @@ const areaById = (id) => data.areas.find((a) => a.id === id);
 const taskById = (id) => data.tasks.find((x) => x.id === id);
 const topAreas = () => data.areas.filter((a) => !a.parentId);
 const childrenOf = (id) => data.areas.filter((a) => a.parentId === id);
+// Folders nest up to three levels: folder › subfolder › sub-subfolder.
+const MAX_DEPTH = 2;
+function ancestorsOf(id) {
+  const out = [];
+  let a = areaById(id);
+  while (a && a.parentId && !out.includes(a.parentId) && areaById(a.parentId)) { out.push(a.parentId); a = areaById(a.parentId); }
+  return out;
+}
+const depthOf = (id) => ancestorsOf(id).length;
+function descendantsOf(id) {
+  const out = [];
+  const walk = (p) => childrenOf(p).forEach((c) => { if (!out.includes(c.id)) { out.push(c.id); walk(c.id); } });
+  walk(id);
+  return out;
+}
 const areaColor = (a) => `var(--c-${(a && a.color) || 'gray'})`;
 function areaLabel(id) {
   const a = areaById(id);
   if (!a) return t('inbox');
-  const p = a.parentId && areaById(a.parentId);
-  return p ? `${p.name} / ${a.name}` : a.name;
+  return [...ancestorsOf(id).reverse().map((pid) => areaById(pid).name), a.name].join(' / ');
 }
 const isOpen = (x) => !x.closure;
 
@@ -47,7 +61,7 @@ function findOrCreatePerson(name, areaId) {
 // People linked to the task's area (or its parent area) come first in suggestions.
 function suggestedPeople(x) {
   const a = areaById(x.areaId);
-  const related = a ? [a.id, a.parentId].filter(Boolean) : [];
+  const related = a ? [a.id, ...ancestorsOf(a.id)] : [];
   const score = (p) => (p.areaIds.some((id) => related.includes(id)) ? 0 : 1);
   return data.people
     .filter((p) => !isPendingWith(x, p.id))
@@ -71,7 +85,7 @@ const VIEWS = [
 function inScope(x, scope = ui.scope) {
   if (scope === 'all') return true;
   if (scope === 'inbox') return !areaById(x.areaId);
-  return x.areaId === scope || areaById(x.areaId)?.parentId === scope;
+  return x.areaId === scope || ancestorsOf(x.areaId).includes(scope);
 }
 
 function currentTasks() {
@@ -103,7 +117,6 @@ function renderAll() {
   applyLang(lang());
   document.title = t('appName');
   $('brandName').textContent = t('appName');
-  $('brandLogo').innerHTML = mouseLogo();
   $('areasTitle').textContent = t('areas');
   $('peopleTitle').textContent = t('people');
   $('addPersonBtn').title = t('addPerson');
@@ -158,7 +171,7 @@ if (window.ResizeObserver) new ResizeObserver(() => fitTabs()).observe(document.
 // or while you hover over them during a drag.
 const dragExpanded = new Set();
 function isExpanded(id) {
-  return (data.settings.expanded || []).includes(id) || dragExpanded.has(id) || areaById(ui.scope)?.parentId === id;
+  return (data.settings.expanded || []).includes(id) || dragExpanded.has(id) || ancestorsOf(ui.scope).includes(id);
 }
 function toggleExpanded(id) {
   const s = new Set(data.settings.expanded || []);
@@ -177,15 +190,19 @@ function renderSidebar() {
     // "No area" only shows when it has tasks (or while dragging, as a drop target).
     item('inbox', `${icon('inbox')}<span>${t('inbox')}</span>`, openCount('inbox') || ui.scope === 'inbox' ? '' : 'empty-inbox');
 
-  $('areasNav').innerHTML = topAreas().map((a) => {
+  // Folders, drawn as a tree: each level folds open and shut on its own.
+  const node = (a, depth) => {
     const kids = childrenOf(a.id);
     const open = isExpanded(a.id);
     const chev = `<span class="chev ${open ? 'open' : ''} ${kids.length ? '' : 'no-kids'}" data-toggle="${a.id}">${icon('chevron')}</span>`;
-    return item(a.id, `${chev}<span class="dot" style="background:${areaColor(a)}"></span><span dir="auto">${esc(a.name)}</span>`)
+    const lead = depth ? chev : `${chev}<span class="dot" style="background:${areaColor(a)}"></span>`;
+    return item(a.id, `${lead}<span dir="auto">${esc(a.name)}</span>`, depth ? `child d${Math.min(depth, MAX_DEPTH)}` : '')
         .replace('</div>', `<button class="edit" data-edit-area="${a.id}">✎</button></div>`) +
-      (kids.length ? `<div class="kids ${open ? 'open' : ''}" data-kids="${a.id}"><div>${kids.map((c) =>
-        item(c.id, `<span dir="auto">${esc(c.name)}</span>`, 'child').replace('</div>', `<button class="edit" data-edit-area="${c.id}">✎</button></div>`)).join('')}</div></div>` : '');
-  }).join('');
+      (kids.length ? `<div class="kids ${open ? 'open' : ''}" data-kids="${a.id}"><div>${kids.map((c) => node(c, depth + 1)).join('')}</div></div>` : '');
+  };
+  $('areasNav').innerHTML = topAreas().map((a) => node(a, 0)).join('');
+
+  updateMascot();
 
   // People: sorted by how many open tasks are pending with them.
   const pendingCount = (pid) => data.tasks.filter((x) => isOpen(x) && isPendingWith(x, pid)).length;
@@ -389,10 +406,11 @@ function renderMatrix() {
 
 function areaOptions(selected) {
   let h = `<option value="">${t('inbox')}</option>`;
-  for (const a of topAreas()) {
-    h += `<option value="${a.id}" ${selected === a.id ? 'selected' : ''}>${esc(a.name)}</option>`;
-    for (const c of childrenOf(a.id)) h += `<option value="${c.id}" ${selected === c.id ? 'selected' : ''}>&nbsp;&nbsp;${esc(a.name)} / ${esc(c.name)}</option>`;
-  }
+  const add = (a, depth) => {
+    h += `<option value="${a.id}" ${selected === a.id ? 'selected' : ''}>${'&nbsp;&nbsp;&nbsp;'.repeat(depth)}${esc(depth ? areaLabel(a.id) : a.name)}</option>`;
+    childrenOf(a.id).forEach((c) => add(c, depth + 1));
+  };
+  topAreas().forEach((a) => add(a, 0));
   return h;
 }
 
@@ -897,7 +915,7 @@ function openAreaModal(area, parentId) {
   const isNew = !area;
   const a = area || { id: uid(), name: '', color: parentId ? areaById(parentId).color : 'blue', parentId: parentId || null };
   let color = a.color;
-  const canHaveChildren = !a.parentId && !isNew;
+  const canHaveChildren = !isNew && depthOf(a.id) < MAX_DEPTH;
   $('modalRoot').innerHTML = `<div class="modal-bg" id="mBg"><div class="modal">
     <h3>${isNew ? (parentId ? t('addProject') : t('addArea')) : t('rename')}</h3>
     <div class="row"><input type="text" id="mName" dir="auto" style="flex:1" value="${esc(a.name)}" placeholder="${t('name')}"></div>
@@ -920,14 +938,14 @@ function openAreaModal(area, parentId) {
       a.name = $('mName').value.trim() || a.name || '—';
       a.color = color;
       if (isNew) data.areas.push(a);
-      childrenOf(a.id).forEach((c) => (c.color = color));
+      descendantsOf(a.id).forEach((id) => (areaById(id).color = color));
       save(); closeModal();
       if (isNew) ui.scope = a.id;
       refresh();
     }
     if (e.target.id === 'mAddChild') { closeModal(); openAreaModal(null, a.id); }
     if (e.target.id === 'mDel' && await askConfirm({ title: t('confirmDelArea'), text: a.name, ok: t('del'), danger: true })) {
-      const ids = [a.id, ...childrenOf(a.id).map((c) => c.id)];
+      const ids = [a.id, ...descendantsOf(a.id)];
       data.areas = data.areas.filter((x) => !ids.includes(x.id));
       data.tasks.forEach((x) => { if (ids.includes(x.areaId)) x.areaId = null; });
       if (ids.includes(ui.scope)) ui.scope = 'all';
@@ -942,13 +960,14 @@ function openPersonModal(person) {
   const p = person || { id: uid(), name: '', areaIds: [] };
   const sel = new Set(p.areaIds);
   const open = isNew ? [] : data.tasks.filter((x) => isOpen(x) && isPendingWith(x, p.id));
-  const box = (a, child) => `<label class="${child ? 'child' : ''}"><input type="checkbox" data-pa="${a.id}" ${sel.has(a.id) ? 'checked' : ''}>
-    ${child ? '' : `<span class="dot" style="background:${areaColor(a)}"></span>`}<span dir="auto">${esc(a.name)}</span></label>`;
+  const box = (a, depth) => `<label class="${depth ? 'child d' + depth : ''}"><input type="checkbox" data-pa="${a.id}" ${sel.has(a.id) ? 'checked' : ''}>
+    ${depth ? '' : `<span class="dot" style="background:${areaColor(a)}"></span>`}<span dir="auto">${esc(a.name)}</span></label>`;
+  const tree = (a, depth) => box(a, depth) + childrenOf(a.id).map((c) => tree(c, depth + 1)).join('');
   $('modalRoot').innerHTML = `<div class="modal-bg" id="mBg"><div class="modal">
     <h3>${isNew ? t('addPerson') : t('editPerson')}</h3>
     <div class="row"><input type="text" id="mName" dir="auto" style="flex:1" value="${esc(p.name)}" placeholder="${t('name')}"></div>
     <div class="small muted" style="margin-bottom:6px">${t('linkedTo')}</div>
-    <div class="person-areas">${topAreas().map((a) => box(a) + childrenOf(a.id).map((c) => box(c, true)).join('')).join('')}</div>
+    <div class="person-areas">${topAreas().map((a) => tree(a, 0)).join('')}</div>
     <p class="small muted">${t('personHint')}</p>
     ${open.length ? `<div class="small muted" style="margin:10px 0 4px">${t('openWith')} (${open.length})</div>
       ${open.slice(0, 6).map((x) => `<div class="small" dir="auto">• ${esc(x.title)}</div>`).join('')}` : ''}
@@ -1107,9 +1126,8 @@ function bind() {
     const changed = ui.scope !== id;
     // Folder with projects: first click opens it, clicking it again folds it back up.
     if (childrenOf(id).length) setFolder(id, changed ? true : !isExpanded(id));
-    // Picking a project keeps its folder open.
-    const parent = areaById(id)?.parentId;
-    if (parent && !(data.settings.expanded || []).includes(parent)) setFolder(parent, true);
+    // Picking a subfolder keeps the folders above it open.
+    for (const p of ancestorsOf(id)) if (!(data.settings.expanded || []).includes(p)) setFolder(p, true);
     if (!changed) return;
     ui.scope = id; ui.selected = null;
     document.querySelectorAll('#scopeNav [data-scope], #areasNav [data-scope]').forEach((n) => n.classList.toggle('active', n.dataset.scope === id));

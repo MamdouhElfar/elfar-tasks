@@ -46,7 +46,7 @@ const I18N = {
     q1: 'مهم ومستعجل', q2: 'مهم ومش مستعجل', q3: 'مستعجل ومش مهم', q4: 'لا مهم ولا مستعجل',
     q1a: 'اعملها دلوقتي', q2a: 'خطط لها', q3a: 'فوّضها', q4a: 'استغنى عنها', matrixHint: 'اسحب أي تاسك لمربع تاني عشان تغيّر تصنيفها، أو من "مش متصنفة" لأي مربع.',
     allAreas: 'كل التاسكات', dragHint: 'سيب التاسك على فولدر عشان تنقله', movedTo: 'اتنقلت إلى',
-    stScheduled: 'يبدأ', later: 'مجدولة', scheduledHint: 'دي تاسكات لسه ميعادها مجاش (زي المرة الجاية من تاسك متكررة). هتظهر في Pending يوم ما تبدأ.', wWeek: '7 أيام', wOthers: 'عند غيري',
+    dayClear: 'مفيش حاجة فاضلة النهارده، الفار مبسوط 🧀', cheerTitle: 'عاش! خلصت كل تاسكات النهارده 🎉', cheerSub: 'الفار فخور بيك', stScheduled: 'يبدأ', later: 'مجدولة', scheduledHint: 'دي تاسكات لسه ميعادها مجاش (زي المرة الجاية من تاسك متكررة). هتظهر في Pending يوم ما تبدأ.', wWeek: '7 أيام', wOthers: 'عند غيري',
     calHint: 'اضغط ＋ في أي يوم تضيف تاسك عليه · اسحب تاسك ليوم تاني يغيّر الـ Due · الباهت = المرات الجاية من تاسك متكررة.',
     ok: 'تمام', home: 'الرئيسية', mine: 'عندي أنا', withOthers: 'عند حد تاني', show: 'عرض', remindCustom: 'وقت محدد…', remindNeedsDue: 'حط Due عشان تقدر تتفكّر قبله بوقت', remindAt9: 'الـ Due من غير وقت، فالتذكير محسوب على 9 الصبح', dueTimeShort: 'الوقت',
     gMorning: 'صباح الخير', gAfternoon: 'مساء الخير', gEvening: 'مساء الخير', hWeek: 'الـ 7 أيام الجايين', hOthers: 'عند ناس تانية', hClosedWeek: 'اتقفلت الأسبوع ده',
@@ -98,7 +98,7 @@ const I18N = {
     q1: 'Important and urgent', q2: 'Important, not urgent', q3: 'Urgent, not important', q4: 'Not important, not urgent',
     q1a: 'Do it now', q2a: 'Schedule it', q3a: 'Delegate it', q4a: 'Drop it', matrixHint: 'Drag a task to another box to change its priority, or from Unclassified into any box.',
     allAreas: 'All tasks', dragHint: 'Drop a task on a folder to move it', movedTo: 'Moved to',
-    stScheduled: 'Starts', later: 'Scheduled', scheduledHint: "Tasks that haven't started yet (like the next round of a repeating task). They move to Pending on their start day.", wWeek: '7 days', wOthers: 'Others',
+    dayClear: 'Nothing left for today. Happy mouse 🧀', cheerTitle: 'Nice! Every task for today is done 🎉', cheerSub: 'The mouse is proud of you', stScheduled: 'Starts', later: 'Scheduled', scheduledHint: "Tasks that haven't started yet (like the next round of a repeating task). They move to Pending on their start day.", wWeek: '7 days', wOthers: 'Others',
     calHint: 'Click ＋ on a day to add a task there · drag a task to another day to change its due · faded = upcoming repeats.',
     ok: 'OK', home: 'Home', mine: 'On me', withOthers: 'With others', show: 'Show', remindCustom: 'Specific time…', remindNeedsDue: 'Set a due date to be reminded before it', remindAt9: 'No due time set, so this counts from 9:00 AM', dueTimeShort: 'Time',
     gMorning: 'Good morning', gAfternoon: 'Good afternoon', gEvening: 'Good evening', hWeek: 'Next 7 days', hOthers: 'With others', hClosedWeek: 'Closed this week',
@@ -149,16 +149,57 @@ function icon(name) {
 }
 
 // The Elfar mouse 🐭: the app's mascot and logo (fixed colors so it looks the same in light and dark).
-function mouseLogo(cls = '') {
-  return `<svg class="mouse-logo ${cls}" viewBox="0 0 64 64" aria-hidden="true">
+// mood 'happy': nothing left for today, so it squints with joy and hugs a wedge of Roumy cheese 🧀
+function mouseLogo(cls = '', mood = '') {
+  const happy = mood === 'happy';
+  const eyes = happy
+    ? `<path d="M21.5 35.5q3-4 6 0M36.5 35.5q3-4 6 0" fill="none" stroke="#1f1e1c" stroke-width="2.2" stroke-linecap="round"/>
+       <circle cx="19" cy="41" r="2.6" fill="#f3a6b8" opacity=".7"/><circle cx="45" cy="41" r="2.6" fill="#f3a6b8" opacity=".7"/>`
+    : `<circle cx="24.5" cy="35" r="3" fill="#1f1e1c"/><circle cx="39.5" cy="35" r="3" fill="#1f1e1c"/>
+       <circle cx="25.6" cy="33.9" r="1" fill="#fff"/><circle cx="40.6" cy="33.9" r="1" fill="#fff"/>`;
+  const cheese = happy
+    ? `<g class="ml-cheese"><path d="M20 62 L44 50 L46 61 Z" fill="#f6c343" stroke="#d9a21b" stroke-width="1.2" stroke-linejoin="round"/>
+       <path d="M44 50 L46 61" stroke="#e8b42f" stroke-width="2.2"/>
+       <circle cx="31" cy="58" r="1.8" fill="#e0a92a"/><circle cx="38" cy="56.5" r="1.3" fill="#e0a92a"/><circle cx="41" cy="59.5" r="1" fill="#e0a92a"/>
+       <ellipse cx="22" cy="58.5" rx="4" ry="3.2" fill="#b9c2cc"/><ellipse cx="44" cy="54" rx="4" ry="3.2" fill="#b9c2cc"/></g>`
+    : '';
+  return `<svg class="mouse-logo ${cls} ${happy ? 'happy' : ''}" viewBox="0 0 64 64" aria-hidden="true">
     <circle cx="17" cy="21" r="12" fill="#8f99a5"/><circle cx="47" cy="21" r="12" fill="#8f99a5"/>
     <circle cx="17" cy="21" r="7" fill="#f3a6b8"/><circle cx="47" cy="21" r="7" fill="#f3a6b8"/>
     <ellipse cx="32" cy="39" rx="20" ry="18" fill="#b9c2cc"/>
     <ellipse cx="32" cy="45" rx="11" ry="8" fill="#d6dce3"/>
-    <circle cx="24.5" cy="35" r="3" fill="#1f1e1c"/><circle cx="39.5" cy="35" r="3" fill="#1f1e1c"/>
-    <circle cx="25.6" cy="33.9" r="1" fill="#fff"/><circle cx="40.6" cy="33.9" r="1" fill="#fff"/>
+    ${eyes}
     <ellipse cx="32" cy="42.5" rx="3.2" ry="2.5" fill="#e8798f"/>
+    ${happy ? '<path d="M28.5 46.5q3.5 3 7 0" fill="none" stroke="#6b4a52" stroke-width="1.4" stroke-linecap="round"/>' : ''}
     <path d="M27 44l-12-3M27 46.5l-12 1M37 44l12-3M37 46.5l12 1" stroke="#6b7380" stroke-width="1.1" stroke-linecap="round"/>
+    ${cheese}
+  </svg>`;
+}
+
+// The mouse that pops up to give you a thumbs-up 👍 when the day's last task is closed.
+function cheerMouseSvg() {
+  return `<svg class="cheer-svg" viewBox="0 0 140 150" aria-hidden="true">
+    <path class="cm-tail" d="M40 128 C 10 130, 8 104, 26 100 S 40 84, 24 76" fill="none" stroke="#f3a6b8" stroke-width="4" stroke-linecap="round"/>
+    <ellipse cx="70" cy="122" rx="34" ry="28" fill="#b9c2cc"/>
+    <ellipse cx="70" cy="128" rx="20" ry="17" fill="#d6dce3"/>
+    <ellipse cx="50" cy="126" rx="8" ry="10" fill="#b9c2cc" transform="rotate(20 50 126)"/>
+    <g class="cm-head">
+      <circle cx="40" cy="36" r="19" fill="#8f99a5"/><circle cx="100" cy="36" r="19" fill="#8f99a5"/>
+      <circle cx="40" cy="36" r="11" fill="#f3a6b8"/><circle cx="100" cy="36" r="11" fill="#f3a6b8"/>
+      <ellipse cx="70" cy="64" rx="34" ry="30" fill="#b9c2cc"/>
+      <ellipse cx="70" cy="75" rx="17" ry="12" fill="#d6dce3"/>
+      <path d="M52 60q6-7 12 0M76 60q6-7 12 0" fill="none" stroke="#1f1e1c" stroke-width="3.2" stroke-linecap="round"/>
+      <circle cx="47" cy="72" r="5" fill="#f3a6b8" opacity=".7"/><circle cx="93" cy="72" r="5" fill="#f3a6b8" opacity=".7"/>
+      <ellipse cx="70" cy="70" rx="4.6" ry="3.6" fill="#e8798f"/>
+      <path d="M62 78q8 7 16 0" fill="none" stroke="#6b4a52" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M62 73l-18-4M62 76.5l-18 2M78 73l18-4M78 76.5l18 2" stroke="#6b7380" stroke-width="1.4" stroke-linecap="round"/>
+    </g>
+    <g class="cm-thumb">
+      <path d="M98 118 L112 98" stroke="#b9c2cc" stroke-width="12" stroke-linecap="round"/>
+      <rect x="104" y="84" width="20" height="18" rx="7" fill="#b9c2cc" stroke="#9aa4af" stroke-width="1.2"/>
+      <rect x="109" y="64" width="9" height="24" rx="4.5" fill="#b9c2cc" stroke="#9aa4af" stroke-width="1.2"/>
+      <path d="M106 90h16M106 95h16" stroke="#9aa4af" stroke-width="1.1" stroke-linecap="round"/>
+    </g>
   </svg>`;
 }
 

@@ -242,6 +242,39 @@ function bindKeyboard() {
   });
 }
 
+// ---------------- the mouse's mood ----------------
+// Nothing due today or overdue → the sidebar mouse is happy, holding a piece of cheese.
+// Closing the last task of the day → a mouse pops up from the bottom with a thumbs-up.
+const mood = { prev: null };
+function updateMascot() {
+  const td = todayStr();
+  const left = data.tasks.filter((x) => !x.closure && x.due && x.due <= td).length;
+  const closedToday = data.tasks.filter((x) => x.closure === td).length;
+  const happy = left === 0;
+  const el = $('brandLogo');
+  if (el && el.dataset.mood !== (happy ? 'happy' : '')) {
+    el.innerHTML = mouseLogo('', happy ? 'happy' : '');
+    el.dataset.mood = happy ? 'happy' : '';
+    el.title = happy ? t('dayClear') : '';
+    if (mood.prev) animateIn(el);
+  }
+  if (mood.prev && mood.prev.left > 0 && left === 0 && closedToday > mood.prev.closed) cheer();
+  mood.prev = { left, closed: closedToday };
+}
+
+function cheer() {
+  document.querySelector('.cheer')?.remove();
+  const el = document.createElement('div');
+  el.className = 'cheer';
+  el.innerHTML = `<div class="cheer-bits">${[...Array(14)].map((_, i) => `<i style="--i:${i}"></i>`).join('')}</div>
+    <div class="cheer-card"><div class="cheer-text"><b>${t('cheerTitle')}</b><span>${t('cheerSub')}</span></div></div>
+    <div class="cheer-mouse">${cheerMouseSvg()}</div>`;
+  document.body.appendChild(el);
+  const bye = () => { el.classList.add('leaving'); setTimeout(() => el.remove(), 600); };
+  el.onclick = bye;
+  setTimeout(bye, 3400);
+}
+
 // In-app yes/no dialog (instead of the plain Windows box). Resolves true / false.
 // Stacks on top of any open dialog; Enter confirms, Esc cancels.
 function askConfirm({ title, text = '', ok = t('ok'), danger = false }) {
@@ -347,6 +380,10 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.4.0': {
+    ar: ['فولدرات فرعية جوه الفولدرات الفرعية (لحد ثلاث مستويات)', 'لما مفيش حاجة فاضلة النهارده، الفار اللي فوق في الجنب بيبقى مبسوط وماسك حتة جبنة رومي 🧀', 'لما تقفل آخر تاسك في يومك، فار بيطلع من تحت ويعملك Like 👍'],
+    en: ['Subfolders inside subfolders (up to three levels)', 'When nothing is left for today, the mouse at the top of the sidebar is happy and holds a piece of cheese 🧀', 'Close the last task of your day and a mouse pops up from the bottom with a thumbs-up 👍']
+  },
   '1.3.0': {
     ar: ['اختيار الوقت بقى عجلات: دوس واسحب لفوق ولتحت (أو استخدم البكرة)، ودوس على أي رقم يتختار', 'الوقت بقى منفصل عن التاريخ في التذكير وفي سجل المتابعة', '"الأقسام" بقى اسمها "الفولدرات"، و"المشروع" بقى "فولدر فرعي"'],
     en: ['Picking a time is now a set of wheels: hold and drag up or down (or scroll), and click a number to pick it', 'Time is now separate from the date in reminders and in the follow-up log', '"Areas" are now "Folders", and "projects" are now "subfolders"']

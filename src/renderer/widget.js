@@ -23,7 +23,8 @@ function filterInfo() {
   if (f.startsWith('area:')) {
     const id = f.slice(5);
     const a = data.areas.find((y) => y.id === id);
-    const ids = [id, ...data.areas.filter((y) => y.parentId === id).map((y) => y.id)];
+    const ids = [id];
+    for (let i = 0; i < ids.length; i++) data.areas.forEach((y) => { if (y.parentId === ids[i] && !ids.includes(y.id)) ids.push(y.id); });
     return { title: a ? a.name : t('pending'), areaId: a ? id : null, test: (x) => isActive(x) && (!a || ids.includes(x.areaId)) };
   }
   return { title: t('today'), today: true, test: (x) => !x.closure && ((x.due && x.due <= td) || x.starred) };

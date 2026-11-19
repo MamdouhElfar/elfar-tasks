@@ -6,10 +6,12 @@ const t = (k) => (I18N[data.settings.lang] || I18N.ar)[k] || k;
 
 function areaOpts() {
   let h = `<option value="">${t('inbox')}</option>`;
-  for (const a of data.areas.filter((x) => !x.parentId)) {
-    h += `<option value="${a.id}">${esc(a.name)}</option>`;
-    for (const c of data.areas.filter((x) => x.parentId === a.id)) h += `<option value="${c.id}">&nbsp;&nbsp;${esc(a.name)} / ${esc(c.name)}</option>`;
-  }
+  // Folders and their subfolders, as a tree.
+  const add = (a, path, depth) => {
+    h += `<option value="${a.id}">${'&nbsp;&nbsp;&nbsp;'.repeat(depth)}${esc(path)}</option>`;
+    data.areas.filter((x) => x.parentId === a.id).forEach((c) => add(c, `${path} / ${c.name}`, depth + 1));
+  };
+  data.areas.filter((x) => !x.parentId).forEach((a) => add(a, a.name, 0));
   return h;
 }
 

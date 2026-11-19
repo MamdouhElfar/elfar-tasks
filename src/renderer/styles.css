@@ -679,3 +679,45 @@ input[type=date], input[type=time], input[type=datetime-local] { cursor: pointer
 .tp-foot { display: flex; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
 .tp-foot button { font-size: 12px; padding: 4px 10px; }
 .tp-foot .tp-done { margin-left: auto; }
+
+/* ---------- 1.4: nested folders ---------- */
+.nav-item.child.d1 { padding-inline-start: 26px; }
+.nav-item.child.d2 { padding-inline-start: 42px; font-size: 12.5px; }
+.nav-item.child .chev { margin-inline-start: 0; }
+.person-areas label.d1 { padding-inline-start: 22px; }
+.person-areas label.d2 { padding-inline-start: 40px; }
+
+/* ---------- 1.4: happy mouse + thumbs-up ---------- */
+.brand .logo .mouse-logo.happy { animation: mlWiggle 2.8s ease-in-out infinite; transform-origin: 50% 80%; }
+.brand .logo .mouse-logo.happy .ml-cheese { transform-origin: 32px 56px; animation: mlNibble 2.8s ease-in-out infinite; }
+@keyframes mlWiggle { 0%, 70%, 100% { transform: rotate(0); } 78% { transform: rotate(-6deg); } 86% { transform: rotate(5deg); } 94% { transform: rotate(-2deg); } }
+@keyframes mlNibble { 0%, 60%, 100% { transform: translateY(0); } 66% { transform: translateY(-1.5px); } 72% { transform: translateY(0); } 78% { transform: translateY(-1.5px); } }
+
+.cheer { position: fixed; inset: 0; z-index: 70; pointer-events: auto; cursor: pointer; overflow: hidden; background: radial-gradient(ellipse at 50% 100%, rgba(47,127,208,.16), transparent 60%); animation: fadeIn .3s ease; }
+.cheer.leaving { animation: fadeOut .5s ease forwards; }
+.cheer-mouse { position: absolute; left: 50%; bottom: -8px; width: 190px; margin-left: -95px; animation: cheerUp .75s cubic-bezier(.2, 1.6, .4, 1) both; }
+.cheer.leaving .cheer-mouse { animation: cheerDown .5s ease-in forwards; }
+.cheer-svg { width: 100%; height: auto; display: block; filter: drop-shadow(0 6px 14px rgba(0,0,0,.18)); }
+.cheer-svg .cm-thumb { transform-origin: 112px 104px; animation: thumbPump .7s ease-in-out .7s 3; }
+.cheer-svg .cm-head { transform-origin: 70px 90px; animation: headBob .7s ease-in-out .7s 3; }
+.cheer-svg .cm-tail { transform-origin: 40px 128px; animation: tailWag .5s ease-in-out infinite alternate; }
+.cheer-card { position: absolute; left: 50%; bottom: 200px; transform: translateX(-50%); animation: cardPop .5s cubic-bezier(.2, 1.4, .4, 1) .45s both; }
+.cheer.leaving .cheer-card { animation: fadeOut .3s ease forwards; }
+.cheer-text { background: var(--panel); border: 1px solid var(--border-2); border-radius: 14px; padding: 10px 18px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,.18); white-space: nowrap; }
+.cheer-text b { display: block; font-size: 15px; }
+.cheer-text span { font-size: 12.5px; color: var(--text-2); }
+.cheer-bits i { position: absolute; bottom: 120px; left: 50%; width: 10px; height: 8px; background: #f6c343; clip-path: polygon(0 100%, 100% 0, 100% 100%);
+  animation: bit 1.4s cubic-bezier(.2, .7, .4, 1) calc(.35s + var(--i) * 25ms) both; --a: calc(var(--i) * 25.7deg); }
+.cheer-bits i:nth-child(3n) { background: #f3a6b8; border-radius: 50%; clip-path: none; width: 7px; height: 7px; }
+.cheer-bits i:nth-child(3n+1) { background: #5aa0e6; border-radius: 2px; clip-path: none; width: 6px; height: 9px; }
+@keyframes cheerUp { from { transform: translateY(110%); } to { transform: translateY(0); } }
+@keyframes cheerDown { to { transform: translateY(115%); } }
+@keyframes thumbPump { 0%, 100% { transform: rotate(0); } 40% { transform: rotate(-14deg) translateY(-4px); } 70% { transform: rotate(6deg); } }
+@keyframes headBob { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-4deg) translateY(-2px); } }
+@keyframes tailWag { from { transform: rotate(-6deg); } to { transform: rotate(8deg); } }
+@keyframes cardPop { from { opacity: 0; transform: translateX(-50%) translateY(14px) scale(.9); } to { opacity: 1; transform: translateX(-50%); } }
+@keyframes bit { from { opacity: 1; transform: translate(-50%, 0) rotate(0); }
+  to { opacity: 0; transform: translate(calc(-50% + cos(var(--a)) * 260px), calc(sin(var(--a)) * -160px - 140px)) rotate(540deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .cheer-mouse, .cheer-card, .cheer-bits i, .cheer-svg * , .brand .logo .mouse-logo.happy, .brand .logo .mouse-logo.happy * { animation-duration: .01s !important; animation-iteration-count: 1 !important; }
+}
