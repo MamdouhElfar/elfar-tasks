@@ -68,12 +68,25 @@ function remindBeforeLabel(m) {
   if (m === 0) return t('atDueTime');
   if (m < 60) return `${m} ${t('minBefore')}`;
   if (m < 1440) return `${m / 60} ${t('hourBefore')}`;
-  if (m < 10080) return `${m / 1440} ${t('dayBefore')}`;
+  if (m < 10080) return m === 1440 ? t('dayBefore1') : `${m / 1440} ${t('dayBefore')}`;
   return t('weekBefore');
 }
-function remindBeforeOptions(cur) {
-  return `<option value="" ${cur == null ? 'selected' : ''}>${t('remindPh')}</option>` +
-    REMIND_BEFORE.map((m) => `<option value="${m}" ${cur === m ? 'selected' : ''}>🔔 ${remindBeforeLabel(m)}</option>`).join('');
+// When a "before due" reminder would fire. A due date with no time counts from 9:00.
+function remindTimeFor(m, due, dueTime) {
+  const at = new Date(`${due}T${dueTime || '09:00'}`);
+  at.setMinutes(at.getMinutes() - m);
+  return nowLocal(at);
+}
+const remindWhen = (at) => `${fmtDate(at.slice(0, 10), lang())} · ${fmtTime(at, lang())}`;
+// One list for every reminder choice. Each "before" option shows the exact time it fires,
+// so "1 h before" on a due date with no time reads "1 h before · 19 Nov · 8:00 AM".
+// custom: undefined = no "specific time" option (quick-add card); true/false = shown, selected or not.
+function remindBeforeOptions(cur, due, dueTime, custom) {
+  let h = `<option value="" ${cur == null && !custom ? 'selected' : ''}>${t('remindPh')}</option>`;
+  // Choices that would already be in the past are left out (unless it's the one already set).
+  if (due) h += REMIND_BEFORE.filter((m) => m === cur || remindTimeFor(m, due, dueTime) > nowLocal()).map((m) => `<option value="${m}" ${cur === m ? 'selected' : ''}>${remindBeforeLabel(m)} · ${remindWhen(remindTimeFor(m, due, dueTime))}</option>`).join('');
+  if (custom !== undefined) h += `<option value="custom" ${custom ? 'selected' : ''}>${t('remindCustom')}</option>`;
+  return h;
 }
 function syncReminder(x) {
   if (x.remindBefore == null || !x.due) return;
@@ -207,7 +220,7 @@ function bindKeyboard() {
     // The rest only when you're not typing and no dialog is open.
     const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName) || document.activeElement?.isContentEditable;
     if (typing || $('modalRoot').innerHTML || e.ctrlKey || e.altKey || e.metaKey) return;
-    if (['calendar', 'matrix', 'report'].includes(ui.view)) return;
+    if (['home', 'calendar', 'matrix', 'report'].includes(ui.view)) return;
     const list = currentTasks();
     if (!list.length) return;
     const i = list.findIndex((x) => x.id === ui.selected);
@@ -228,7 +241,41 @@ function bindKeyboard() {
   });
 }
 
-function deleteTask(x) {
+// In-app yes/no dialog (instead of the plain Windows box). Resolves true / false.
+// Stacks on top of any open dialog; Enter confirms, Esc cancels.
+function askConfirm({ title, text = '', ok = t('ok'), danger = false }) {
+  return new Promise((resolve) => {
+    const bg = document.createElement('div');
+    bg.className = 'modal-bg confirm-bg';
+    bg.innerHTML = `<div class="modal confirm ${danger ? 'is-danger' : ''}" role="alertdialog">
+      <div class="cf-icon">${danger ? icon('trash') : icon('help')}</div>
+      <h3 dir="auto">${esc(title)}</h3>
+      ${text ? `<p class="cf-text" dir="auto">${esc(text)}</p>` : ''}
+      <div class="actions"><span style="flex:1"></span>
+        <button id="cfNo">${t('cancel')}</button>
+        <button class="${danger ? 'danger-solid' : 'primary'}" id="cfYes">${esc(ok)}</button></div></div>`;
+    document.body.appendChild(bg);
+    const done = (v) => {
+      document.removeEventListener('keydown', onKey, true);
+      bg.classList.add('leaving');
+      setTimeout(() => bg.remove(), 150);
+      resolve(v);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); done(false); }
+      if (e.key === 'Enter') { e.stopPropagation(); e.preventDefault(); done(true); }
+    };
+    document.addEventListener('keydown', onKey, true);
+    bg.onclick = (e) => {
+      if (e.target === bg || e.target.closest('#cfNo')) done(false);
+      else if (e.target.closest('#cfYes')) done(true);
+    };
+    setTimeout(() => bg.querySelector('#cfYes').focus(), 30);
+  });
+}
+
+async function deleteTask(x) {
+  if (!(await askConfirm({ title: t('confirmDelTask'), text: x.title, ok: t('del'), danger: true }))) return;
   const snap = snapshot();
   data.tasks = data.tasks.filter((y) => y.id !== x.id);
   ui.selected = null; save(); refresh();
@@ -286,7 +333,7 @@ function renderReport() {
     await navigator.clipboard.writeText(lines.join('\n'));
     showToast(t('copied'));
   };
-  $('rCsv').onclick = () => window.api.exportCsv(tasksCsv(inScopeAll), 'elfar-notes-tasks');
+  $('rCsv').onclick = () => window.api.exportCsv(tasksCsv(inScopeAll), 'elfar-tasks');
 }
 
 function tasksCsv(tasks) {
@@ -299,6 +346,10 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.1.0': {
+    ar: ['اسم التطبيق بقى Elfar Tasks', 'صفحة رئيسية جديدة: المتأخر، النهارده، الأسبوع الجاي، مستني رد من مين، والأقسام', 'التابات اتبسّطت: المتأخر بقى جوه "النهارده"، و"معلّق عند" بقى جوه Pending (الكل / عندي أنا / عند حد تاني)', 'الحذف بقى بيسأل الأول، بشكل التطبيق نفسه', 'التذكير: اختيار واحد واضح، وكل اختيار مكتوب جنبه هيفكّرك إمتى بالظبط', 'إضافة تاسك: تقدر تحدد وقت الـ Due', 'التقويم: أسهم أوضح جنب اسم الشهر، زرار ＋ أوضح، والفلاتر متقسمة'],
+    en: ['The app is now called Elfar Tasks', 'A new Home page: overdue, today, the next 7 days, who you are waiting on, and your areas', 'Simpler tabs: overdue is now inside Today, and "Pending with" is inside Pending (All / On me / With others)', 'Deleting now asks first, in a dialog that matches the app', 'Reminders: one clear choice, and each option shows exactly when it will fire', 'Quick add: you can set a due time', 'Calendar: clearer arrows next to the month, a clearer ＋ button, and grouped filters']
+  },
   '1.0.2': {
     ar: ['التابات بقت تتظبط لوحدها مع حجم الخط وعرض الشباك: لو مفيش مكان بتبقى أيقونات بس، ومفيش Scroll', '"كل الأقسام" بقى اسمه "كل التاسكات"', '"الوارد" بقى اسمه "من غير قسم"، وبيظهر بس لما يكون فيه تاسكات'],
     en: ['Tabs now fit any text size or window width: they turn into icons when space is short, with no scrolling', '"All areas" is now "All tasks"', '"Inbox" is now "No area", and only shows when it has tasks']

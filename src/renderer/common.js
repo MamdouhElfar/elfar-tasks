@@ -1,14 +1,14 @@
 // Shared helpers for the main window and the widget.
 const I18N = {
   ar: {
-    appName: 'Elfar Notes', views: 'العرض', areas: 'الأقسام', today: 'النهارده', pending: 'Pending', overdue: 'متأخرة',
+    appName: 'Elfar Tasks', views: 'العرض', areas: 'الأقسام', today: 'النهارده', pending: 'Pending', overdue: 'متأخرة',
     starred: 'مميزة', waiting: 'معلّق عند', closed: 'مقفولة', all: 'الكل', inbox: 'من غير قسم', calendar: 'التقويم',
     addTask: 'أضف تاسك واضغط Enter…', search: 'بحث…', addArea: 'قسم جديد', addProject: 'مشروع جديد جوه القسم',
     start: 'البداية', due: 'الموعد النهائي', closure: 'الإغلاق', notSet: 'مش محدد', status: 'الحالة',
     stPending: 'Pending', stOverdue: 'متأخرة', stClosed: 'مقفولة', stDueToday: 'النهارده',
     subtasks: 'المهام الفرعية', addSubtask: 'أضف مهمة فرعية…', notes: 'الصفحة / الملاحظات',
     notesPh: 'اكتب أي حاجة تخص التاسك: تفاصيل، لينكات، أفكار…', log: 'سجل المتابعة', addLog: 'حصل إيه النهارده؟',
-    closeToday: 'اقفل النهارده', reopen: 'افتح تاني', del: 'حذف', confirmDelTask: 'حذف التاسك ده نهائياً؟',
+    closeToday: 'اقفل النهارده', reopen: 'افتح تاني', del: 'حذف', confirmDelTask: 'تمسح التاسك دي؟',
     confirmDelArea: 'حذف القسم؟ التاسكات اللي فيه هتبقى "من غير قسم".', waitingOn: 'مستني رد من…', star: 'تمييز',
     area: 'القسم', noTask: 'اختار تاسك عشان تفتح صفحته', emptyList: 'مفيش تاسكات هنا', showClosed: 'اعرض المقفول',
     allSubsDone: 'كل المهام الفرعية خلصت. تقفل التاسك بتاريخ النهارده؟', settings: 'الإعدادات', language: 'اللغة',
@@ -25,7 +25,7 @@ const I18N = {
     timeline: 'مسار التاسك', longest: 'أطول مدة', handoff: 'تسليم', still: 'لسه عنده',
     reminder: 'تذكير', remindPh: 'من غير تذكير', in1h: 'بعد ساعة', tomorrow9: 'بكرة 9ص', dayBeforeDue: 'قبل الـ Due بيوم', dueMorning: 'يوم الـ Due 9ص', clear: 'شيل',
     autoHide: 'يختفي على جنب ويظهر بالـ hover', edgeRight: 'يمين', edgeLeft: 'شمال', off: 'مقفول', widgetMode: 'وضع الظهور',
-    about: 'عن التطبيق', creditBy: 'تنفيذ', sendFeedback: 'ابعت إيميل', feedbackHint: 'عندك فكرة أو لقيت مشكلة؟ ابعتها على GitHub (محتاج حساب مجاني) أو بالإيميل، وهتتضاف في التحديث الجاي.', reportBug: 'بلّغ عن مشكلة', suggestIdea: 'اقترح فكرة', seeRequests: 'شوف الطلبات', version: 'الإصدار',
+    about: 'عن التطبيق', creditBy: 'تنفيذ', sendFeedback: 'ابعت إيميل', feedbackHint: 'عندك فكرة أو لقيت مشكلة؟ ابعتها على GitHub (محتاج حساب مجاني) وهتتضاف في التحديث الجاي.', reportBug: 'بلّغ عن مشكلة', suggestIdea: 'اقترح فكرة', seeRequests: 'شوف الطلبات', version: 'الإصدار',
     tomorrowLbl: 'بكرة', nextWeek: 'بعد أسبوع', repeat: 'تكرار', noRepeat: 'مش متكررة', every: 'كل',
     rDay: 'أيام', rWeek: 'أسابيع', rMonth: 'شهور', rYear: 'سنين', r1day: 'كل يوم', r1week: 'كل أسبوع', r1month: 'كل شهر', r1year: 'كل سنة',
     undo: 'تراجع', closedMsg: 'اتقفلت', nextOn: 'الجاية', deleted: 'اتمسحت',
@@ -38,7 +38,7 @@ const I18N = {
     shortcutsHint: 'اختصارات: Ctrl+N تاسك · Ctrl+K بحث · Ctrl+Alt+Space إضافة من أي برنامج · ↑↓ تنقل · Space قفل · 1-4 تصنيف · S تمييز · Delete حذف',
     screen: 'الشاشة', dataSec: 'البيانات', dataFolder: 'مكان حفظ البيانات', changeFolder: 'تغيير…', syncHint: 'اختار فولدر OneDrive عشان نفس البيانات تبقى على جهاز الشغل والبيت.',
     backupsDaily: 'نسخ احتياطية تلقائية (آخر 30 يوم)', restore: 'استرجاع', confirmRestore: 'هترجع البيانات للنسخة دي. البيانات الحالية هتتحفظ في نسخة .bak. تكمل؟', tasksWord: 'تاسك',
-    addOnDay: 'تاسك في اليوم ده', upcomingRepeats: 'المتكرر الجاي', onDay: 'يوم', atDueTime: 'في وقت الـ Due', minBefore: 'دقيقة قبلها', hourBefore: 'ساعة قبلها', dayBefore: 'يوم قبلها', weekBefore: 'أسبوع قبلها',
+    addOnDay: 'تاسك في اليوم ده', upcomingRepeats: 'المتكرر الجاي', onDay: 'يوم', atDueTime: 'في وقت الـ Due', minBefore: 'دقيقة قبلها', hourBefore: 'ساعة قبلها', dayBefore: 'أيام قبلها', dayBefore1: 'يوم قبلها', weekBefore: 'أسبوع قبلها',
     dueTime: 'وقت الـ Due (اختياري)', beforeDue: 'قبل الـ Due بـ', exactTime: 'أو وقت محدد', nextNote: 'ملاحظة للمرة الجاية', nextNotePh: 'حاجة تاخد بالك منها في التاسك الجاية (هتظهر فيها وفي التذكير بتاعها)', done: 'تم',
     newTask: 'تاسك جديد', addBtn: 'إضافة', titleRequired: 'اكتب عنوان التاسك الأول', added: 'اتضافت', open: 'افتح',
     composerHint: 'Enter للإضافة · Esc للإغلاق', noDue: 'من غير Due', noPrio: 'من غير تصنيف',
@@ -46,17 +46,20 @@ const I18N = {
     q1: 'مهم ومستعجل', q2: 'مهم ومش مستعجل', q3: 'مستعجل ومش مهم', q4: 'لا مهم ولا مستعجل',
     q1a: 'اعملها دلوقتي', q2a: 'خطط لها', q3a: 'فوّضها', q4a: 'استغنى عنها', matrixHint: 'اسحب أي تاسك لمربع تاني عشان تغيّر تصنيفها، أو من "مش متصنفة" لأي مربع.',
     allAreas: 'كل التاسكات', dragHint: 'سيب التاسك على قسم عشان تنقله', movedTo: 'اتنقلت إلى',
-    calHint: 'اضغط ＋ في أي يوم تضيف تاسك عليه · اسحب تاسك ليوم تاني يغيّر الـ Due · الباهت = المرات الجاية من تاسك متكررة.'
+    calHint: 'اضغط ＋ في أي يوم تضيف تاسك عليه · اسحب تاسك ليوم تاني يغيّر الـ Due · الباهت = المرات الجاية من تاسك متكررة.',
+    ok: 'تمام', home: 'الرئيسية', mine: 'عندي أنا', withOthers: 'عند حد تاني', show: 'عرض', remindCustom: 'وقت محدد…', remindNeedsDue: 'حط Due عشان تقدر تتفكّر قبله بوقت', remindAt9: 'الـ Due من غير وقت، فالتذكير محسوب على 9 الصبح', dueTimeShort: 'الوقت',
+    gMorning: 'صباح الخير', gAfternoon: 'مساء الخير', gEvening: 'مساء الخير', hWeek: 'الـ 7 أيام الجايين', hOthers: 'عند ناس تانية', hClosedWeek: 'اتقفلت الأسبوع ده',
+    hFocus: 'ابدأ بدول', hComing: 'جاي قريب', hWaiting: 'مستني رد من', hReminders: 'تذكيرات النهارده', hAllClear: 'مفيش حاجة متأخرة ولا مستعجلة النهارده 🎉', hNothing: 'مفيش حاجة', avgClose: 'متوسط وقت الإنجاز', more: 'كمان', oldestDays: 'أقدم واحدة من', hAreasTitle: 'الأقسام', hOpenN: 'مفتوحة', hSeeAll: 'اعرض الكل'
   },
   en: {
-    appName: 'Elfar Notes', views: 'Views', areas: 'Areas', today: 'Today', pending: 'Pending', overdue: 'Overdue',
+    appName: 'Elfar Tasks', views: 'Views', areas: 'Areas', today: 'Today', pending: 'Pending', overdue: 'Overdue',
     starred: 'Starred', waiting: 'Pending with', closed: 'Closed', all: 'All', inbox: 'No area', calendar: 'Calendar',
     addTask: 'Add a task and press Enter…', search: 'Search…', addArea: 'New area', addProject: 'New project in area',
     start: 'Start', due: 'Due', closure: 'Closure', notSet: 'Not set', status: 'Status',
     stPending: 'Pending', stOverdue: 'Overdue', stClosed: 'Closed', stDueToday: 'Due today',
     subtasks: 'Subtasks', addSubtask: 'Add a subtask…', notes: 'Page / notes',
     notesPh: 'Write anything about this task: details, links, ideas…', log: 'Follow-up log', addLog: 'What happened today?',
-    closeToday: 'Close today', reopen: 'Reopen', del: 'Delete', confirmDelTask: 'Delete this task permanently?',
+    closeToday: 'Close today', reopen: 'Reopen', del: 'Delete', confirmDelTask: 'Delete this task?',
     confirmDelArea: 'Delete this area? Its tasks will have no area.', waitingOn: 'Waiting on…', star: 'Star',
     area: 'Area', noTask: 'Pick a task to open its page', emptyList: 'No tasks here', showClosed: 'Show closed',
     allSubsDone: 'All subtasks are done. Close the task with today\'s date?', settings: 'Settings', language: 'Language',
@@ -73,7 +76,7 @@ const I18N = {
     timeline: 'Task timeline', longest: 'Longest hold', handoff: 'Handoff', still: 'still there',
     reminder: 'Reminder', remindPh: 'No reminder', in1h: 'In 1 hour', tomorrow9: 'Tomorrow 9am', dayBeforeDue: '1 day before due', dueMorning: 'Due day 9am', clear: 'Clear',
     autoHide: 'Hide at screen edge, show on hover', edgeRight: 'Right', edgeLeft: 'Left', off: 'Off', widgetMode: 'Show mode',
-    about: 'About', creditBy: 'Credit', sendFeedback: 'Email', feedbackHint: 'Have an idea or found a problem? Post it on GitHub (free account) or send an email, and it can make the next update.', reportBug: 'Report a problem', suggestIdea: 'Suggest an idea', seeRequests: 'See requests', version: 'Version',
+    about: 'About', creditBy: 'Credit', sendFeedback: 'Email', feedbackHint: 'Have an idea or found a problem? Post it on GitHub (free account) and it can make the next update.', reportBug: 'Report a problem', suggestIdea: 'Suggest an idea', seeRequests: 'See requests', version: 'Version',
     tomorrowLbl: 'Tomorrow', nextWeek: 'In a week', repeat: 'Repeat', noRepeat: "Doesn't repeat", every: 'Every',
     rDay: 'days', rWeek: 'weeks', rMonth: 'months', rYear: 'years', r1day: 'Every day', r1week: 'Every week', r1month: 'Every month', r1year: 'Every year',
     undo: 'Undo', closedMsg: 'Closed', nextOn: 'next one', deleted: 'Deleted',
@@ -86,7 +89,7 @@ const I18N = {
     shortcutsHint: 'Shortcuts: Ctrl+N task · Ctrl+K search · Ctrl+Alt+Space add from any app · ↑↓ move · Space close · 1-4 priority · S star · Delete',
     screen: 'Screen', dataSec: 'Data', dataFolder: 'Data folder', changeFolder: 'Change…', syncHint: 'Pick a OneDrive folder to keep the same data on your work and home computers.',
     backupsDaily: 'Automatic backups (last 30 days)', restore: 'Restore', confirmRestore: 'Your data goes back to this backup. Current data is kept as .bak. Continue?', tasksWord: 'tasks',
-    addOnDay: 'Task on this day', upcomingRepeats: 'Upcoming repeats', onDay: 'day', atDueTime: 'At due time', minBefore: 'min before', hourBefore: 'h before', dayBefore: 'day(s) before', weekBefore: '1 week before',
+    addOnDay: 'Task on this day', upcomingRepeats: 'Upcoming repeats', onDay: 'day', atDueTime: 'At due time', minBefore: 'min before', hourBefore: 'h before', dayBefore: 'days before', dayBefore1: '1 day before', weekBefore: '1 week before',
     dueTime: 'Due time (optional)', beforeDue: 'Before due', exactTime: 'or an exact time', nextNote: 'Note for next time', nextNotePh: 'Something to keep in mind for the next one (shows on it and in its reminder)', done: 'Done',
     newTask: 'New task', addBtn: 'Add', titleRequired: 'Enter a task title first', added: 'Added', open: 'Open',
     composerHint: 'Enter to add · Esc to close', noDue: 'No due date', noPrio: 'No priority',
@@ -94,7 +97,10 @@ const I18N = {
     q1: 'Important and urgent', q2: 'Important, not urgent', q3: 'Urgent, not important', q4: 'Not important, not urgent',
     q1a: 'Do it now', q2a: 'Schedule it', q3a: 'Delegate it', q4a: 'Drop it', matrixHint: 'Drag a task to another box to change its priority, or from Unclassified into any box.',
     allAreas: 'All tasks', dragHint: 'Drop a task on an area to move it', movedTo: 'Moved to',
-    calHint: 'Click ＋ on a day to add a task there · drag a task to another day to change its due · faded = upcoming repeats.'
+    calHint: 'Click ＋ on a day to add a task there · drag a task to another day to change its due · faded = upcoming repeats.',
+    ok: 'OK', home: 'Home', mine: 'On me', withOthers: 'With others', show: 'Show', remindCustom: 'Specific time…', remindNeedsDue: 'Set a due date to be reminded before it', remindAt9: 'No due time set, so this counts from 9:00 AM', dueTimeShort: 'Time',
+    gMorning: 'Good morning', gAfternoon: 'Good afternoon', gEvening: 'Good evening', hWeek: 'Next 7 days', hOthers: 'With others', hClosedWeek: 'Closed this week',
+    hFocus: 'Start with these', hComing: 'Coming up', hWaiting: 'Waiting on', hReminders: "Today's reminders", hAllClear: 'Nothing overdue or urgent today 🎉', hNothing: 'Nothing here', avgClose: 'Avg. time to close', more: 'more', oldestDays: 'oldest', hAreasTitle: 'Areas', hOpenN: 'open', hSeeAll: 'See all'
   }
 };
 
@@ -109,6 +115,9 @@ const ICONS = {
   inbox: '<path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 2h6l1-2h5"/>',
   all: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17v.01"/>',
+  home: '<path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/><path d="M10 20v-5h4v5"/>',
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
   bug: '<rect x="7" y="7" width="10" height="13" rx="5"/><path d="M9.5 7a2.5 2.5 0 0 1 5 0M12 11v9M3 13h4M17 13h4M4 7l3 2M20 7l-3 2M4 19l3-2M20 19l-3-2"/>',
   idea: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',

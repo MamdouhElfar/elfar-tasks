@@ -48,7 +48,7 @@ function firstRun(lang) {
       { id: personal, name: ar ? 'شخصي' : 'Personal', color: 'purple', parentId: null }
     ],
     tasks: [{
-      id: uid(), areaId: null, title: ar ? '👋 أهلاً بيك في Elfar Notes' : '👋 Welcome to Elfar Notes',
+      id: uid(), areaId: null, title: ar ? '👋 أهلاً بيك في Elfar Tasks' : '👋 Welcome to Elfar Tasks',
       start: today(), due: today(), closure: null, priority: 'q2', starred: true, pendingWith: [],
       notes: ar
         ? 'جولة سريعة:\n• زرار + تحت (أو Ctrl+N) يضيف تاسك، و Ctrl+Alt+Space يضيف من أي برنامج.\n• تاب المصفوفة يرتّب حسب الأهمية والاستعجال.\n• "معلّق عند" يتابع التاسكات اللي مستنيه فيها حد.\n• Ctrl+K للبحث في كل حاجة.\n• الويدجت يقدر يفضل فوق كل البرامج أو يستخبى على جنب الشاشة.\n\nلما تخلص الجولة اقفل التاسك دي ✓'

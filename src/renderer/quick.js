@@ -17,7 +17,7 @@ function render() {
   applyLang(data.settings.lang);
   prio = null;
   $('qa').innerHTML = `
-    <div class="qa-head">${mouseLogo('brand-mini')}<span>Elfar Notes · ${t('newTask')}</span></div>
+    <div class="qa-head">${mouseLogo('brand-mini')}<span>Elfar Tasks · ${t('newTask')}</span></div>
     <input type="text" class="qa-title" id="qTitle" dir="auto" placeholder="${t('newTask')}…" autocomplete="off">
     <div class="qa-err" id="qErr">${t('titleRequired')}</div>
     <div class="qa-row">

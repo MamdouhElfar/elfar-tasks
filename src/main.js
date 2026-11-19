@@ -4,10 +4,9 @@ const fs = require('fs');
 const os = require('os');
 const store = require('./store');
 
-const APP_NAME = 'Elfar Notes';
+const APP_NAME = 'Elfar Tasks';
 const CREDIT = 'Mamdouh Elfar';
-const FEEDBACK_EMAIL = 'mamdouhelfar@gmail.com';
-const REPO_URL = 'https://github.com/MamdouhElfar/elfar-notes';
+const REPO_URL = 'https://github.com/MamdouhElfar/elfar-tasks';
 const QUICK_ADD_KEYS = ['CommandOrControl+Alt+Space', 'CommandOrControl+Shift+Space', 'CommandOrControl+Alt+N'];
 let quickKeyInUse = null;
 const prettyKey = (k) => (k || '').replace('CommandOrControl', 'Ctrl');
@@ -16,15 +15,20 @@ const prettyKey = (k) => (k || '').replace('CommandOrControl', 'Ctrl');
 app.setName(APP_NAME);
 const USER_DIR = path.join(app.getPath('appData'), APP_NAME);
 app.setPath('userData', USER_DIR);
+// The app was called "Elfar Notes" (and "Desktop Notes" before that). The newest old folder
+// that has data is copied over once: tasks, backups, and config.json (which may point at a
+// OneDrive data folder). The old folder is left in place as a fallback.
 (function migrateOldName() {
-  const oldDir = path.join(app.getPath('appData'), 'Desktop Notes');
+  const has = (dir) => fs.existsSync(path.join(dir, 'data.json')) || fs.existsSync(path.join(dir, 'config.json'));
   try {
-    if (!fs.existsSync(path.join(USER_DIR, 'data.json')) && fs.existsSync(path.join(oldDir, 'data.json'))) {
-      fs.mkdirSync(USER_DIR, { recursive: true });
-      for (const f of ['data.json', 'data.json.bak']) {
-        if (fs.existsSync(path.join(oldDir, f))) fs.copyFileSync(path.join(oldDir, f), path.join(USER_DIR, f));
-      }
+    if (has(USER_DIR)) return;
+    const oldDir = ['Elfar Notes', 'Desktop Notes'].map((n) => path.join(app.getPath('appData'), n)).find(has);
+    if (!oldDir) return;
+    fs.mkdirSync(USER_DIR, { recursive: true });
+    for (const f of ['data.json', 'data.json.bak', 'config.json']) {
+      if (fs.existsSync(path.join(oldDir, f))) fs.copyFileSync(path.join(oldDir, f), path.join(USER_DIR, f));
     }
+    if (fs.existsSync(path.join(oldDir, 'backups'))) fs.cpSync(path.join(oldDir, 'backups'), path.join(USER_DIR, 'backups'), { recursive: true });
   } catch { /* first run on a clean machine */ }
 })();
 
@@ -361,12 +365,7 @@ ipcMain.handle('quick:add', (e, task) => {
 });
 ipcMain.handle('quick:close', () => quickWin && quickWin.hide());
 
-ipcMain.handle('app:info', () => ({ version: app.getVersion(), name: APP_NAME, credit: CREDIT, email: FEEDBACK_EMAIL, quickKey: prettyKey(quickKeyInUse), update: updateState }));
-ipcMain.handle('app:feedback', () => {
-  const subject = `${APP_NAME} feedback (v${app.getVersion()})`;
-  const body = `\n\n\n---\nApp version: ${app.getVersion()}\nWindows: ${os.release()}\nLanguage: ${store.get().settings.lang}`;
-  shell.openExternal(`mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-});
+ipcMain.handle('app:info', () => ({ version: app.getVersion(), name: APP_NAME, credit: CREDIT, quickKey: prettyKey(quickKeyInUse), update: updateState }));
 // GitHub issue forms: the "version" field is filled in from the link.
 function openGithub(kind) {
   const v = encodeURIComponent(app.getVersion());
@@ -389,7 +388,7 @@ ipcMain.handle('app:displays', () => screen.getAllDisplays().map((d, i) => ({
 // Data: export / import / CSV / backups / sync folder
 const stamp = () => new Date().toISOString().slice(0, 10);
 ipcMain.handle('data:export', async () => {
-  const r = await dialog.showSaveDialog(mainWin, { defaultPath: `elfar-notes-backup-${stamp()}.json`, filters: [{ name: 'JSON', extensions: ['json'] }] });
+  const r = await dialog.showSaveDialog(mainWin, { defaultPath: `elfar-tasks-backup-${stamp()}.json`, filters: [{ name: 'JSON', extensions: ['json'] }] });
   if (r.canceled || !r.filePath) return false;
   store.exportTo(r.filePath);
   return true;
@@ -402,7 +401,7 @@ ipcMain.handle('data:import', async () => {
   return true;
 });
 ipcMain.handle('data:export-csv', async (e, csv, name) => {
-  const r = await dialog.showSaveDialog(mainWin, { defaultPath: `${name || 'elfar-notes'}-${stamp()}.csv`, filters: [{ name: 'CSV (Excel)', extensions: ['csv'] }] });
+  const r = await dialog.showSaveDialog(mainWin, { defaultPath: `${name || 'elfar-tasks'}-${stamp()}.csv`, filters: [{ name: 'CSV (Excel)', extensions: ['csv'] }] });
   if (r.canceled || !r.filePath) return false;
   fs.writeFileSync(r.filePath, '﻿' + csv, 'utf8'); // BOM so Excel reads Arabic correctly
   return true;
@@ -442,6 +441,14 @@ ipcMain.handle('file:reveal', (e, p) => shell.showItemInFolder(p));
 // ---------- lifecycle ----------
 app.whenReady().then(() => {
   app.setAppUserModelId('com.elfar.notes');
+  // The program's file name changed with the new app name: if "open at login" was on for the
+  // old file, point it at this one so it keeps starting with Windows.
+  if (app.isPackaged) {
+    try {
+      const s = app.getLoginItemSettings({ args: ['--hidden'] });
+      if (!s.openAtLogin && (s.launchItems || []).some((i) => i.enabled)) app.setLoginItemSettings({ openAtLogin: true, args: ['--hidden'] });
+    } catch { /* not critical */ }
+  }
   // First run follows the Windows language.
   const lang = (app.getLocale() || '').startsWith('ar') ? 'ar' : 'en';
   store.init(USER_DIR, { lang, onExternalChange: () => broadcast() });

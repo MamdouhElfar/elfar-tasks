@@ -1,7 +1,7 @@
 let data = null;
 // scope = which area you're looking at (sidebar); view = how you're filtering it (tabs on top).
 // person = optional filter: only tasks pending with that person.
-const ui = { scope: 'all', view: 'today', selected: null, search: '', sort: 'priority', calMonth: null, person: null };
+const ui = { scope: 'all', view: 'home', pendingSub: 'all', selected: null, search: '', sort: 'priority', calMonth: null, person: null };
 let saveTimer = null;
 let dragTaskId = null;
 
@@ -56,11 +56,12 @@ function suggestedPeople(x) {
 
 // ---------------- filtering ----------------
 // Two groups of tabs: task lists (filters) and boards (other ways to look at the same tasks).
+// Home is the dashboard. Today also holds what's overdue; Pending splits into "on me" and "with others".
 const VIEWS = [
-  { id: 'today', test: (x) => isOpen(x) && ((x.due && x.due <= todayStr()) || x.starred) },
-  { id: 'pending', test: isOpen, cls: 'warn' },
-  { id: 'overdue', test: (x) => statusOf(x) === 'overdue', cls: 'danger' },
-  { id: 'waiting', test: (x) => isOpen(x) && pendingOf(x).length > 0 },
+  { id: 'home', test: isOpen, noCount: true, lead: true },
+  { id: 'today', test: (x) => isOpen(x) && ((x.due && x.due <= todayStr()) || x.starred),
+    cls: () => (data.tasks.some((x) => inScope(x) && statusOf(x) === 'overdue') ? 'danger' : '') },
+  { id: 'pending', test: isOpen, cls: () => 'warn' },
   { id: 'closed', test: (x) => !!x.closure, noCount: true },
   { id: 'matrix', test: isOpen, noCount: true, board: true },
   { id: 'calendar', test: () => true, noCount: true, board: true },
@@ -76,6 +77,7 @@ function inScope(x, scope = ui.scope) {
 function currentTasks() {
   const v = VIEWS.find((v) => v.id === ui.view);
   let list = data.tasks.filter((x) => inScope(x) && v.test(x) && (!ui.person || isPendingWith(x, ui.person)));
+  if (ui.view === 'pending' && ui.pendingSub !== 'all') list = list.filter((x) => (pendingOf(x).length > 0) === (ui.pendingSub === 'others'));
   const q = ui.search.trim().toLowerCase();
   if (q) {
     list = list.filter((x) => [x.title, x.notes, ...peopleNames(x), ...(x.subtasks || []).map((s) => s.title), ...(x.log || []).map((l) => l.text)]
@@ -120,15 +122,17 @@ function renderAll() {
 function renderTabs() {
   const tab = (v) => {
     const n = v.noCount ? 0 : data.tasks.filter((x) => inScope(x) && v.test(x) && (!ui.person || isPendingWith(x, ui.person))).length;
-    return `<button class="tab ${v.board ? 'board' : ''} ${ui.view === v.id ? 'active' : ''}" data-view="${v.id}" title="${esc(t(v.id))}">
-      ${icon(v.id)}<span class="tab-label">${esc(t(v.id))}</span>${n ? `<span class="count ${v.cls || ''}">${n}</span>` : ''}</button>`;
+    return `<button class="tab ${v.board ? 'board' : ''} ${v.lead ? 'lead' : ''} ${ui.view === v.id ? 'active' : ''}" data-view="${v.id}" title="${esc(t(v.id))}">
+      ${icon(v.id)}<span class="tab-label">${esc(t(v.id))}</span>${n ? `<span class="count ${v.cls ? v.cls() : ''}">${n}</span>` : ''}</button>`;
   };
-  $('tabs').innerHTML = `<div class="tab-group">${VIEWS.filter((v) => !v.board).map(tab).join('')}</div>
+  $('tabs').innerHTML = `<div class="tab-group">${VIEWS.filter((v) => v.lead).map(tab).join('')}</div>
+    <span class="tab-sep"></span>
+    <div class="tab-group">${VIEWS.filter((v) => !v.board && !v.lead).map(tab).join('')}</div>
     <span class="tab-sep"></span>
     <div class="tab-group boards">${VIEWS.filter((v) => v.board).map(tab).join('')}</div>`;
   fitTabs();
   // Tools that don't apply to a view are hidden instead of sitting there doing nothing.
-  const tools = { search: !['calendar', 'report'].includes(ui.view), sort: !['matrix', 'calendar', 'report'].includes(ui.view) };
+  const tools = { search: !['home', 'calendar', 'report'].includes(ui.view), sort: !['home', 'matrix', 'calendar', 'report'].includes(ui.view) };
   $('search').hidden = !tools.search;
   $('sort').hidden = !tools.sort;
 }
@@ -191,13 +195,6 @@ function renderSidebar() {
       ${icon('user')}<span dir="auto">${esc(p.name)}</span><span class="count">${n || ''}</span>
       <button class="edit" data-edit-person="${p.id}">✎</button></div>`).join('');
 
-  const month = todayStr().slice(0, 7);
-  const closedMonth = data.tasks.filter((x) => x.closure && x.closure.startsWith(month)).length;
-  const durations = data.tasks.filter((x) => x.closure && x.start).map((x) => daysBetween(x.start, x.closure));
-  const avg = durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : null;
-  $('credit').innerHTML = `Credit: <b>Mamdouh Elfar</b>`;
-  $('stats').innerHTML = `${t('openTasks')}: ${data.tasks.filter(isOpen).length} · ${t('closedThisMonth')}: ${closedMonth}` +
-    (avg !== null ? `<br>${lang() === 'ar' ? 'متوسط الإنجاز' : 'Avg. time to close'}: ${avg} ${t('days')}` : '');
 }
 
 function statusPill(x) {
@@ -235,13 +232,24 @@ function renderList() {
       .map((p) => `<option value="${p.id}" ${ui.person === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
   $('personFilter').classList.toggle('active', !!ui.person);
 
+  if (ui.view === 'home') return renderHome();
   if (ui.view === 'calendar') return renderCalendar();
   if (ui.view === 'matrix') return renderMatrix();
   if (ui.view === 'report') return renderReport();
   const list = currentTasks();
-  if (!list.length) { $('list').innerHTML = `<div class="empty">${t('emptyList')}</div>`; return; }
-  // "Pending with" tab with no person picked: group by person, for follow-up rounds.
-  if (ui.view === 'waiting' && !ui.person) {
+  // Pending: all / on me / with others.
+  const subBar = ui.view === 'pending' ? pendingSubBar() : '';
+  if (!list.length) { $('list').innerHTML = subBar + `<div class="empty">${t('emptyList')}</div>`; return; }
+  // Today: overdue first, then due today, then starred ones that aren't due yet.
+  if (ui.view === 'today') {
+    const sec = (title, cls, xs) => (xs.length ? `<div class="group-title ${cls}">${title} · ${xs.length}</div>${xs.map(rowHtml).join('')}` : '');
+    $('list').innerHTML = sec(t('overdue'), 'danger', list.filter((x) => statusOf(x) === 'overdue')) +
+      sec(t('stDueToday'), '', list.filter((x) => statusOf(x) === 'today')) +
+      sec(t('starred'), '', list.filter((x) => !['overdue', 'today'].includes(statusOf(x))));
+    return;
+  }
+  // "With others" with no person picked: group by person, for follow-up rounds.
+  if (ui.view === 'pending' && ui.pendingSub === 'others' && !ui.person) {
     const groups = new Map();
     for (const x of list) for (const pw of pendingOf(x)) {
       if (!groups.has(pw.personId)) groups.set(pw.personId, []);
@@ -251,9 +259,17 @@ function renderList() {
       .sort((a, b) => b[1].length - a[1].length)
       .map(([pid, xs]) => `<div class="group-title" data-person-group="${pid}">${icon('user')} <b dir="auto">${esc(personById(pid).name)}</b> · ${xs.length}</div>${xs.map(rowHtml).join('')}`)
       .join('');
+    $('list').innerHTML = subBar + $('list').innerHTML;
     return;
   }
-  $('list').innerHTML = list.map(rowHtml).join('');
+  $('list').innerHTML = subBar + list.map(rowHtml).join('');
+}
+
+function pendingSubBar() {
+  const open = data.tasks.filter((x) => isOpen(x) && inScope(x) && (!ui.person || isPendingWith(x, ui.person)));
+  const n = { all: open.length, mine: open.filter((x) => !pendingOf(x).length).length, others: open.filter((x) => pendingOf(x).length).length };
+  const b = (k, label) => `<button class="${ui.pendingSub === k ? 'on' : ''}" data-psub="${k}">${label} <span class="n">${n[k]}</span></button>`;
+  return `<div class="sub-bar"><span class="seg-joined">${b('all', t('all'))}${b('mine', t('mine'))}${b('others', t('withOthers'))}</span></div>`;
 }
 
 function renderCalendar() {
@@ -298,20 +314,24 @@ function renderCalendar() {
       `<span class="ev ${ghost ? 'ghost' : statusOf(x)} ${quadClass(x)}" data-task="${x.id}" ${x.closure || ghost ? '' : 'draggable="true"'}
         title="${esc(x.title)}${ghost ? ' · ' + esc(repeatLabel(x.repeat, x.due)) : ''}" dir="auto">${ghost || x.repeat ? icon('repeat') : ''}${x.remindAt && !x.closure && !ghost ? icon('bell') : ''}${esc(x.title)}</span>`).join('');
     cells += `<div class="cal-cell ${d.getMonth() !== m - 1 ? 'other' : ''} ${ds === todayStr() ? 'is-today' : ''}" data-date="${ds}">
-      <div class="cal-top"><span class="n">${d.getDate()}</span><button class="cal-add" data-add-date="${ds}" title="${t('addOnDay')}">＋</button></div>${evs}</div>`;
+      <div class="cal-top"><span class="n">${d.getDate()}</span><button class="cal-add" data-add-date="${ds}" title="${t('addOnDay')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg></button></div>${evs}</div>`;
   }
   const chip = (group, val, label, on) => `<button class="chip-f ${on ? 'on' : ''} ${group === 'prio' ? val : ''}" data-cf="${group}" data-cv="${val}">${label}</button>`;
   $('list').innerHTML = `<div class="cal">
     <div class="cal-head">
-      <button class="icon" data-cal="-1" title="${t('prev')}">${lang() === 'ar' ? '›' : '‹'}</button>
-      <b class="cal-month">${monthName}</b>
-      <button class="icon" data-cal="1" title="${t('next')}">${lang() === 'ar' ? '‹' : '›'}</button>
-      <button class="cal-today" data-cal="0">${t('today')}</button>
+      <div class="cal-nav">
+        <button class="cal-arrow" data-cal="-1" title="${t('prev')}">${icon('chevron')}</button>
+        <b class="cal-month">${monthName}</b>
+        <button class="cal-arrow next" data-cal="1" title="${t('next')}">${icon('chevron')}</button>
+      </div>
+      ${ui.calMonth && ui.calMonth !== todayStr().slice(0, 7) ? `<button class="cal-today" data-cal="0">${t('today')}</button>` : ''}
     </div>
     <div class="cal-filters">
-      <span class="seg-f">${chip('status', 'open', t('openTasks'), f.status === 'open')}${chip('status', 'closed', t('closed'), f.status === 'closed')}${chip('status', 'all', t('all'), f.status === 'all')}</span>
-      <span class="seg-f">${QUADS.map((q) => chip('prio', q, t(q + 'a'), f.prios.includes(q))).join('')}${chip('prio', 'none', t('unclassified'), f.prios.includes('none'))}</span>
-      ${chip('repeats', '1', `${icon('repeat')} ${t('upcomingRepeats')}`, f.repeats)}
+      <div class="cf-group"><span class="cf-label">${t('show')}</span>
+        <span class="seg-joined">${chip('status', 'open', t('openTasks'), f.status === 'open')}${chip('status', 'closed', t('closed'), f.status === 'closed')}${chip('status', 'all', t('all'), f.status === 'all')}</span></div>
+      <div class="cf-group"><span class="cf-label">${t('priority')}</span>
+        <span class="seg-f">${QUADS.map((q) => chip('prio', q, t(q + 'a'), f.prios.includes(q))).join('')}${chip('prio', 'none', t('unclassified'), f.prios.includes('none'))}</span></div>
+      <div class="cf-group cf-end">${chip('repeats', '1', `${icon('repeat')} ${t('upcomingRepeats')}`, f.repeats)}</div>
     </div>
     <div class="cal-grid">${dows.map((d) => `<div class="cal-dow">${d}</div>`).join('')}${cells}</div>
     <p class="small muted">${t('calHint')}</p></div>`;
@@ -408,16 +428,7 @@ function renderDetail() {
       <div class="d-field"><label>${t('due')}</label><div class="due-row"><input type="date" id="dDue" value="${x.due || ''}"><input type="time" id="dDueTime" value="${x.dueTime || ''}" title="${t('dueTime')}"></div></div>
       <div class="d-field"><label>${t('closure')}</label><input type="date" id="dClosure" value="${x.closure || ''}"></div>
     </div>
-    <div class="d-field" style="margin-bottom:8px">
-      <label>${icon('bell')} ${t('reminder')}${x.remindAt ? ` · <a href="#" data-remind="clear">${t('clear')}</a>` : ''}</label>
-      <div class="remind-row">
-        ${x.due ? `<select id="dRemindBefore" title="${t('beforeDue')}">${remindBeforeOptions(x.remindBefore ?? null)}</select>` : ''}
-        <input type="datetime-local" id="dRemind" value="${x.remindAt || ''}" title="${t('exactTime')}">
-        <button data-remind="1h">${t('in1h')}</button>
-        <button data-remind="tom9">${t('tomorrow9')}</button>
-        ${x.due ? `<button data-remind="due-1">${t('dayBeforeDue')}</button><button data-remind="due9">${t('dueMorning')}</button>` : ''}
-      </div>
-    </div>
+    ${reminderFieldHtml(x)}
     <div class="d-row">
       <div class="d-field grow"><label>${t('area')}</label><select id="dArea">${areaOptions(x.areaId)}</select></div>
       <div class="d-field grow"><label>${icon('repeat')} ${t('repeat')}</label><select id="dRepeat">${repeatOptions(x.repeat, x.due)}</select></div>
@@ -487,6 +498,22 @@ function renderDetail() {
     </div>
   </div>`;
   if (swap) { el.scrollTop = 0; animateIn(el.firstElementChild); }
+}
+
+// Reminder: one dropdown (none / before due with the exact time / a specific time).
+// The date-time box only appears for "specific time", so the dropdown never contradicts it.
+function reminderFieldHtml(x) {
+  const custom = !!x.remindAt && x.remindBefore == null;
+  const hint = !x.due ? t('remindNeedsDue') : x.remindBefore != null && !x.dueTime ? t('remindAt9') : '';
+  return `<div class="d-field remind-field">
+    <label>${icon('bell')} ${t('reminder')}${x.remindAt && isOpen(x) ? ` <span class="remind-when ${x.remindAt <= nowLocal() ? 'past' : ''}">${remindWhen(x.remindAt)}</span>` : ''}</label>
+    <div class="remind-row">
+      <select id="dRemindSel">${remindBeforeOptions(x.remindBefore ?? null, x.due, x.dueTime, custom)}</select>
+      ${custom ? `<input type="datetime-local" id="dRemind" value="${x.remindAt || ''}">` : ''}
+    </div>
+    <div class="remind-quick"><button data-remind="1h">${t('in1h')}</button><button data-remind="tom9">${t('tomorrow9')}</button></div>
+    ${hint ? `<div class="small muted remind-hint">${hint}</div>` : ''}
+  </div>`;
 }
 
 // Restart the shared slide-in animation on an element (tab, area or task swaps).
@@ -560,7 +587,7 @@ function setClosed(x, closed) {
 
 function addTask(title, opts = {}) {
   const x = {
-    id: uid(), areaId: opts.areaId ?? null, title, start: todayStr(), due: opts.due || null, closure: null,
+    id: uid(), areaId: opts.areaId ?? null, title, start: todayStr(), due: opts.due || null, dueTime: opts.dueTime || null, closure: null,
     priority: opts.priority || null,
     repeat: opts.repeat || null, remindBefore: opts.remindBefore ?? null,
     starred: false, notes: '', subtasks: [], log: [], created: Date.now(), updated: Date.now(),
@@ -585,10 +612,11 @@ const composer = { title: '', areaId: null, due: null, priority: null };
 function openComposer(preset = {}) {
   composer.title = '';
   composer.areaId = ui.scope === 'all' || ui.scope === 'inbox' ? null : ui.scope;
-  composer.due = preset.due || (ui.view === 'today' || ui.view === 'overdue' ? todayStr() : null);
+  composer.due = preset.due || (ui.view === 'today' ? todayStr() : null);
   composer.priority = null;
   composer.repeat = '';
   composer.remindBefore = '';
+  composer.dueTime = null;
   renderComposer();
   $('composer').classList.add('open');
   $('fab').classList.add('open');
@@ -606,20 +634,35 @@ function renderComposer() {
     <div class="err" id="cErr">${t('titleRequired')}</div>
     <div class="c-row">
       <select id="cArea" title="${t('area')}">${areaOptions(composer.areaId)}</select>
+    </div>
+    <div class="c-row">
       <input type="date" id="cDue" title="${t('due')}" value="${composer.due || ''}">
+      <input type="time" id="cDueTime" title="${t('dueTime')}" value="${composer.dueTime || ''}">
     </div>
     <div class="c-row">
       <select id="cRepeat" title="${t('repeat')}">${repeatOptions(composer.repeat ? parseRepeat(composer.repeat) : null, composer.due)}</select>
-      <select id="cRemind" title="${t('reminder')}">${remindBeforeOptions(composer.remindBefore === '' ? null : Number(composer.remindBefore))}</select>
+      <select id="cRemind" title="${composer.due ? t('reminder') : t('remindNeedsDue')}" ${composer.due ? '' : 'disabled'}>${composerRemindOptions()}</select>
     </div>
     <div class="c-prio">${QUADS.map((q) => `<button class="${q} ${composer.priority === q ? 'on' : ''}" data-cprio="${q}" title="${t(q)}">${t(q + 'a')}</button>`).join('')}</div>
     <div class="c-foot"><span class="hint">${t('composerHint')}</span><button class="primary" id="cAdd">${t('addBtn')}</button></div>`;
 }
 
+const composerRemindOptions = () =>
+  remindBeforeOptions(composer.remindBefore === '' ? null : Number(composer.remindBefore), composer.due, composer.dueTime);
+
+// Date or time changed: the reminder choices show new times (and switch off with no date).
+function refreshComposerRemind() {
+  if (!composer.due) composer.remindBefore = '';
+  const sel = $('cRemind');
+  sel.innerHTML = composerRemindOptions();
+  sel.disabled = !composer.due;
+  sel.title = composer.due ? t('reminder') : t('remindNeedsDue');
+}
+
 function submitComposer() {
   const title = $('cTitle').value.trim();
   if (!title) { $('cErr').classList.add('show'); $('cTitle').focus(); return; }
-  addTask(title, { areaId: $('cArea').value || null, due: $('cDue').value || null, priority: composer.priority,
+  addTask(title, { areaId: $('cArea').value || null, due: $('cDue').value || null, dueTime: ($('cDue').value && $('cDueTime').value) || null, priority: composer.priority,
     repeat: parseRepeat($('cRepeat').value), remindBefore: $('cRemind').value === '' ? null : Number($('cRemind').value) });
   // Stay open for the next one, keeping area/date/priority — handy for adding a batch.
   composer.title = '';
@@ -644,7 +687,8 @@ function bindComposer() {
   };
   c.onchange = (e) => {
     if (e.target.id === 'cArea') composer.areaId = e.target.value || null;
-    if (e.target.id === 'cDue') { composer.due = e.target.value || null; $('cRepeat').innerHTML = repeatOptions(parseRepeat(composer.repeat), composer.due); }
+    if (e.target.id === 'cDue') { composer.due = e.target.value || null; $('cRepeat').innerHTML = repeatOptions(parseRepeat(composer.repeat), composer.due); refreshComposerRemind(); }
+    if (e.target.id === 'cDueTime') { composer.dueTime = e.target.value || null; refreshComposerRemind(); }
     if (e.target.id === 'cRepeat') composer.repeat = e.target.value;
     if (e.target.id === 'cRemind') composer.remindBefore = e.target.value;
   };
@@ -741,7 +785,8 @@ function setReminder(x, at) {
 
 function maybeAutoClose(x) {
   const subs = x.subtasks || [];
-  if (!x.closure && subs.length && subs.every((s) => s.done) && confirm(t('allSubsDone'))) setClosed(x, true);
+  if (x.closure || !subs.length || !subs.every((s) => s.done)) return;
+  askConfirm({ title: t('allSubsDone'), ok: t('closeToday') }).then((yes) => { if (yes) { setClosed(x, true); refresh(); } });
 }
 
 // ---------------- drag and drop ----------------
@@ -845,7 +890,7 @@ function openAreaModal(area, parentId) {
       <button id="mCancel">${t('cancel')}</button><button class="primary" id="mSave">${t('save')}</button>
     </div></div></div>`;
   $('mName').focus();
-  $('mBg').onclick = (e) => {
+  $('mBg').onclick = async (e) => {
     if (e.target.id === 'mBg' || e.target.id === 'mCancel') return closeModal();
     if (e.target.dataset.color) {
       color = e.target.dataset.color;
@@ -861,7 +906,7 @@ function openAreaModal(area, parentId) {
       refresh();
     }
     if (e.target.id === 'mAddChild') { closeModal(); openAreaModal(null, a.id); }
-    if (e.target.id === 'mDel' && confirm(t('confirmDelArea'))) {
+    if (e.target.id === 'mDel' && await askConfirm({ title: t('confirmDelArea'), text: a.name, ok: t('del'), danger: true })) {
       const ids = [a.id, ...childrenOf(a.id).map((c) => c.id)];
       data.areas = data.areas.filter((x) => !ids.includes(x.id));
       data.tasks.forEach((x) => { if (ids.includes(x.areaId)) x.areaId = null; });
@@ -893,7 +938,7 @@ function openPersonModal(person) {
       <button id="mCancel">${t('cancel')}</button><button class="primary" id="mSave">${t('save')}</button>
     </div></div></div>`;
   $('mName').focus();
-  $('mBg').onclick = (e) => {
+  $('mBg').onclick = async (e) => {
     if (e.target.id === 'mBg' || e.target.id === 'mCancel') return closeModal();
     if (e.target.id === 'mSave') {
       const name = $('mName').value.trim();
@@ -905,7 +950,7 @@ function openPersonModal(person) {
       if (isNew) data.people.push(p);
       save(); closeModal(); refresh();
     }
-    if (e.target.id === 'mDel' && confirm(t('confirmDelPerson'))) {
+    if (e.target.id === 'mDel' && await askConfirm({ title: t('confirmDelPerson'), text: p.name, ok: t('del'), danger: true })) {
       data.people = data.people.filter((y) => y.id !== p.id);
       data.tasks.forEach((x) => { x.pendingWith = (x.pendingWith || []).filter((pw) => pw.personId !== p.id); });
       if (ui.person === p.id) ui.person = null;
@@ -973,7 +1018,6 @@ async function openSettings() {
         <button id="sBug">${icon('bug')} ${t('reportBug')}</button>
         <button id="sIdea">${icon('idea')} ${t('suggestIdea')}</button>
         <button id="sIssues">${icon('github')} ${t('seeRequests')}</button>
-        <button id="sFeedback">${icon('mail')} ${t('sendFeedback')}</button>
       </div>
     </div>
     <div class="actions"><button class="primary" id="mCancel">${t('closeBtn')}</button></div>
@@ -983,12 +1027,11 @@ async function openSettings() {
     const id = e.target.closest('button')?.id || e.target.id;
     if (id === 'mBg' || id === 'mCancel') return closeModal();
     if (e.target.dataset.lang) { data.settings.lang = e.target.dataset.lang; save(); renderAll(); openSettings(); }
-    if (id === 'sFeedback') window.api.sendFeedback();
     if (id === 'sBug') window.api.openGithub('bug');
     if (id === 'sIdea') window.api.openGithub('idea');
     if (id === 'sIssues') window.api.openGithub('list');
     if (id === 'sExport') window.api.exportData();
-    if (id === 'sCsv') window.api.exportCsv(tasksCsv(data.tasks), 'elfar-notes-tasks');
+    if (id === 'sCsv') window.api.exportCsv(tasksCsv(data.tasks), 'elfar-tasks');
     if (id === 'sOpenBackups') window.api.openBackups();
     if (id === 'sCheck') { window.api.checkUpdate(); $('sUpd').textContent = t('upChecking'); }
     if (id === 'sInstall') window.api.installUpdate();
@@ -996,11 +1039,11 @@ async function openSettings() {
       const dir = await window.api.chooseDataFolder();
       if (dir) { data = await window.api.getData(); renderAll(); openSettings(); }
     }
-    if (id === 'sRestore' && confirm(t('confirmRestore'))) {
+    if (id === 'sRestore' && await askConfirm({ title: t('confirmRestore'), ok: t('restore'), danger: true })) {
       await window.api.restoreBackup($('sBackup').value);
       data = await window.api.getData(); ui.selected = null; closeModal(); renderAll();
     }
-    if (id === 'sImport' && confirm(t('confirmImport'))) {
+    if (id === 'sImport' && await askConfirm({ title: t('confirmImport'), ok: t('import'), danger: true })) {
       if (await window.api.importData()) { data = await window.api.getData(); ui.selected = null; closeModal(); renderAll(); }
     }
   };
@@ -1063,7 +1106,7 @@ function bind() {
     const p = e.target.closest('[data-person]'); if (!p) return;
     // Click a person = show what's pending with them; click again to clear.
     if (ui.person === p.dataset.person) ui.person = null;
-    else { ui.person = p.dataset.person; ui.view = 'waiting'; }
+    else { ui.person = p.dataset.person; ui.view = 'pending'; ui.pendingSub = 'others'; }
     ui.selected = null;
     return refresh();
     refreshLists();
@@ -1083,6 +1126,10 @@ function bind() {
       ui.calMonth = cal.dataset.cal === '0' ? null : todayStr(new Date(y, m - 1 + Number(cal.dataset.cal), 1)).slice(0, 7);
       return renderList();
     }
+    const ps = e.target.closest('[data-psub]');
+    if (ps) { ui.pendingSub = ps.dataset.psub; return renderList(); }
+    const hv = e.target.closest('[data-go]');
+    if (hv) return homeGo(hv.dataset.go);
     const add = e.target.closest('[data-add-date]');
     if (add) return openComposer({ due: add.dataset.addDate });
     const cf = e.target.closest('[data-cf]');
@@ -1125,6 +1172,7 @@ function bind() {
       const shift = (ds, n) => { const z = new Date(ds + 'T00:00'); z.setDate(z.getDate() + n); return todayStr(z); };
       const v = { '1h': nowLocal(new Date(d.getTime() + 3600000)), tom9: at9(shift(todayStr(), 1)),
         'due-1': x.due && at9(shift(x.due, -1)), due9: x.due && at9(x.due), clear: null }[rm.dataset.remind];
+      x.remindBefore = null;
       setReminder(x, v);
       return refresh();
     }
@@ -1172,13 +1220,27 @@ function bind() {
     const x = taskById(ui.selected); if (!x) return;
     const el = e.target;
     if (el.id === 'dStart') x.start = el.value || null;
-    else if (el.id === 'dDue') { x.due = el.value || null; syncReminder(x); }
+    else if (el.id === 'dDue') {
+      x.due = el.value || null;
+      // No due date left to count back from: keep the reminder as a fixed time.
+      if (!x.due) x.remindBefore = null;
+      syncReminder(x);
+    }
     else if (el.id === 'dClosure') { x.closure = el.value || null; if (x.closure) spawnNext(x); }
     else if (el.id === 'dRemind') { x.remindBefore = null; setReminder(x, el.value || null); }
     else if (el.id === 'dArea') x.areaId = el.value || null;
     else if (el.id === 'dRepeat') { x.repeat = parseRepeat(el.value); delete x.spawned; }
     else if (el.id === 'dDueTime') { x.dueTime = el.value || null; syncReminder(x); }
-    else if (el.id === 'dRemindBefore') { x.remindBefore = el.value === '' ? null : Number(el.value); if (x.remindBefore == null) { x.remindAt = null; delete x.reminded; } else syncReminder(x); }
+    else if (el.id === 'dRemindSel') {
+      delete x.reminded;
+      if (el.value === '') { x.remindBefore = null; x.remindAt = null; }
+      else if (el.value === 'custom') {
+        // Start from a sensible time; the date-time box appears to fine-tune it.
+        x.remindBefore = null;
+        const due9 = x.due && `${x.due}T${x.dueTime || '09:00'}`;
+        x.remindAt = due9 && due9 > nowLocal() ? due9 : nowLocal(new Date(Date.now() + 3600000));
+      } else { x.remindBefore = Number(el.value); syncReminder(x); }
+    }
     else if (el.dataset.subToggle) {
       x.subtasks.find((s) => s.id === el.dataset.subToggle).done = el.checked;
       touch(x); maybeAutoClose(x); return refresh();

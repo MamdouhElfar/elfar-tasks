@@ -30,7 +30,6 @@ contextBridge.exposeInMainWorld('api', {
 
   loginItem: (enabled) => ipcRenderer.invoke('app:login-item', enabled),
   appInfo: () => ipcRenderer.invoke('app:info'),
-  sendFeedback: () => ipcRenderer.invoke('app:feedback'),
   openGithub: (kind) => ipcRenderer.invoke('app:github', kind),
   checkUpdate: () => ipcRenderer.invoke('app:check-update'),
   installUpdate: () => ipcRenderer.invoke('app:install-update'),
