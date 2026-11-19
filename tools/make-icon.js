@@ -1,4 +1,4 @@
-// Draws the Elfar Notes app icon (a mouse 🐭 on a blue tile) and saves it as PNG.
+// Draws the Elfar Tasks app icon (a mouse 🐭 on a blue tile) and saves it as PNG.
 // Pure Node, no image libraries: shapes are drawn with anti-aliasing (4×4 supersampling).
 // Usage: node tools/make-icon.js   → build/icon.png (512) and src/assets/icon.png (256)
 const fs = require('fs');

@@ -400,6 +400,16 @@ ipcMain.handle('data:import', async () => {
   broadcast();
   return true;
 });
+ipcMain.handle('data:pick-copy', async () => {
+  const r = await dialog.showOpenDialog(mainWin, { properties: ['openFile'], filters: [{ name: 'JSON', extensions: ['json'] }] });
+  if (r.canceled || !r.filePaths[0]) return null;
+  const f = r.filePaths[0];
+  try {
+    const d = JSON.parse(fs.readFileSync(f, 'utf8'));
+    if (!d || !Array.isArray(d.tasks)) throw new Error('not a copy');
+    return { file: f, name: path.basename(f), tasks: d.tasks.length };
+  } catch { return { error: true, name: path.basename(f) }; }
+});
 ipcMain.handle('data:export-csv', async (e, csv, name) => {
   const r = await dialog.showSaveDialog(mainWin, { defaultPath: `${name || 'elfar-tasks'}-${stamp()}.csv`, filters: [{ name: 'CSV (Excel)', extensions: ['csv'] }] });
   if (r.canceled || !r.filePath) return false;
@@ -444,6 +454,8 @@ app.whenReady().then(() => {
   // The program's file name changed with the new app name: if "open at login" was on for the
   // old file, point it at this one so it keeps starting with Windows.
   if (app.isPackaged) {
+    // Updates used to download into a folder under the old name; it's no longer used.
+    try { fs.rmSync(path.join(process.env.LOCALAPPDATA || '', 'elfar-notes-updater'), { recursive: true, force: true }); } catch { /* not critical */ }
     try {
       const s = app.getLoginItemSettings({ args: ['--hidden'] });
       if (!s.openAtLogin && (s.launchItems || []).some((i) => i.enabled)) app.setLoginItemSettings({ openAtLogin: true, args: ['--hidden'] });

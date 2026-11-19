@@ -155,15 +155,37 @@ function dailyBackup() {
   } catch { /* a failed backup must never block saving */ }
 }
 
+// Before a restore or a loaded copy replaces everything, the data as it was is kept as a
+// "safety copy" (the last 10), so a wrong restore can be undone from the same list.
+const KEEP_SAFETY = 10;
+function safetyCopy() {
+  try {
+    if (!fs.existsSync(file)) return;
+    const dir = backupsDir();
+    fs.mkdirSync(dir, { recursive: true });
+    const d = new Date();
+    const stamp = `${today()}T${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}${String(d.getSeconds()).padStart(2, '0')}`;
+    fs.copyFileSync(file, path.join(dir, `safety-${stamp}.json`));
+    const all = fs.readdirSync(dir).filter((f) => /^safety-.+\.json$/.test(f)).sort();
+    for (const old of all.slice(0, Math.max(0, all.length - KEEP_SAFETY))) fs.unlinkSync(path.join(dir, old));
+  } catch { /* never block the restore itself */ }
+}
+
+// Newest first: safety copies (with their time) and the daily copies.
 function listBackups() {
   try {
-    return fs.readdirSync(backupsDir()).filter((f) => /^data-\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort().reverse()
+    return fs.readdirSync(backupsDir())
+      .filter((f) => /^data-\d{4}-\d{2}-\d{2}\.json$/.test(f) || /^safety-\d{4}-\d{2}-\d{2}T\d{6}\.json$/.test(f))
       .map((f) => {
         const full = path.join(backupsDir(), f);
+        const safety = f.startsWith('safety-');
         let tasks = 0;
         try { tasks = readFile(full).tasks.length; } catch {}
-        return { file: full, date: f.slice(5, 15), tasks };
-      });
+        const date = safety ? f.slice(7, 17) : f.slice(5, 15);
+        const time = safety ? `${f.slice(18, 20)}:${f.slice(20, 22)}` : '';
+        return { file: full, date, time, tasks, kind: safety ? 'safety' : 'daily', key: date + (safety ? 'T' + f.slice(18, 24) : 'T000000') };
+      })
+      .sort((a, b) => b.key.localeCompare(a.key));
   } catch { return []; }
 }
 
@@ -195,7 +217,8 @@ module.exports = {
   importFrom(p) {
     const d = readFile(p);
     if (!d || !Array.isArray(d.tasks)) throw new Error('Invalid backup file');
-    writeNow(); // the current state lands in .bak first
+    writeNow();
+    safetyCopy(); // what's here now is kept first, so this can be undone
     data = normalize(d, data.settings.lang);
     writeNow();
   },

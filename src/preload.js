@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('api', {
   saveData: (d) => ipcRenderer.invoke('data:save', d),
   exportData: () => ipcRenderer.invoke('data:export'),
   importData: () => ipcRenderer.invoke('data:import'),
+  pickCopy: () => ipcRenderer.invoke('data:pick-copy'),
   exportCsv: (csv, name) => ipcRenderer.invoke('data:export-csv', csv, name),
   listBackups: () => ipcRenderer.invoke('backup:list'),
   openBackups: () => ipcRenderer.invoke('backup:open-folder'),

@@ -380,6 +380,10 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.5.0': {
+    ar: ['شكل جديد للإعدادات: الأقسام على الجنب، وكل اختيار مكتوب تحته بيعمل إيه', 'البيانات والنسخ الاحتياطية بقت أوضح: حفظ نسخة، فتح نسخة، النسخ التلقائية، وExcel، وكل واحدة مكتوب دورها', 'قبل أي استرجاع أو فتح نسخة، التطبيق بيحفظ "نسخة أمان" من بياناتك الحالية تقدر ترجعلها'],
+    en: ['A new Settings layout: sections on the side, and every option says what it does', 'Data & backups is clearer: save a copy, load a copy, automatic backups and Excel, each with its job explained', 'Before any restore or loaded copy, the app keeps a "safety copy" of your current data that you can go back to']
+  },
   '1.4.1': {
     ar: ['التاسكات المجدولة (اللي لسه ميعادها مجاش) بقت بتظهر تحت في Pending ← الكل، باهتة، عشان الفولدر ميبانش فاضي', 'مسح سطر من سجل المتابعة بقى بيسأل الأول'],
     en: ['Scheduled tasks (not started yet) now show at the bottom of Pending › All, faded, so a folder never looks empty', 'Deleting an entry from the follow-up log now asks first']

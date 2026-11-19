@@ -1005,8 +1005,10 @@ function openPersonModal(person) {
   $('mName').onkeydown = (e) => { if (e.key === 'Enter') $('mSave').click(); };
 }
 
-async function openSettings() {
+// Settings: sections on the side, each option with a one-line explanation of what it does.
+async function openSettings(section) {
   const s = data.settings, w = s.widget;
+  ui.setSec = section || ui.setSec || 'general';
   const [login, info, displays, folder, backups] = await Promise.all([
     window.api.loginItem(), window.api.appInfo(), window.api.displays(), window.api.dataFolder(), window.api.listBackups()
   ]);
@@ -1014,82 +1016,131 @@ async function openSettings() {
     .concat(topAreas().map((a) => ['area:' + a.id, a.name]))
     .concat(data.people.map((p) => ['person:' + p.id, `${t('waiting')}: ${p.name}`]));
   const zoom = Math.round((s.zoom || 1) * 100);
-  $('modalRoot').innerHTML = `<div class="modal-bg" id="mBg"><div class="modal settings">
-    <h3>${t('settings')}</h3>
+  // One setting: title + what it does on one side, the control on the other.
+  const row = (title, desc, control, cls = '') => `<div class="set-row ${cls}"><div class="set-txt"><b>${title}</b>${desc ? `<span>${desc}</span>` : ''}</div><div class="set-ctl">${control}</div></div>`;
+  const toggle = (id, on) => `<label class="switch"><input type="checkbox" id="${id}" ${on ? 'checked' : ''}><i></i></label>`;
+  const card = (inner) => `<div class="set-card">${inner}</div>`;
+  const backupLabel = (b) => b.kind === 'safety'
+    ? `🛟 ${t('safetyCopy')} · ${fmtDate(b.date, lang())} ${fmtTime(`${b.date}T${b.time}`, lang())} · ${b.tasks} ${t('tasksWord')}`
+    : `${fmtDate(b.date, lang())} · ${b.tasks} ${t('tasksWord')}`;
+  const SECTIONS = [
+    ['general', 'settings', t('general')], ['notifications', 'bell', t('notifications')], ['widget', 'edgeRight', t('widget')],
+    ['data', 'folder', t('dataTitle')], ['updates', 'download', t('updates')], ['about', 'help', t('about')]
+  ];
+  const sec = (id, title, body) => `<section class="set-sec-body" data-sec="${id}" ${ui.setSec === id ? '' : 'hidden'}><h4>${title}</h4>${body}</section>`;
 
-    <div class="set-sec">${t('general')}</div>
-    <div class="row"><label>${t('language')}</label><div class="seg">
-      <button data-lang="ar" class="${s.lang === 'ar' ? 'on' : ''}">عربي</button><button data-lang="en" class="${s.lang === 'en' ? 'on' : ''}">English</button></div></div>
-    <div class="row"><label>${t('launch')}</label><input type="checkbox" id="sLogin" ${login ? 'checked' : ''}></div>
-    <div class="row"><label>${t('textSize')} <span class="muted small" id="sZoomVal">${zoom}%</span></label>
-      <input type="range" id="sZoom" min="80" max="160" step="10" value="${zoom}"></div>
-    <div class="row small muted">${t('shortcutsHint').replace('Ctrl+Alt+Space', info.quickKey || '—')}</div>
+  $('modalRoot').innerHTML = `<div class="modal-bg" id="mBg"><div class="modal settings2">
+    <nav class="set-nav">
+      <div class="set-nav-title">${t('settings')}</div>
+      ${SECTIONS.map(([id, ico, label]) => `<button class="${ui.setSec === id ? 'on' : ''}" data-setsec="${id}">${icon(ico)}<span>${label}</span></button>`).join('')}
+    </nav>
+    <div class="set-main">
+      ${sec('general', t('general'), card(
+        row(t('language'), '', `<div class="seg"><button data-lang="ar" class="${s.lang === 'ar' ? 'on' : ''}">عربي</button><button data-lang="en" class="${s.lang === 'en' ? 'on' : ''}">English</button></div>`) +
+        row(t('launch'), t('launchDesc'), toggle('sLogin', login)) +
+        row(`${t('textSize')} <span class="muted" id="sZoomVal">${zoom}%</span>`, t('textSizeDesc'), `<input type="range" id="sZoom" min="80" max="160" step="10" value="${zoom}">`)
+      ) + card(`<div class="set-txt"><b>${t('shortcuts')}</b></div>
+        <div class="keys">${shortcutList(info.quickKey).map(([k, d]) => `<div><kbd>${k}</kbd><span>${d}</span></div>`).join('')}</div>`))}
 
-    <div class="set-sec">${t('notifications')}</div>
-    <div class="row"><label>${t('morningSummary')}</label><span><input type="checkbox" id="sSum" ${s.summary.enabled ? 'checked' : ''}> ${timeBox('sSumTime', s.summary.time)}</span></div>
-    <div class="row"><label>${t('nudgeAfter')}</label><span><input type="number" id="sNudge" min="1" max="30" value="${s.nudgeDays || 3}" style="width:64px"> ${t('days')}</span></div>
+      ${sec('notifications', t('notifications'), card(
+        row(t('morningSummary'), t('summaryDesc'), `${timeBox('sSumTime', s.summary.time)} ${toggle('sSum', s.summary.enabled)}`) +
+        row(t('nudgeTitle'), t('nudgeAfter'), `<span class="num-days"><input type="number" id="sNudge" min="1" max="30" value="${s.nudgeDays || 3}"> ${t('days')}</span>`)
+      ))}
 
-    <div class="set-sec">${t('widget')}</div>
-    <div class="row"><label>${t('showWidget')}</label><input type="checkbox" id="sWidget" ${w.visible ? 'checked' : ''}></div>
-    <div class="row"><label>${t('widgetMode')}</label><select id="sEdge">
-      <option value="off" ${(w.edge || 'off') === 'off' ? 'selected' : ''}>${t('onTop')}</option>
-      <option value="right" ${w.edge === 'right' ? 'selected' : ''}>${t('autoHide')} · ${t('edgeRight')}</option>
-      <option value="left" ${w.edge === 'left' ? 'selected' : ''}>${t('autoHide')} · ${t('edgeLeft')}</option></select></div>
-    ${displays.length > 1 ? `<div class="row"><label>${t('screen')}</label><select id="sDisplay">${displays.map((d) =>
-      `<option value="${d.id}" ${w.display === d.id ? 'selected' : ''}>${d.label}</option>`).join('')}</select></div>` : ''}
-    <div class="row"><label>${t('opacity')}</label><input type="range" id="sOpacity" min="0.4" max="1" step="0.05" value="${w.opacity || 1}"></div>
-    <div class="row"><label>${t('widgetShows')}</label><select id="sFilter">${filterOpts.map(([v, l]) =>
-      `<option value="${v}" ${w.filter === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
+      ${sec('widget', t('widget'), card(
+        row(t('showWidget'), t('widgetDesc'), toggle('sWidget', w.visible)) +
+        row(t('widgetMode'), t('widgetModeDesc'), `<select id="sEdge">
+          <option value="off" ${(w.edge || 'off') === 'off' ? 'selected' : ''}>${t('onTop')}</option>
+          <option value="right" ${w.edge === 'right' ? 'selected' : ''}>${t('autoHide')} · ${t('edgeRight')}</option>
+          <option value="left" ${w.edge === 'left' ? 'selected' : ''}>${t('autoHide')} · ${t('edgeLeft')}</option></select>`) +
+        row(t('widgetShows'), t('widgetShowsDesc'), `<select id="sFilter">${filterOpts.map(([v, l]) => `<option value="${v}" ${w.filter === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`) +
+        (displays.length > 1 ? row(t('screen'), '', `<select id="sDisplay">${displays.map((d) => `<option value="${d.id}" ${w.display === d.id ? 'selected' : ''}>${d.label}</option>`).join('')}</select>`) : '') +
+        row(t('opacity'), '', `<input type="range" id="sOpacity" min="0.4" max="1" step="0.05" value="${w.opacity || 1}">`)
+      ))}
 
-    <div class="set-sec">${t('dataSec')}</div>
-    <div class="row col"><label>${t('dataFolder')}</label>
-      <div class="path-row"><code dir="ltr" title="${esc(folder)}">${esc(folder)}</code><button id="sFolder">${t('changeFolder')}</button></div>
-      <span class="small muted">${t('syncHint')}</span></div>
-    <div class="row col"><label>${t('backupsDaily')}</label>
-      <div class="path-row"><select id="sBackup">${backups.map((b) => `<option value="${esc(b.file)}">${fmtDate(b.date, lang())} · ${b.tasks} ${t('tasksWord')}</option>`).join('') || `<option>—</option>`}</select>
-        <button id="sRestore" ${backups.length ? '' : 'disabled'}>${t('restore')}</button><button id="sOpenBackups">${icon('folder')}</button></div></div>
-    <div class="row"><label>${t('backup')}</label><span><button id="sExport">${t('export')}</button> <button id="sImport">${t('import')}</button> <button id="sCsv">${icon('download')} Excel</button></span></div>
+      ${sec('data', t('dataTitle'), `
+        ${card(`<div class="data-item">
+          <span class="di-ico">${icon('folder')}</span>
+          <div class="set-txt"><b>${t('dataWhere')}</b><span>${t('syncHint')}</span>
+            <div class="path-row"><code dir="ltr" title="${esc(folder)}">${esc(folder)}</code></div></div>
+          <div class="set-ctl"><button id="sFolder">${t('changeFolder')}</button></div></div>`)}
+        ${card(`<div class="data-item">
+          <span class="di-ico ok">${icon('repeat')}</span>
+          <div class="set-txt"><b>${t('autoBk')}</b><span>${t('autoBkDesc')}</span>
+            <div class="path-row"><select id="sBackup">${backups.map((b) => `<option value="${esc(b.file)}">${esc(backupLabel(b))}</option>`).join('') || `<option>—</option>`}</select>
+              <button class="icon-btn" id="sOpenBackups" title="${t('openBackups')}">${icon('folder')}</button></div></div>
+          <div class="set-ctl"><button id="sRestore" ${backups.length ? '' : 'disabled'}>${t('restoreBtn')}</button></div></div>`)}
+        <div class="set-group-title">${t('manualCopies')}</div>
+        ${card(`<div class="data-item">
+          <span class="di-ico">${icon('download')}</span>
+          <div class="set-txt"><b>${t('saveCopy')}</b><span>${t('saveCopyDesc')}</span></div>
+          <div class="set-ctl"><button id="sExport">${t('saveCopyBtn')}</button></div></div>
+          <div class="data-item">
+          <span class="di-ico warn">${icon('waiting')}</span>
+          <div class="set-txt"><b>${t('loadCopy')}</b><span>${t('loadCopyDesc')}</span></div>
+          <div class="set-ctl"><button id="sImport">${t('loadCopyBtn')}</button></div></div>`)}
+        ${card(`<div class="data-item">
+          <span class="di-ico xl">${icon('report')}</span>
+          <div class="set-txt"><b>${t('excelTitle')}</b><span>${t('excelDesc')}</span></div>
+          <div class="set-ctl"><button id="sCsv">${t('excelBtn')}</button></div></div>`)}`)}
 
-    <div class="set-sec">${t('updates')}</div>
-    <div class="row"><span class="small" id="sUpd">${updateLine(info.update) || '—'}</span>
-      <span>${info.update?.status === 'ready' ? `<button class="primary" id="sInstall">${t('restartUpdate')}</button>` : `<button id="sCheck" ${info.update?.status === 'dev' ? 'disabled' : ''}>${t('checkNow')}</button>`}</span></div>
+      ${sec('updates', t('updates'), card(
+        row(`${t('version')} ${info.version}`, `<span id="sUpd">${updateLine(info.update) || t('updatesDesc')}</span>`,
+          info.update?.status === 'ready' ? `<button class="primary" id="sInstall">${t('restartUpdate')}</button>` : `<button id="sCheck" ${info.update?.status === 'dev' ? 'disabled' : ''}>${t('checkNow')}</button>`)
+      ))}
 
-    <div class="set-sec">${t('about')}</div>
-    <div class="about">
-      <div class="about-top">${mouseLogo('about-logo')}<div><b>${esc(info.name)}</b> <span class="muted small">${t('version')} ${info.version}</span>
-        <div class="small">${t('creditBy')}: <b>${esc(info.credit)}</b></div></div></div>
-      <p class="small muted">${t('feedbackHint')}</p>
-      <div class="about-btns">
-        <button id="sBug">${icon('bug')} ${t('reportBug')}</button>
-        <button id="sIdea">${icon('idea')} ${t('suggestIdea')}</button>
-        <button id="sIssues">${icon('github')} ${t('seeRequests')}</button>
-      </div>
+      ${sec('about', t('about'), card(`<div class="about-top">${mouseLogo('about-logo')}<div><b>${esc(info.name)}</b> <span class="muted small">${t('version')} ${info.version}</span>
+          <div class="small">${t('creditBy')}: <b>${esc(info.credit)}</b></div></div></div>
+        <p class="small muted">${t('feedbackHint')}</p>
+        <div class="about-btns">
+          <button id="sBug">${icon('bug')} ${t('reportBug')}</button>
+          <button id="sIdea">${icon('idea')} ${t('suggestIdea')}</button>
+          <button id="sIssues">${icon('github')} ${t('seeRequests')}</button>
+        </div>`))}
+      <div class="set-foot"><button class="primary" id="mCancel">${t('closeBtn')}</button></div>
     </div>
-    <div class="actions"><button class="primary" id="mCancel">${t('closeBtn')}</button></div>
   </div></div>`;
+
   const setW = (patch) => { data.settings.widget = { ...data.settings.widget, ...patch }; save(); };
+  // Load a copy / restore: confirm with what you're about to load, then replace (a safety copy is kept first).
+  const loadFrom = async (file, label, tasks) => {
+    if (!(await askConfirm({ title: t('confirmLoadTitle'), text: `${label}${tasks != null ? ` · ${tasks} ${t('tasksWord')}` : ''}\n${t('confirmLoadText')}`, ok: t('restoreBtn'), danger: true }))) return;
+    await window.api.restoreBackup(file);
+    data = await window.api.getData(); ui.selected = null; renderAll();
+    showToast(t('restoredMsg'));
+    openSettings('data');
+  };
   $('mBg').onclick = async (e) => {
     const id = e.target.closest('button')?.id || e.target.id;
     if (id === 'mBg' || id === 'mCancel') return closeModal();
+    const nav = e.target.closest('[data-setsec]');
+    if (nav) {
+      ui.setSec = nav.dataset.setsec;
+      document.querySelectorAll('[data-setsec]').forEach((b) => b.classList.toggle('on', b === nav));
+      document.querySelectorAll('.set-sec-body').forEach((x) => { x.hidden = x.dataset.sec !== ui.setSec; if (!x.hidden) animateIn(x); });
+      return;
+    }
     if (e.target.dataset.lang) { data.settings.lang = e.target.dataset.lang; save(); renderAll(); openSettings(); }
     if (id === 'sBug') window.api.openGithub('bug');
     if (id === 'sIdea') window.api.openGithub('idea');
     if (id === 'sIssues') window.api.openGithub('list');
-    if (id === 'sExport') window.api.exportData();
-    if (id === 'sCsv') window.api.exportCsv(tasksCsv(data.tasks), 'elfar-tasks');
+    if (id === 'sExport' && await window.api.exportData()) showToast(t('savedCopyMsg'));
+    if (id === 'sCsv' && await window.api.exportCsv(tasksCsv(data.tasks), 'elfar-tasks')) showToast(t('savedCopyMsg'));
     if (id === 'sOpenBackups') window.api.openBackups();
     if (id === 'sCheck') { window.api.checkUpdate(); $('sUpd').textContent = t('upChecking'); }
     if (id === 'sInstall') window.api.installUpdate();
     if (id === 'sFolder') {
       const dir = await window.api.chooseDataFolder();
-      if (dir) { data = await window.api.getData(); renderAll(); openSettings(); }
+      if (dir) { data = await window.api.getData(); renderAll(); openSettings('data'); }
     }
-    if (id === 'sRestore' && await askConfirm({ title: t('confirmRestore'), ok: t('restore'), danger: true })) {
-      await window.api.restoreBackup($('sBackup').value);
-      data = await window.api.getData(); ui.selected = null; closeModal(); renderAll();
+    if (id === 'sRestore') {
+      const b = backups.find((x) => x.file === $('sBackup').value);
+      if (b) loadFrom(b.file, backupLabel(b).replace(/ · \d+ .*$/, ''), b.tasks);
     }
-    if (id === 'sImport' && await askConfirm({ title: t('confirmImport'), ok: t('import'), danger: true })) {
-      if (await window.api.importData()) { data = await window.api.getData(); ui.selected = null; closeModal(); renderAll(); }
+    if (id === 'sImport') {
+      const f = await window.api.pickCopy();
+      if (f && f.error) return askConfirm({ title: t('badCopy'), text: f.name, ok: t('ok') });
+      if (f) loadFrom(f.file, f.name, f.tasks);
     }
   };
   $('sLogin').onchange = (e) => window.api.loginItem(e.target.checked);
@@ -1103,6 +1154,22 @@ async function openSettings() {
   if ($('sDisplay')) $('sDisplay').onchange = (e) => setW({ display: Number(e.target.value) });
   $('sOpacity').oninput = (e) => setW({ opacity: Number(e.target.value) });
   $('sFilter').onchange = (e) => setW({ filter: e.target.value });
+}
+
+// The keyboard shortcuts, shown as a list in Settings › General.
+function shortcutList(quickKey) {
+  const ar = lang() === 'ar';
+  return [
+    ['Ctrl+N', ar ? 'تاسك جديد' : 'New task'],
+    [quickKey || 'Ctrl+Shift+Space', ar ? 'إضافة من أي برنامج' : 'Add from any app'],
+    ['Ctrl+K', ar ? 'بحث في كل حاجة' : 'Search everything'],
+    ['↑ ↓', ar ? 'تنقل بين التاسكات' : 'Move between tasks'],
+    ['Space', ar ? 'قفل التاسك' : 'Close the task'],
+    ['1 – 4', ar ? 'التصنيف' : 'Priority'],
+    ['S', ar ? 'تمييز' : 'Star'],
+    ['Delete', ar ? 'حذف' : 'Delete'],
+    ['Ctrl + / −', ar ? 'حجم الخط' : 'Text size']
+  ];
 }
 
 // ---------------- events ----------------
