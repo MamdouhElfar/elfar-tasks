@@ -1,7 +1,7 @@
 {
   "name": "elfar-notes",
   "productName": "Elfar Tasks",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Elfar Tasks: a desktop to-do app with areas, subtasks, a priority matrix, follow-ups, reminders and a desktop widget",
   "main": "src/main.js",
   "scripts": {
@@ -22,7 +22,7 @@
   "build": {
     "appId": "com.elfar.notes",
     "productName": "Elfar Tasks",
-    "copyright": "Â© Mamdouh Elfar",
+    "copyright": "???? Mamdouh Elfar",
     "directories": { "output": "dist", "buildResources": "build" },
     "files": ["src/**/*", "package.json"],
     "win": {

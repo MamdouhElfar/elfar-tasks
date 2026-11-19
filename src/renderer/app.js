@@ -434,12 +434,12 @@ function renderDetail() {
     <div class="d-grid">
       <div class="d-field"><label>${icon('today')} ${t('start')}</label><input type="date" id="dStart" value="${x.start || ''}"></div>
       <div class="d-field"><label>${icon('calendar')} ${t('due')}</label><input type="date" id="dDue" value="${x.due || ''}"></div>
-      <div class="d-field"><label>${icon('pending')} ${t('dueTimeShort')}</label><input type="time" id="dDueTime" value="${x.dueTime || ''}" title="${t('dueTime')}"></div>
+      <div class="d-field"><label>${icon('pending')} ${t('dueTimeShort')}</label>${timeBox('dDueTime', x.dueTime, `title="${t('dueTime')}"`)}</div>
       <div class="d-field"><label>${icon('closed')} ${t('closure')}</label><input type="date" id="dClosure" value="${x.closure || ''}"></div>
     </div>
     ${reminderFieldHtml(x)}
     <div class="d-row">
-      <div class="d-field grow"><label>${icon('all')} ${t('area')}</label><select id="dArea">${areaOptions(x.areaId)}</select></div>
+      <div class="d-field grow"><label>${icon('folder')} ${t('area')}</label><select id="dArea">${areaOptions(x.areaId)}</select></div>
       <div class="d-field grow"><label>${icon('repeat')} ${t('repeat')}</label><select id="dRepeat">${repeatOptions(x.repeat, x.due)}</select></div>
     </div>
     <div class="d-field">
@@ -491,7 +491,7 @@ function renderDetail() {
       <div class="log-add">
         <input type="text" id="dAddLog" dir="auto" placeholder="＋ ${t('addLog')}">
         <input type="text" id="dLogPerson" dir="auto" list="allPeopleList" placeholder="${t('logOwner')}" autocomplete="off">
-        <input type="datetime-local" id="dLogAt" title="${t('logAt')}">
+        <div class="dt-pair log-when" title="${t('logAt')}"><input type="date" id="dLogDate">${timeBox('dLogTime', '')}</div>
         <datalist id="allPeopleList">${data.people.map((p) => `<option value="${esc(p.name)}"></option>`).join('')}</datalist>
       </div>
       ${(x.log || []).slice().sort((a, b) => logAt(b).localeCompare(logAt(a))).map((l) => {
@@ -527,7 +527,7 @@ function reminderFieldHtml(x) {
     <label>${icon('bell')} ${t('reminder')}${x.remindAt && isOpen(x) ? ` <span class="remind-when ${x.remindAt <= nowLocal() ? 'past' : ''}">${remindWhen(x.remindAt)}</span>` : ''}</label>
     <div class="remind-row">
       <select id="dRemindSel">${remindBeforeOptions(x.remindBefore ?? null, x.due, x.dueTime, custom)}</select>
-      ${custom ? `<input type="datetime-local" id="dRemind" value="${x.remindAt || ''}">` : ''}
+      ${custom ? `<div class="dt-pair"><input type="date" id="dRemindDate" value="${(x.remindAt || '').slice(0, 10)}">${timeBox('dRemindTime', (x.remindAt || '').slice(11, 16))}</div>` : ''}
     </div>
     <div class="remind-quick"><button data-remind="1h">${t('in1h')}</button><button data-remind="tom9">${t('tomorrow9')}</button></div>
     ${hint ? `<div class="small muted remind-hint">${hint}</div>` : ''}
@@ -655,7 +655,7 @@ function renderComposer() {
     </div>
     <div class="c-row">
       <input type="date" id="cDue" title="${t('due')}" value="${composer.due || ''}">
-      <input type="time" id="cDueTime" title="${t('dueTime')}" value="${composer.dueTime || ''}">
+      ${timeBox('cDueTime', composer.dueTime, `title="${t('dueTime')}"`)}
     </div>
     <div class="c-row">
       <select id="cRepeat" title="${t('repeat')}">${repeatOptions(composer.repeat ? parseRepeat(composer.repeat) : null, composer.due)}</select>
@@ -680,7 +680,7 @@ function refreshComposerRemind() {
 function submitComposer() {
   const title = $('cTitle').value.trim();
   if (!title) { $('cErr').classList.add('show'); $('cTitle').focus(); return; }
-  addTask(title, { areaId: $('cArea').value || null, due: $('cDue').value || null, dueTime: ($('cDue').value && $('cDueTime').value) || null, priority: composer.priority,
+  addTask(title, { areaId: $('cArea').value || null, due: $('cDue').value || null, dueTime: ($('cDue').value && timeValue($('cDueTime'))) || null, priority: composer.priority,
     repeat: parseRepeat($('cRepeat').value), remindBefore: $('cRemind').value === '' ? null : Number($('cRemind').value) });
   // Stay open for the next one, keeping area/date/priority — handy for adding a batch.
   composer.title = '';
@@ -706,14 +706,14 @@ function bindComposer() {
   c.onchange = (e) => {
     if (e.target.id === 'cArea') composer.areaId = e.target.value || null;
     if (e.target.id === 'cDue') { composer.due = e.target.value || null; $('cRepeat').innerHTML = repeatOptions(parseRepeat(composer.repeat), composer.due); refreshComposerRemind(); }
-    if (e.target.id === 'cDueTime') { composer.dueTime = e.target.value || null; refreshComposerRemind(); }
+    if (e.target.id === 'cDueTime') { composer.dueTime = timeValue(e.target) || null; refreshComposerRemind(); }
     if (e.target.id === 'cRepeat') composer.repeat = e.target.value;
     if (e.target.id === 'cRemind') composer.remindBefore = e.target.value;
   };
   c.onkeydown = (e) => { if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') { e.preventDefault(); submitComposer(); } };
   // Clicking anywhere outside closes it (unless you've typed something).
   document.addEventListener('mousedown', (e) => {
-    if (!c.classList.contains('open') || c.contains(e.target) || $('fab').contains(e.target)) return;
+    if (!c.classList.contains('open') || c.contains(e.target) || $('fab').contains(e.target) || e.target.closest?.('.tp-pop')) return;
     if (!$('cTitle').value.trim()) closeComposer();
   });
 }
@@ -752,7 +752,9 @@ function addLogEntry(x) {
   const text = $('dAddLog').value.trim();
   const who = $('dLogPerson').value.trim();
   if (!text && !who) return;
-  const at = $('dLogAt').value || nowLocal();
+  // Empty = now. A time with no date = today; a date with no time = now's time on that day.
+  const d = $('dLogDate').value, tm = timeValue($('dLogTime'));
+  const at = d || tm ? `${d || todayStr()}T${tm || nowLocal().slice(11)}` : nowLocal();
   if (who) {
     // Entry with an owner = the task moves to that person from this moment.
     const p = findOrCreatePerson(who, x.areaId);
@@ -999,7 +1001,7 @@ async function openSettings() {
     <div class="row small muted">${t('shortcutsHint').replace('Ctrl+Alt+Space', info.quickKey || '—')}</div>
 
     <div class="set-sec">${t('notifications')}</div>
-    <div class="row"><label>${t('morningSummary')}</label><span><input type="checkbox" id="sSum" ${s.summary.enabled ? 'checked' : ''}> <input type="time" id="sSumTime" value="${s.summary.time}"></span></div>
+    <div class="row"><label>${t('morningSummary')}</label><span><input type="checkbox" id="sSum" ${s.summary.enabled ? 'checked' : ''}> ${timeBox('sSumTime', s.summary.time)}</span></div>
     <div class="row"><label>${t('nudgeAfter')}</label><span><input type="number" id="sNudge" min="1" max="30" value="${s.nudgeDays || 3}" style="width:64px"> ${t('days')}</span></div>
 
     <div class="set-sec">${t('widget')}</div>
@@ -1069,7 +1071,7 @@ async function openSettings() {
   $('sZoom').oninput = (e) => { $('sZoomVal').textContent = e.target.value + '%'; };
   $('sZoom').onchange = (e) => { data.settings.zoom = Number(e.target.value) / 100; save(); };
   $('sSum').onchange = (e) => { data.settings.summary = { ...data.settings.summary, enabled: e.target.checked }; save(); };
-  $('sSumTime').onchange = (e) => { if (e.target.value) { data.settings.summary = { ...data.settings.summary, time: e.target.value }; save(); } };
+  $('sSumTime').onchange = (e) => { if (timeValue(e.target)) { data.settings.summary = { ...data.settings.summary, time: timeValue(e.target) }; save(); } };
   $('sNudge').onchange = (e) => { data.settings.nudgeDays = Math.max(1, Math.min(30, Number(e.target.value) || 3)); save(); };
   $('sWidget').onchange = (e) => setW({ visible: e.target.checked });
   $('sEdge').onchange = (e) => setW(e.target.value === 'off' ? { edge: 'off' } : { edge: e.target.value, lastEdge: e.target.value, visible: true });
@@ -1245,10 +1247,14 @@ function bind() {
       syncReminder(x);
     }
     else if (el.id === 'dClosure') { x.closure = el.value || null; if (x.closure) spawnNext(x); }
-    else if (el.id === 'dRemind') { x.remindBefore = null; setReminder(x, el.value || null); }
+    else if (el.id === 'dRemindDate' || el.id === 'dRemindTime') {
+      const date = $('dRemindDate').value, time = timeValue($('dRemindTime')) || '09:00';
+      x.remindBefore = null;
+      setReminder(x, date ? `${date}T${time}` : null);
+    }
     else if (el.id === 'dArea') x.areaId = el.value || null;
     else if (el.id === 'dRepeat') { x.repeat = parseRepeat(el.value); delete x.spawned; }
-    else if (el.id === 'dDueTime') { x.dueTime = el.value || null; syncReminder(x); }
+    else if (el.id === 'dDueTime') { x.dueTime = timeValue(el) || null; syncReminder(x); }
     else if (el.id === 'dRemindSel') {
       delete x.reminded;
       if (el.value === '') { x.remindBefore = null; x.remindAt = null; }
@@ -1270,7 +1276,7 @@ function bind() {
     if (e.target.id === 'dAddSub' && e.target.value.trim()) {
       (x.subtasks = x.subtasks || []).push({ id: uid(), title: e.target.value.trim(), done: false });
       touch(x); refresh(); $('dAddSub').focus();
-    } else if (['dAddLog', 'dLogPerson', 'dLogAt'].includes(e.target.id)) {
+    } else if (['dAddLog', 'dLogPerson', 'dLogDate'].includes(e.target.id)) {
       e.preventDefault();
       addLogEntry(x);
     } else if (e.target.id === 'dAddPerson' && e.target.value.trim()) {

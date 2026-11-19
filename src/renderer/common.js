@@ -1,16 +1,16 @@
 // Shared helpers for the main window and the widget.
 const I18N = {
   ar: {
-    appName: 'Elfar Tasks', views: 'العرض', areas: 'الأقسام', today: 'النهارده', pending: 'Pending', overdue: 'متأخرة',
-    starred: 'مميزة', waiting: 'معلّق عند', closed: 'مقفولة', all: 'الكل', inbox: 'من غير قسم', calendar: 'التقويم',
-    addTask: 'أضف تاسك واضغط Enter…', search: 'بحث…', addArea: 'قسم جديد', addProject: 'مشروع جديد جوه القسم',
+    appName: 'Elfar Tasks', views: 'العرض', areas: 'الفولدرات', today: 'النهارده', pending: 'Pending', overdue: 'متأخرة',
+    starred: 'مميزة', waiting: 'معلّق عند', closed: 'مقفولة', all: 'الكل', inbox: 'من غير فولدر', calendar: 'التقويم',
+    addTask: 'أضف تاسك واضغط Enter…', search: 'بحث…', addArea: 'فولدر جديد', addProject: 'فولدر فرعي جديد',
     start: 'البداية', due: 'الموعد النهائي', closure: 'الإغلاق', notSet: 'مش محدد', status: 'الحالة',
     stPending: 'Pending', stOverdue: 'متأخرة', stClosed: 'مقفولة', stDueToday: 'النهارده',
     subtasks: 'المهام الفرعية', addSubtask: 'أضف مهمة فرعية…', notes: 'الصفحة / الملاحظات',
     notesPh: 'اكتب أي حاجة تخص التاسك: تفاصيل، لينكات، أفكار…', log: 'سجل المتابعة', addLog: 'حصل إيه النهارده؟',
     closeToday: 'اقفل النهارده', reopen: 'افتح تاني', del: 'حذف', confirmDelTask: 'تمسح التاسك دي؟',
-    confirmDelArea: 'حذف القسم؟ التاسكات اللي فيه هتبقى "من غير قسم".', waitingOn: 'مستني رد من…', star: 'تمييز',
-    area: 'القسم', noTask: 'اختار تاسك عشان تفتح صفحته', emptyList: 'مفيش تاسكات هنا', showClosed: 'اعرض المقفول',
+    confirmDelArea: 'حذف الفولدر؟ التاسكات اللي فيه هتبقى "من غير فولدر".', waitingOn: 'مستني رد من…', star: 'تمييز',
+    area: 'الفولدر', noTask: 'اختار تاسك عشان تفتح صفحته', emptyList: 'مفيش تاسكات هنا', showClosed: 'اعرض المقفول',
     allSubsDone: 'كل المهام الفرعية خلصت. تقفل التاسك بتاريخ النهارده؟', settings: 'الإعدادات', language: 'اللغة',
     widget: 'ويدجت سطح المكتب', showWidget: 'اعرض الويدجت', onTop: 'فوق كل الشبابيك', opacity: 'الشفافية',
     widgetShows: 'الويدجت يعرض', focus: 'النهارده + المتأخر + المميز', launch: 'يفتح مع تشغيل الويندوز',
@@ -20,7 +20,7 @@ const I18N = {
     sortDue: 'الأقرب موعداً', sortUpdated: 'آخر تعديل', title: 'عنوان التاسك', nothingToday: 'مفيش حاجة مستعجلة 👌',
     openApp: 'افتح التطبيق', hide: 'إخفاء', prev: 'السابق', next: 'التالي', importDone: 'تم الاستيراد',
     confirmImport: 'الاستيراد هيستبدل كل البيانات الحالية. تكمل؟',
-    people: 'الأشخاص', allPeople: 'كل الأشخاص', personPh: 'اكتب اسم واختار أو اضغط Enter…', since: 'من', followUp: 'سجّل متابعة', followedUpWith: 'تابعت مع', linkedTo: 'مرتبط بـ', editPerson: 'تعديل الشخص', addPerson: 'شخص جديد', confirmDelPerson: 'حذف الشخص؟ هيتشال من كل التاسكات.', noOne: 'مش معلّق عند حد', openWith: 'تاسكات مفتوحة معاه', remove: 'شيل', personHint: 'اربط الشخص بالأقسام/المشاريع عشان يظهر أول في الاقتراحات.',
+    people: 'الأشخاص', allPeople: 'كل الأشخاص', personPh: 'اكتب اسم واختار أو اضغط Enter…', since: 'من', followUp: 'سجّل متابعة', followedUpWith: 'تابعت مع', linkedTo: 'مرتبط بـ', editPerson: 'تعديل الشخص', addPerson: 'شخص جديد', confirmDelPerson: 'حذف الشخص؟ هيتشال من كل التاسكات.', noOne: 'مش معلّق عند حد', openWith: 'تاسكات مفتوحة معاه', remove: 'شيل', personHint: 'اربط الشخص بالفولدرات عشان يظهر أول في الاقتراحات.',
     logOwner: 'مسؤول (اختياري)…', logAt: 'الوقت (فاضي = دلوقتي)', me: 'أنا', nowWith: 'بقت عند', finishedPart: 'خلص الجزء بتاعه', backWithMe: 'رجعت عندي',
     timeline: 'مسار التاسك', longest: 'أطول مدة', handoff: 'تسليم', still: 'لسه عنده',
     reminder: 'تذكير', remindPh: 'من غير تذكير', in1h: 'بعد ساعة', tomorrow9: 'بكرة 9ص', dayBeforeDue: 'قبل الـ Due بيوم', dueMorning: 'يوم الـ Due 9ص', clear: 'شيل',
@@ -31,7 +31,7 @@ const I18N = {
     undo: 'تراجع', closedMsg: 'اتقفلت', nextOn: 'الجاية', deleted: 'اتمسحت',
     files: 'ملفات ولينكات', attachFile: 'إرفاق ملف', pasteLink: 'الصق لينك (SharePoint، Drive…) واضغط Enter', dropFiles: 'أو اسحب ملفات من الجهاز هنا', showInFolder: 'افتح مكانه',
     searchAll: 'ابحث في كل التاسكات، الملاحظات، الأشخاص…', report: 'تقرير', reportFrom: 'من', copyReport: 'نسخ', exportCsv: 'Excel',
-    rClosed: 'اتقفلت', rAdded: 'اتضافت', rByArea: 'المقفول حسب القسم', rStuck: 'متعطلة عند ناس', copied: 'اتنسخ، الصقه في إيميل أو Teams',
+    rClosed: 'اتقفلت', rAdded: 'اتضافت', rByArea: 'المقفول حسب الفولدر', rStuck: 'متعطلة عند ناس', copied: 'اتنسخ، الصقه في إيميل أو Teams',
     whatsNew: 'الجديد في التحديث', gotIt: 'تمام',
     upDev: 'التحديث التلقائي بيشتغل في النسخة المتسطبة بس', upChecking: 'بيدوّر على تحديث…', upLatest: 'عندك آخر إصدار ✓', upDownloading: 'بينزّل التحديث', upReady: 'تحديث جاهز', upError: 'مقدرش يوصل لسيرفر التحديثات', restartUpdate: 'أعد التشغيل وحدّث', checkNow: 'دوّر دلوقتي', updates: 'التحديثات',
     general: 'عام', notifications: 'الإشعارات', morningSummary: 'ملخص الصبح', nudgeAfter: 'نبّهني لو حد مأخر تاسك أكتر من', textSize: 'حجم الخط',
@@ -45,24 +45,24 @@ const I18N = {
     matrix: 'المصفوفة', priority: 'التصنيف', unclassified: 'مش متصنفة', important: 'مهم', notImportant: 'مش مهم', urgent: 'مستعجل', notUrgent: 'مش مستعجل', sortPriority: 'الأهم أولاً', clearPriority: 'شيل التصنيف',
     q1: 'مهم ومستعجل', q2: 'مهم ومش مستعجل', q3: 'مستعجل ومش مهم', q4: 'لا مهم ولا مستعجل',
     q1a: 'اعملها دلوقتي', q2a: 'خطط لها', q3a: 'فوّضها', q4a: 'استغنى عنها', matrixHint: 'اسحب أي تاسك لمربع تاني عشان تغيّر تصنيفها، أو من "مش متصنفة" لأي مربع.',
-    allAreas: 'كل التاسكات', dragHint: 'سيب التاسك على قسم عشان تنقله', movedTo: 'اتنقلت إلى',
+    allAreas: 'كل التاسكات', dragHint: 'سيب التاسك على فولدر عشان تنقله', movedTo: 'اتنقلت إلى',
     stScheduled: 'يبدأ', later: 'مجدولة', scheduledHint: 'دي تاسكات لسه ميعادها مجاش (زي المرة الجاية من تاسك متكررة). هتظهر في Pending يوم ما تبدأ.', wWeek: '7 أيام', wOthers: 'عند غيري',
     calHint: 'اضغط ＋ في أي يوم تضيف تاسك عليه · اسحب تاسك ليوم تاني يغيّر الـ Due · الباهت = المرات الجاية من تاسك متكررة.',
     ok: 'تمام', home: 'الرئيسية', mine: 'عندي أنا', withOthers: 'عند حد تاني', show: 'عرض', remindCustom: 'وقت محدد…', remindNeedsDue: 'حط Due عشان تقدر تتفكّر قبله بوقت', remindAt9: 'الـ Due من غير وقت، فالتذكير محسوب على 9 الصبح', dueTimeShort: 'الوقت',
     gMorning: 'صباح الخير', gAfternoon: 'مساء الخير', gEvening: 'مساء الخير', hWeek: 'الـ 7 أيام الجايين', hOthers: 'عند ناس تانية', hClosedWeek: 'اتقفلت الأسبوع ده',
-    hFocus: 'ابدأ بدول', hComing: 'جاي قريب', hWaiting: 'مستني رد من', hReminders: 'تذكيرات النهارده', hAllClear: 'مفيش حاجة متأخرة ولا مستعجلة النهارده 🎉', hNothing: 'مفيش حاجة', avgClose: 'متوسط وقت الإنجاز', more: 'كمان', oldestDays: 'أقدم واحدة من', hAreasTitle: 'الأقسام', hOpenN: 'مفتوحة', hSeeAll: 'اعرض الكل'
+    hFocus: 'ابدأ بدول', hComing: 'جاي قريب', hWaiting: 'مستني رد من', hReminders: 'تذكيرات النهارده', hAllClear: 'مفيش حاجة متأخرة ولا مستعجلة النهارده 🎉', hNothing: 'مفيش حاجة', avgClose: 'متوسط وقت الإنجاز', more: 'كمان', oldestDays: 'أقدم واحدة من', hAreasTitle: 'الفولدرات', hOpenN: 'مفتوحة', hSeeAll: 'اعرض الكل'
   },
   en: {
-    appName: 'Elfar Tasks', views: 'Views', areas: 'Areas', today: 'Today', pending: 'Pending', overdue: 'Overdue',
-    starred: 'Starred', waiting: 'Pending with', closed: 'Closed', all: 'All', inbox: 'No area', calendar: 'Calendar',
-    addTask: 'Add a task and press Enter…', search: 'Search…', addArea: 'New area', addProject: 'New project in area',
+    appName: 'Elfar Tasks', views: 'Views', areas: 'Folders', today: 'Today', pending: 'Pending', overdue: 'Overdue',
+    starred: 'Starred', waiting: 'Pending with', closed: 'Closed', all: 'All', inbox: 'No folder', calendar: 'Calendar',
+    addTask: 'Add a task and press Enter…', search: 'Search…', addArea: 'New folder', addProject: 'New subfolder',
     start: 'Start', due: 'Due', closure: 'Closure', notSet: 'Not set', status: 'Status',
     stPending: 'Pending', stOverdue: 'Overdue', stClosed: 'Closed', stDueToday: 'Due today',
     subtasks: 'Subtasks', addSubtask: 'Add a subtask…', notes: 'Page / notes',
     notesPh: 'Write anything about this task: details, links, ideas…', log: 'Follow-up log', addLog: 'What happened today?',
     closeToday: 'Close today', reopen: 'Reopen', del: 'Delete', confirmDelTask: 'Delete this task?',
-    confirmDelArea: 'Delete this area? Its tasks will have no area.', waitingOn: 'Waiting on…', star: 'Star',
-    area: 'Area', noTask: 'Pick a task to open its page', emptyList: 'No tasks here', showClosed: 'Show closed',
+    confirmDelArea: 'Delete this folder? Its tasks will have no folder.', waitingOn: 'Waiting on…', star: 'Star',
+    area: 'Folder', noTask: 'Pick a task to open its page', emptyList: 'No tasks here', showClosed: 'Show closed',
     allSubsDone: 'All subtasks are done. Close the task with today\'s date?', settings: 'Settings', language: 'Language',
     widget: 'Desktop widget', showWidget: 'Show widget', onTop: 'Always on top', opacity: 'Opacity',
     widgetShows: 'Widget shows', focus: 'Today + overdue + starred', launch: 'Open when Windows starts',
@@ -72,7 +72,7 @@ const I18N = {
     sortDue: 'Nearest due', sortUpdated: 'Last updated', title: 'Task title', nothingToday: 'Nothing urgent 👌',
     openApp: 'Open app', hide: 'Hide', prev: 'Previous', next: 'Next', importDone: 'Imported',
     confirmImport: 'Importing replaces all current data. Continue?',
-    people: 'People', allPeople: 'All people', personPh: 'Type a name, pick or press Enter…', since: 'since', followUp: 'Log a follow-up', followedUpWith: 'Followed up with', linkedTo: 'Linked to', editPerson: 'Edit person', addPerson: 'New person', confirmDelPerson: 'Delete this person? They will be removed from all tasks.', noOne: 'Not pending with anyone', openWith: 'Open tasks with them', remove: 'Remove', personHint: 'Link people to areas/projects so they show first in suggestions.',
+    people: 'People', allPeople: 'All people', personPh: 'Type a name, pick or press Enter…', since: 'since', followUp: 'Log a follow-up', followedUpWith: 'Followed up with', linkedTo: 'Linked to', editPerson: 'Edit person', addPerson: 'New person', confirmDelPerson: 'Delete this person? They will be removed from all tasks.', noOne: 'Not pending with anyone', openWith: 'Open tasks with them', remove: 'Remove', personHint: 'Link people to folders so they show first in suggestions.',
     logOwner: 'Owner (optional)…', logAt: 'Time (empty = now)', me: 'Me', nowWith: 'Now with', finishedPart: 'finished their part', backWithMe: 'Back with me',
     timeline: 'Task timeline', longest: 'Longest hold', handoff: 'Handoff', still: 'still there',
     reminder: 'Reminder', remindPh: 'No reminder', in1h: 'In 1 hour', tomorrow9: 'Tomorrow 9am', dayBeforeDue: '1 day before due', dueMorning: 'Due day 9am', clear: 'Clear',
@@ -83,7 +83,7 @@ const I18N = {
     undo: 'Undo', closedMsg: 'Closed', nextOn: 'next one', deleted: 'Deleted',
     files: 'Files and links', attachFile: 'Attach file', pasteLink: 'Paste a link (SharePoint, Drive…) and press Enter', dropFiles: 'or drop files from your computer here', showInFolder: 'Show in folder',
     searchAll: 'Search all tasks, notes, people…', report: 'Report', reportFrom: 'From', copyReport: 'Copy', exportCsv: 'Excel',
-    rClosed: 'Closed', rAdded: 'Added', rByArea: 'Closed by area', rStuck: 'Stuck with people', copied: 'Copied. Paste it into an email or Teams',
+    rClosed: 'Closed', rAdded: 'Added', rByArea: 'Closed by folder', rStuck: 'Stuck with people', copied: 'Copied. Paste it into an email or Teams',
     whatsNew: "What's new", gotIt: 'Got it',
     upDev: 'Auto-update works in the installed app only', upChecking: 'Checking for updates…', upLatest: "You're on the latest version ✓", upDownloading: 'Downloading update', upReady: 'Update ready', upError: "Couldn't reach the update server", restartUpdate: 'Restart and update', checkNow: 'Check now', updates: 'Updates',
     general: 'General', notifications: 'Notifications', morningSummary: 'Morning summary', nudgeAfter: 'Nudge me when someone holds a task over', textSize: 'Text size',
@@ -97,12 +97,12 @@ const I18N = {
     matrix: 'Matrix', priority: 'Priority', unclassified: 'Unclassified', important: 'Important', notImportant: 'Not important', urgent: 'Urgent', notUrgent: 'Not urgent', sortPriority: 'Priority first', clearPriority: 'Clear priority',
     q1: 'Important and urgent', q2: 'Important, not urgent', q3: 'Urgent, not important', q4: 'Not important, not urgent',
     q1a: 'Do it now', q2a: 'Schedule it', q3a: 'Delegate it', q4a: 'Drop it', matrixHint: 'Drag a task to another box to change its priority, or from Unclassified into any box.',
-    allAreas: 'All tasks', dragHint: 'Drop a task on an area to move it', movedTo: 'Moved to',
+    allAreas: 'All tasks', dragHint: 'Drop a task on a folder to move it', movedTo: 'Moved to',
     stScheduled: 'Starts', later: 'Scheduled', scheduledHint: "Tasks that haven't started yet (like the next round of a repeating task). They move to Pending on their start day.", wWeek: '7 days', wOthers: 'Others',
     calHint: 'Click ＋ on a day to add a task there · drag a task to another day to change its due · faded = upcoming repeats.',
     ok: 'OK', home: 'Home', mine: 'On me', withOthers: 'With others', show: 'Show', remindCustom: 'Specific time…', remindNeedsDue: 'Set a due date to be reminded before it', remindAt9: 'No due time set, so this counts from 9:00 AM', dueTimeShort: 'Time',
     gMorning: 'Good morning', gAfternoon: 'Good afternoon', gEvening: 'Good evening', hWeek: 'Next 7 days', hOthers: 'With others', hClosedWeek: 'Closed this week',
-    hFocus: 'Start with these', hComing: 'Coming up', hWaiting: 'Waiting on', hReminders: "Today's reminders", hAllClear: 'Nothing overdue or urgent today 🎉', hNothing: 'Nothing here', avgClose: 'Avg. time to close', more: 'more', oldestDays: 'oldest', hAreasTitle: 'Areas', hOpenN: 'open', hSeeAll: 'See all'
+    hFocus: 'Start with these', hComing: 'Coming up', hWaiting: 'Waiting on', hReminders: "Today's reminders", hAllClear: 'Nothing overdue or urgent today 🎉', hNothing: 'Nothing here', avgClose: 'Avg. time to close', more: 'more', oldestDays: 'oldest', hAreasTitle: 'Folders', hOpenN: 'open', hSeeAll: 'See all'
   }
 };
 
@@ -202,7 +202,7 @@ const isActive = (x) => !x.closure && statusOf(x) !== 'scheduled';
 // Clicking anywhere on a date / time box opens its picker, not just on the small icon.
 document.addEventListener('click', (e) => {
   const el = e.target;
-  if (!el.matches || !el.matches('input[type=date], input[type=time], input[type=datetime-local]') || el.disabled || el.readOnly) return;
+  if (!el.matches || !el.matches('input[type=date]') || el.disabled || el.readOnly) return;
   try { el.showPicker(); } catch { /* picker already open */ }
 });
 
@@ -218,7 +218,7 @@ function nowLocal(d = new Date()) {
 }
 function fmtTime(at, lang) {
   if (!at || !at.includes('T')) return '';
-  return new Date(at).toLocaleTimeString(lang === 'ar' ? 'ar-EG' : 'en-GB', { hour: 'numeric', minute: '2-digit' });
+  return new Date(at).toLocaleTimeString(lang === 'ar' ? 'ar-EG' : 'en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 function fmtDur(ms, lang) {
   const m = Math.max(0, Math.round(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;

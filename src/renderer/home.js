@@ -99,7 +99,7 @@ function renderHome() {
       ${panel(t('hFocus'), 'today', focus.length ? capped(focus, 7, 'today') : empty(t('hAllClear')), focus.length > 7 ? 'today' : '')}
       ${panel(t('hComing'), 'calendar', coming || empty(t('hNothing')), 'calendar')}
       ${people.size ? panel(t('hWaiting'), 'waiting', `<div class="h-people">${waiting}</div>`, 'others') : ''}
-      ${areaList.length ? panel(t('hAreasTitle'), 'all', `<div class="h-areas">${areas}</div>`) : ''}
+      ${areaList.length ? panel(t('hAreasTitle'), 'folder', `<div class="h-areas">${areas}</div>`) : ''}
       ${reminders.length ? panel(t('hReminders'), 'bell', reminders.map((x) =>
         `<div class="h-row" data-task="${x.id}"><span class="h-time">${fmtTime(x.remindAt, lang())}</span><span class="h-title" dir="auto">${esc(x.title)}</span></div>`).join('')) : ''}
     </div>

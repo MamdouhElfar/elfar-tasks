@@ -339,7 +339,7 @@ function renderReport() {
 
 function tasksCsv(tasks) {
   const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const head = ['Title', 'Area', 'Status', 'Priority', 'Start', 'Due', 'Closure', 'Pending with', 'Subtasks', 'Repeat', 'Notes'];
+  const head = ['Title', 'Folder', 'Status', 'Priority', 'Start', 'Due', 'Closure', 'Pending with', 'Subtasks', 'Repeat', 'Notes'];
   const rows = tasks.map((x) => [x.title, areaLabel(x.areaId), statusOf(x), x.priority ? t(x.priority + 'a') : '', x.start, x.due, x.closure,
     peopleNames(x).join(', '), (x.subtasks || []).length ? `${x.subtasks.filter((s) => s.done).length}/${x.subtasks.length}` : '', repeatLabel(x.repeat), x.notes]);
   return [head, ...rows].map((r) => r.map(q).join(',')).join('\r\n');
@@ -347,6 +347,10 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.3.0': {
+    ar: ['اختيار الوقت بقى عجلات: دوس واسحب لفوق ولتحت (أو استخدم البكرة)، ودوس على أي رقم يتختار', 'الوقت بقى منفصل عن التاريخ في التذكير وفي سجل المتابعة', '"الأقسام" بقى اسمها "الفولدرات"، و"المشروع" بقى "فولدر فرعي"'],
+    en: ['Picking a time is now a set of wheels: hold and drag up or down (or scroll), and click a number to pick it', 'Time is now separate from the date in reminders and in the follow-up log', '"Areas" are now "Folders", and "projects" are now "subfolders"']
+  },
   '1.2.0': {
     ar: ['الويدجت فيه كروت أرقام زي الرئيسية: متأخرة، النهارده، 7 أيام، عند ناس تانية. دوس على أي كارت يعرض تاسكاته', 'التاسك المتكررة: كل مرة مستقلة، والمرة الجاية بتبدأ يوم ميعادها مش يوم ما قفلت اللي قبلها. ولحد ما ييجي يومها بتبقى "مجدولة" ومش بتتحسب في Pending', 'صفحة التاسك: العنوان بينزل سطر جديد بدل ما يتقص، والتواريخ والوقت مبقتش بتدخل في بعض', 'الضغط في أي حتة على خانة التاريخ أو الوقت بيفتح الاختيار على طول', 'زرار الحذف بقى مربع أحمر واضح، والعناوين كلها بقت بنفس الشكل'],
     en: ['The widget has number cards like Home: overdue, today, 7 days, with others. Click a card to see those tasks', 'Repeating tasks: each round stands on its own, and the next one starts on its own day, not the day you closed the last one. Until then it is "scheduled" and not counted in Pending', 'Task page: the title wraps instead of being cut off, and the dates and time no longer run into each other', 'Clicking anywhere on a date or time box opens the picker', 'The delete button is now a clear red square, and all headings share one style']
