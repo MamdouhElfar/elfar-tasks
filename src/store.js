@@ -1,0 +1,215 @@
+// JSON file storage.
+// - Writes are atomic (temp file + rename) and the previous version is kept as .bak.
+// - One automatic backup per day is kept for 30 days (in the local app folder).
+// - The data file can live in any folder (e.g. OneDrive) to sync between computers;
+//   changes made by another computer are picked up automatically.
+const fs = require('fs');
+const path = require('path');
+
+let appDir = null;      // local app folder (config + backups)
+let file = null;        // the data file in use
+let data = null;
+let timer = null;
+let lastOwnWrite = 0;   // mtime of our own last write, to tell it apart from a sync
+let onExternal = null;
+
+const KEEP_BACKUPS = 30;
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+const SETTINGS_DEFAULTS = {
+  lang: 'ar',
+  widget: { visible: true, opacity: 1, filter: 'focus' },
+  showClosed: false,
+  summary: { enabled: true, time: '09:00' },
+  nudgeDays: 3,
+  zoom: 1
+};
+
+// What a brand-new user sees: neutral areas and one welcome task that explains the app.
+function firstRun(lang) {
+  const ar = lang === 'ar';
+  const work = uid(), home = uid(), personal = uid();
+  const sub = (title, done = false) => ({ id: uid(), title, done });
+  return {
+    version: 1,
+    settings: { ...SETTINGS_DEFAULTS, lang },
+    people: [],
+    areas: [
+      { id: work, name: ar ? 'الشغل' : 'Work', color: 'blue', parentId: null },
+      { id: home, name: ar ? 'البيت' : 'Home', color: 'teal', parentId: null },
+      { id: personal, name: ar ? 'شخصي' : 'Personal', color: 'purple', parentId: null }
+    ],
+    tasks: [{
+      id: uid(), areaId: null, title: ar ? '👋 أهلاً بيك في Elfar Notes' : '👋 Welcome to Elfar Notes',
+      start: today(), due: today(), closure: null, priority: 'q2', starred: true, pendingWith: [],
+      notes: ar
+        ? 'جولة سريعة:\n• زرار + تحت (أو Ctrl+N) يضيف تاسك، و Ctrl+Alt+Space يضيف من أي برنامج.\n• تاب المصفوفة يرتّب حسب الأهمية والاستعجال.\n• "معلّق عند" يتابع التاسكات اللي مستنيه فيها حد.\n• Ctrl+K للبحث في كل حاجة.\n• الويدجت يقدر يفضل فوق كل البرامج أو يستخبى على جنب الشاشة.\n\nلما تخلص الجولة اقفل التاسك دي ✓'
+        : 'Quick tour:\n• The + button (or Ctrl+N) adds a task; Ctrl+Alt+Space adds one from any app.\n• The Matrix tab sorts by importance and urgency.\n• "Pending with" tracks tasks waiting on someone.\n• Ctrl+K searches everything.\n• The widget can stay on top of all apps or hide at the screen edge.\n\nClose this task ✓ when you are done.',
+      subtasks: ar
+        ? [sub('افتح التاسك دي واقرا الملاحظات', true), sub('ضيف أول تاسك حقيقية'), sub('جرّب الويدجت'), sub('اختار لغتك من تحت')]
+        : [sub('Open this task and read the notes', true), sub('Add your first real task'), sub('Try the widget'), sub('Pick your language at the bottom left')],
+      log: [], created: Date.now(), updated: Date.now()
+    }]
+  };
+}
+
+function normalize(d, lang = 'ar') {
+  if (!d || typeof d !== 'object') d = firstRun(lang);
+  d.settings = { ...SETTINGS_DEFAULTS, ...(d.settings || {}) };
+  d.settings.widget = { ...SETTINGS_DEFAULTS.widget, ...(d.settings.widget || {}) };
+  d.settings.summary = { ...SETTINGS_DEFAULTS.summary, ...(d.settings.summary || {}) };
+  d.areas = Array.isArray(d.areas) ? d.areas : [];
+  d.tasks = Array.isArray(d.tasks) ? d.tasks : [];
+  d.people = Array.isArray(d.people) ? d.people : [];
+  migrateWaitingOn(d);
+  return d;
+}
+
+// Old free-text "waitingOn" becomes real people records + task.pendingWith.
+function migrateWaitingOn(d) {
+  for (const t of d.tasks) {
+    if (!Array.isArray(t.pendingWith)) t.pendingWith = [];
+    const text = (t.waitingOn || '').trim();
+    if (text) {
+      for (const name of text.split(/[,،]/).map((s) => s.trim()).filter(Boolean)) {
+        let p = d.people.find((x) => x.name.toLowerCase() === name.toLowerCase());
+        if (!p) { p = { id: uid(), name, areaIds: [] }; d.people.push(p); }
+        if (t.areaId && !p.areaIds.includes(t.areaId)) p.areaIds.push(t.areaId);
+        if (!t.pendingWith.some((x) => x.personId === p.id)) t.pendingWith.push({ personId: p.id, since: t.start || today() });
+      }
+    }
+    delete t.waitingOn;
+  }
+}
+
+// ---------- config (where the data file lives) ----------
+const configPath = () => path.join(appDir, 'config.json');
+function readConfig() { try { return JSON.parse(fs.readFileSync(configPath(), 'utf8')); } catch { return {}; } }
+function writeConfig(c) { fs.writeFileSync(configPath(), JSON.stringify(c, null, 2), 'utf8'); }
+const backupsDir = () => path.join(appDir, 'backups');
+
+function readFile(f) { return JSON.parse(fs.readFileSync(f, 'utf8')); }
+
+function load(lang) {
+  try {
+    data = normalize(readFile(file), lang);
+  } catch (e) {
+    if (fs.existsSync(file)) {
+      // Corrupt file: keep a copy instead of overwriting it silently, then try the backup.
+      fs.copyFileSync(file, file + '.corrupt-' + Date.now());
+      try { data = normalize(readFile(file + '.bak'), lang); }
+      catch { data = firstRun(lang); }
+    } else {
+      data = firstRun(lang);
+    }
+    writeNow();
+  }
+}
+
+function init(dir, { lang = 'ar', onExternalChange } = {}) {
+  appDir = dir;
+  onExternal = onExternalChange;
+  fs.mkdirSync(appDir, { recursive: true });
+  const cfg = readConfig();
+  const dataDir = cfg.dataDir && fs.existsSync(cfg.dataDir) ? cfg.dataDir : appDir;
+  file = path.join(dataDir, 'data.json');
+  load(lang);
+  dailyBackup();
+  watch();
+}
+
+function writeNow() {
+  clearTimeout(timer);
+  timer = null;
+  if (!file) return;
+  const tmp = file + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf8');
+  if (fs.existsSync(file)) fs.copyFileSync(file, file + '.bak');
+  fs.renameSync(tmp, file);
+  try { lastOwnWrite = fs.statSync(file).mtimeMs; } catch {}
+  dailyBackup();
+}
+
+function scheduleWrite() {
+  clearTimeout(timer);
+  timer = setTimeout(writeNow, 300);
+}
+
+// ---------- daily backups ----------
+function dailyBackup() {
+  try {
+    const dir = backupsDir();
+    fs.mkdirSync(dir, { recursive: true });
+    const target = path.join(dir, `data-${today()}.json`);
+    if (!fs.existsSync(target) && fs.existsSync(file)) fs.copyFileSync(file, target);
+    const all = fs.readdirSync(dir).filter((f) => /^data-\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort();
+    for (const old of all.slice(0, Math.max(0, all.length - KEEP_BACKUPS))) fs.unlinkSync(path.join(dir, old));
+  } catch { /* a failed backup must never block saving */ }
+}
+
+function listBackups() {
+  try {
+    return fs.readdirSync(backupsDir()).filter((f) => /^data-\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort().reverse()
+      .map((f) => {
+        const full = path.join(backupsDir(), f);
+        let tasks = 0;
+        try { tasks = readFile(full).tasks.length; } catch {}
+        return { file: full, date: f.slice(5, 15), tasks };
+      });
+  } catch { return []; }
+}
+
+// ---------- sync folder: pick up changes written by another computer ----------
+function watch() {
+  fs.unwatchFile(file);
+  try { lastOwnWrite = fs.statSync(file).mtimeMs; } catch {}
+  fs.watchFile(file, { interval: 2000 }, (cur) => {
+    if (!cur.mtimeMs || Math.abs(cur.mtimeMs - lastOwnWrite) < 5 || timer) return;
+    try {
+      data = normalize(readFile(file), data.settings.lang);
+      lastOwnWrite = cur.mtimeMs;
+      if (onExternal) onExternal();
+    } catch { /* half-synced file: wait for the next change */ }
+  });
+}
+
+module.exports = {
+  init,
+  get: () => data,
+  file: () => file,
+  dataDir: () => path.dirname(file),
+  backupsDir,
+  listBackups,
+  replace(d) { data = normalize(d, data && data.settings.lang); scheduleWrite(); },
+  updateSettings(patch) { data.settings = { ...data.settings, ...patch }; scheduleWrite(); },
+  flush() { if (timer) writeNow(); },
+  exportTo(p) { fs.writeFileSync(p, JSON.stringify(data, null, 2), 'utf8'); },
+  importFrom(p) {
+    const d = readFile(p);
+    if (!d || !Array.isArray(d.tasks)) throw new Error('Invalid backup file');
+    writeNow(); // the current state lands in .bak first
+    data = normalize(d, data.settings.lang);
+    writeNow();
+  },
+  // Move the data file to another folder (e.g. OneDrive). If that folder already
+  // has data (from another computer), `useExisting` decides which one wins.
+  moveTo(dir, useExisting) {
+    const target = path.join(dir, 'data.json');
+    writeNow();
+    if (!(useExisting && fs.existsSync(target))) fs.copyFileSync(file, target);
+    fs.unwatchFile(file);
+    file = target;
+    writeConfig({ ...readConfig(), dataDir: dir });
+    load(data.settings.lang);
+    watch();
+  },
+  hasDataIn(dir) { return fs.existsSync(path.join(dir, 'data.json')); }
+};

@@ -1,0 +1,213 @@
+// Shared helpers for the main window and the widget.
+const I18N = {
+  ar: {
+    appName: 'Elfar Notes', views: 'العرض', areas: 'الأقسام', today: 'النهارده', pending: 'Pending', overdue: 'متأخرة',
+    starred: 'مميزة', waiting: 'معلّق عند', closed: 'مقفولة', all: 'الكل', inbox: 'الوارد', calendar: 'التقويم',
+    addTask: 'أضف تاسك واضغط Enter…', search: 'بحث…', addArea: 'قسم جديد', addProject: 'مشروع جديد جوه القسم',
+    start: 'البداية', due: 'الموعد النهائي', closure: 'الإغلاق', notSet: 'مش محدد', status: 'الحالة',
+    stPending: 'Pending', stOverdue: 'متأخرة', stClosed: 'مقفولة', stDueToday: 'النهارده',
+    subtasks: 'المهام الفرعية', addSubtask: 'أضف مهمة فرعية…', notes: 'الصفحة / الملاحظات',
+    notesPh: 'اكتب أي حاجة تخص التاسك: تفاصيل، لينكات، أفكار…', log: 'سجل المتابعة', addLog: 'حصل إيه النهارده؟',
+    closeToday: 'اقفل النهارده', reopen: 'افتح تاني', del: 'حذف', confirmDelTask: 'حذف التاسك ده نهائياً؟',
+    confirmDelArea: 'حذف القسم؟ التاسكات اللي فيه هتتنقل للوارد.', waitingOn: 'مستني رد من…', star: 'تمييز',
+    area: 'القسم', noTask: 'اختار تاسك عشان تفتح صفحته', emptyList: 'مفيش تاسكات هنا', showClosed: 'اعرض المقفول',
+    allSubsDone: 'كل المهام الفرعية خلصت. تقفل التاسك بتاريخ النهارده؟', settings: 'الإعدادات', language: 'اللغة',
+    widget: 'ويدجت سطح المكتب', showWidget: 'اعرض الويدجت', onTop: 'فوق كل الشبابيك', opacity: 'الشفافية',
+    widgetShows: 'الويدجت يعرض', focus: 'النهارده + المتأخر + المميز', launch: 'يفتح مع تشغيل الويندوز',
+    backup: 'نسخة احتياطية', export: 'تصدير', import: 'استيراد', closeBtn: 'تم', rename: 'إعادة تسمية', color: 'اللون',
+    name: 'الاسم', save: 'حفظ', cancel: 'إلغاء', days: 'يوم', openedFor: 'مفتوحة من', tookDays: 'خلصت في',
+    closedThisMonth: 'اتقفل الشهر ده', openTasks: 'مفتوحة', sortBy: 'ترتيب', sortStart: 'الأقدم بداية',
+    sortDue: 'الأقرب موعداً', sortUpdated: 'آخر تعديل', title: 'عنوان التاسك', nothingToday: 'مفيش حاجة مستعجلة 👌',
+    openApp: 'افتح التطبيق', hide: 'إخفاء', prev: 'السابق', next: 'التالي', importDone: 'تم الاستيراد',
+    confirmImport: 'الاستيراد هيستبدل كل البيانات الحالية. تكمل؟',
+    people: 'الأشخاص', allPeople: 'كل الأشخاص', personPh: 'اكتب اسم واختار أو اضغط Enter…', since: 'من', followUp: 'سجّل متابعة', followedUpWith: 'تابعت مع', linkedTo: 'مرتبط بـ', editPerson: 'تعديل الشخص', addPerson: 'شخص جديد', confirmDelPerson: 'حذف الشخص؟ هيتشال من كل التاسكات.', noOne: 'مش معلّق عند حد', openWith: 'تاسكات مفتوحة معاه', remove: 'شيل', personHint: 'اربط الشخص بالأقسام/المشاريع عشان يظهر أول في الاقتراحات.',
+    logOwner: 'مسؤول (اختياري)…', logAt: 'الوقت (فاضي = دلوقتي)', me: 'أنا', nowWith: 'بقت عند', finishedPart: 'خلص الجزء بتاعه', backWithMe: 'رجعت عندي',
+    timeline: 'مسار التاسك', longest: 'أطول مدة', handoff: 'تسليم', still: 'لسه عنده',
+    reminder: 'تذكير', remindPh: 'من غير تذكير', in1h: 'بعد ساعة', tomorrow9: 'بكرة 9ص', dayBeforeDue: 'قبل الـ Due بيوم', dueMorning: 'يوم الـ Due 9ص', clear: 'شيل',
+    autoHide: 'يختفي على جنب ويظهر بالـ hover', edgeRight: 'يمين', edgeLeft: 'شمال', off: 'مقفول', widgetMode: 'وضع الظهور',
+    about: 'عن التطبيق', creditBy: 'تنفيذ', sendFeedback: 'ابعت اقتراح أو مشكلة', feedbackHint: 'عندك فكرة أو لقيت مشكلة؟ ابعتها وهتتضاف في التحديث الجاي.', version: 'الإصدار',
+    tomorrowLbl: 'بكرة', nextWeek: 'بعد أسبوع', repeat: 'تكرار', noRepeat: 'مش متكررة', every: 'كل',
+    rDay: 'أيام', rWeek: 'أسابيع', rMonth: 'شهور', rYear: 'سنين', r1day: 'كل يوم', r1week: 'كل أسبوع', r1month: 'كل شهر', r1year: 'كل سنة',
+    undo: 'تراجع', closedMsg: 'اتقفلت', nextOn: 'الجاية', deleted: 'اتمسحت',
+    files: 'ملفات ولينكات', attachFile: 'إرفاق ملف', pasteLink: 'الصق لينك (SharePoint، Drive…) واضغط Enter', dropFiles: 'أو اسحب ملفات من الجهاز هنا', showInFolder: 'افتح مكانه',
+    searchAll: 'ابحث في كل التاسكات، الملاحظات، الأشخاص…', report: 'تقرير', reportFrom: 'من', copyReport: 'نسخ', exportCsv: 'Excel',
+    rClosed: 'اتقفلت', rAdded: 'اتضافت', rByArea: 'المقفول حسب القسم', rStuck: 'متعطلة عند ناس', copied: 'اتنسخ، الصقه في إيميل أو Teams',
+    whatsNew: 'الجديد في التحديث', gotIt: 'تمام',
+    upDev: 'التحديث التلقائي بيشتغل في النسخة المتسطبة بس', upChecking: 'بيدوّر على تحديث…', upLatest: 'عندك آخر إصدار ✓', upDownloading: 'بينزّل التحديث', upReady: 'تحديث جاهز', upError: 'مقدرش يوصل لسيرفر التحديثات', restartUpdate: 'أعد التشغيل وحدّث', checkNow: 'دوّر دلوقتي', updates: 'التحديثات',
+    general: 'عام', notifications: 'الإشعارات', morningSummary: 'ملخص الصبح', nudgeAfter: 'نبّهني لو حد مأخر تاسك أكتر من', textSize: 'حجم الخط',
+    shortcutsHint: 'اختصارات: Ctrl+N تاسك · Ctrl+K بحث · Ctrl+Alt+Space إضافة من أي برنامج · ↑↓ تنقل · Space قفل · 1-4 تصنيف · S تمييز · Delete حذف',
+    screen: 'الشاشة', dataSec: 'البيانات', dataFolder: 'مكان حفظ البيانات', changeFolder: 'تغيير…', syncHint: 'اختار فولدر OneDrive عشان نفس البيانات تبقى على جهاز الشغل والبيت.',
+    backupsDaily: 'نسخ احتياطية تلقائية (آخر 30 يوم)', restore: 'استرجاع', confirmRestore: 'هترجع البيانات للنسخة دي. البيانات الحالية هتتحفظ في نسخة .bak. تكمل؟', tasksWord: 'تاسك',
+    addOnDay: 'تاسك في اليوم ده', upcomingRepeats: 'المتكرر الجاي', onDay: 'يوم', atDueTime: 'في وقت الـ Due', minBefore: 'دقيقة قبلها', hourBefore: 'ساعة قبلها', dayBefore: 'يوم قبلها', weekBefore: 'أسبوع قبلها',
+    dueTime: 'وقت الـ Due (اختياري)', beforeDue: 'قبل الـ Due بـ', exactTime: 'أو وقت محدد', nextNote: 'ملاحظة للمرة الجاية', nextNotePh: 'حاجة تاخد بالك منها في التاسك الجاية (هتظهر فيها وفي التذكير بتاعها)', done: 'تم',
+    newTask: 'تاسك جديد', addBtn: 'إضافة', titleRequired: 'اكتب عنوان التاسك الأول', added: 'اتضافت', open: 'افتح',
+    composerHint: 'Enter للإضافة · Esc للإغلاق', noDue: 'من غير Due', noPrio: 'من غير تصنيف',
+    matrix: 'المصفوفة', priority: 'التصنيف', unclassified: 'مش متصنفة', important: 'مهم', notImportant: 'مش مهم', urgent: 'مستعجل', notUrgent: 'مش مستعجل', sortPriority: 'الأهم أولاً', clearPriority: 'شيل التصنيف',
+    q1: 'مهم ومستعجل', q2: 'مهم ومش مستعجل', q3: 'مستعجل ومش مهم', q4: 'لا مهم ولا مستعجل',
+    q1a: 'اعملها دلوقتي', q2a: 'خطط لها', q3a: 'فوّضها', q4a: 'استغنى عنها', matrixHint: 'اسحب أي تاسك لمربع تاني عشان تغيّر تصنيفها، أو من "مش متصنفة" لأي مربع.',
+    allAreas: 'كل الأقسام', dragHint: 'سيب التاسك على قسم عشان تنقله', movedTo: 'اتنقلت إلى',
+    calHint: 'اضغط ＋ في أي يوم تضيف تاسك عليه · اسحب تاسك ليوم تاني يغيّر الـ Due · الباهت = المرات الجاية من تاسك متكررة.'
+  },
+  en: {
+    appName: 'Elfar Notes', views: 'Views', areas: 'Areas', today: 'Today', pending: 'Pending', overdue: 'Overdue',
+    starred: 'Starred', waiting: 'Pending with', closed: 'Closed', all: 'All', inbox: 'Inbox', calendar: 'Calendar',
+    addTask: 'Add a task and press Enter…', search: 'Search…', addArea: 'New area', addProject: 'New project in area',
+    start: 'Start', due: 'Due', closure: 'Closure', notSet: 'Not set', status: 'Status',
+    stPending: 'Pending', stOverdue: 'Overdue', stClosed: 'Closed', stDueToday: 'Due today',
+    subtasks: 'Subtasks', addSubtask: 'Add a subtask…', notes: 'Page / notes',
+    notesPh: 'Write anything about this task: details, links, ideas…', log: 'Follow-up log', addLog: 'What happened today?',
+    closeToday: 'Close today', reopen: 'Reopen', del: 'Delete', confirmDelTask: 'Delete this task permanently?',
+    confirmDelArea: 'Delete this area? Its tasks move to the Inbox.', waitingOn: 'Waiting on…', star: 'Star',
+    area: 'Area', noTask: 'Pick a task to open its page', emptyList: 'No tasks here', showClosed: 'Show closed',
+    allSubsDone: 'All subtasks are done. Close the task with today\'s date?', settings: 'Settings', language: 'Language',
+    widget: 'Desktop widget', showWidget: 'Show widget', onTop: 'Always on top', opacity: 'Opacity',
+    widgetShows: 'Widget shows', focus: 'Today + overdue + starred', launch: 'Open when Windows starts',
+    backup: 'Backup', export: 'Export', import: 'Import', closeBtn: 'Done', rename: 'Rename', color: 'Color',
+    name: 'Name', save: 'Save', cancel: 'Cancel', days: 'days', openedFor: 'Open for', tookDays: 'Took',
+    closedThisMonth: 'Closed this month', openTasks: 'Open', sortBy: 'Sort', sortStart: 'Oldest start',
+    sortDue: 'Nearest due', sortUpdated: 'Last updated', title: 'Task title', nothingToday: 'Nothing urgent 👌',
+    openApp: 'Open app', hide: 'Hide', prev: 'Previous', next: 'Next', importDone: 'Imported',
+    confirmImport: 'Importing replaces all current data. Continue?',
+    people: 'People', allPeople: 'All people', personPh: 'Type a name, pick or press Enter…', since: 'since', followUp: 'Log a follow-up', followedUpWith: 'Followed up with', linkedTo: 'Linked to', editPerson: 'Edit person', addPerson: 'New person', confirmDelPerson: 'Delete this person? They will be removed from all tasks.', noOne: 'Not pending with anyone', openWith: 'Open tasks with them', remove: 'Remove', personHint: 'Link people to areas/projects so they show first in suggestions.',
+    logOwner: 'Owner (optional)…', logAt: 'Time (empty = now)', me: 'Me', nowWith: 'Now with', finishedPart: 'finished their part', backWithMe: 'Back with me',
+    timeline: 'Task timeline', longest: 'Longest hold', handoff: 'Handoff', still: 'still there',
+    reminder: 'Reminder', remindPh: 'No reminder', in1h: 'In 1 hour', tomorrow9: 'Tomorrow 9am', dayBeforeDue: '1 day before due', dueMorning: 'Due day 9am', clear: 'Clear',
+    autoHide: 'Hide at screen edge, show on hover', edgeRight: 'Right', edgeLeft: 'Left', off: 'Off', widgetMode: 'Show mode',
+    about: 'About', creditBy: 'Credit', sendFeedback: 'Send feedback', feedbackHint: 'Have an idea or found a problem? Send it and it can make the next update.', version: 'Version',
+    tomorrowLbl: 'Tomorrow', nextWeek: 'In a week', repeat: 'Repeat', noRepeat: "Doesn't repeat", every: 'Every',
+    rDay: 'days', rWeek: 'weeks', rMonth: 'months', rYear: 'years', r1day: 'Every day', r1week: 'Every week', r1month: 'Every month', r1year: 'Every year',
+    undo: 'Undo', closedMsg: 'Closed', nextOn: 'next one', deleted: 'Deleted',
+    files: 'Files and links', attachFile: 'Attach file', pasteLink: 'Paste a link (SharePoint, Drive…) and press Enter', dropFiles: 'or drop files from your computer here', showInFolder: 'Show in folder',
+    searchAll: 'Search all tasks, notes, people…', report: 'Report', reportFrom: 'From', copyReport: 'Copy', exportCsv: 'Excel',
+    rClosed: 'Closed', rAdded: 'Added', rByArea: 'Closed by area', rStuck: 'Stuck with people', copied: 'Copied. Paste it into an email or Teams',
+    whatsNew: "What's new", gotIt: 'Got it',
+    upDev: 'Auto-update works in the installed app only', upChecking: 'Checking for updates…', upLatest: "You're on the latest version ✓", upDownloading: 'Downloading update', upReady: 'Update ready', upError: "Couldn't reach the update server", restartUpdate: 'Restart and update', checkNow: 'Check now', updates: 'Updates',
+    general: 'General', notifications: 'Notifications', morningSummary: 'Morning summary', nudgeAfter: 'Nudge me when someone holds a task over', textSize: 'Text size',
+    shortcutsHint: 'Shortcuts: Ctrl+N task · Ctrl+K search · Ctrl+Alt+Space add from any app · ↑↓ move · Space close · 1-4 priority · S star · Delete',
+    screen: 'Screen', dataSec: 'Data', dataFolder: 'Data folder', changeFolder: 'Change…', syncHint: 'Pick a OneDrive folder to keep the same data on your work and home computers.',
+    backupsDaily: 'Automatic backups (last 30 days)', restore: 'Restore', confirmRestore: 'Your data goes back to this backup. Current data is kept as .bak. Continue?', tasksWord: 'tasks',
+    addOnDay: 'Task on this day', upcomingRepeats: 'Upcoming repeats', onDay: 'day', atDueTime: 'At due time', minBefore: 'min before', hourBefore: 'h before', dayBefore: 'day(s) before', weekBefore: '1 week before',
+    dueTime: 'Due time (optional)', beforeDue: 'Before due', exactTime: 'or an exact time', nextNote: 'Note for next time', nextNotePh: 'Something to keep in mind for the next one (shows on it and in its reminder)', done: 'Done',
+    newTask: 'New task', addBtn: 'Add', titleRequired: 'Enter a task title first', added: 'Added', open: 'Open',
+    composerHint: 'Enter to add · Esc to close', noDue: 'No due date', noPrio: 'No priority',
+    matrix: 'Matrix', priority: 'Priority', unclassified: 'Unclassified', important: 'Important', notImportant: 'Not important', urgent: 'Urgent', notUrgent: 'Not urgent', sortPriority: 'Priority first', clearPriority: 'Clear priority',
+    q1: 'Important and urgent', q2: 'Important, not urgent', q3: 'Urgent, not important', q4: 'Not important, not urgent',
+    q1a: 'Do it now', q2a: 'Schedule it', q3a: 'Delegate it', q4a: 'Drop it', matrixHint: 'Drag a task to another box to change its priority, or from Unclassified into any box.',
+    allAreas: 'All areas', dragHint: 'Drop a task on an area to move it', movedTo: 'Moved to',
+    calHint: 'Click ＋ on a day to add a task there · drag a task to another day to change its due · faded = upcoming repeats.'
+  }
+};
+
+// Monochrome line icons (inherit text color), so the UI doesn't depend on colored emoji.
+const ICONS = {
+  today: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  pending: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  overdue: '<path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17.5v.01"/>',
+  waiting: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>',
+  closed: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.5 9"/>',
+  calendar: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  inbox: '<path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 2h6l1-2h5"/>',
+  all: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
+  pin: '<path d="M9 4h6l-1 6 3 3H7l3-3z"/><path d="M12 13v7"/>',
+  edgeRight: '<rect x="3.5" y="4" width="17" height="16" rx="2"/><path d="M15 4v16"/><path d="M9 10l2 2-2 2"/>',
+  edgeLeft: '<rect x="3.5" y="4" width="17" height="16" rx="2"/><path d="M9 4v16"/><path d="M15 10l-2 2 2 2"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6 8.5-6"/>',
+  clip: '<path d="M20 11.5l-8.2 8.2a5 5 0 0 1-7-7L13 4.5a3.4 3.4 0 0 1 4.8 4.8l-8.2 8.2a1.7 1.7 0 0 1-2.4-2.4L15 7.3"/>',
+  link: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/>',
+  file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+  download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
+  repeat: '<path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/>',
+  report: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  chevron: '<path d="M9 6l6 6-6 6"/>',
+  matrix: '<rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M12 3.5v17M3.5 12h17"/>',
+  grip: '<circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/>'
+};
+function icon(name) {
+  return `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+}
+
+// The Elfar mouse 🐭: the app's mascot and logo (fixed colors so it looks the same in light and dark).
+function mouseLogo(cls = '') {
+  return `<svg class="mouse-logo ${cls}" viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="17" cy="21" r="12" fill="#8f99a5"/><circle cx="47" cy="21" r="12" fill="#8f99a5"/>
+    <circle cx="17" cy="21" r="7" fill="#f3a6b8"/><circle cx="47" cy="21" r="7" fill="#f3a6b8"/>
+    <ellipse cx="32" cy="39" rx="20" ry="18" fill="#b9c2cc"/>
+    <ellipse cx="32" cy="45" rx="11" ry="8" fill="#d6dce3"/>
+    <circle cx="24.5" cy="35" r="3" fill="#1f1e1c"/><circle cx="39.5" cy="35" r="3" fill="#1f1e1c"/>
+    <circle cx="25.6" cy="33.9" r="1" fill="#fff"/><circle cx="40.6" cy="33.9" r="1" fill="#fff"/>
+    <ellipse cx="32" cy="42.5" rx="3.2" ry="2.5" fill="#e8798f"/>
+    <path d="M27 44l-12-3M27 46.5l-12 1M37 44l12-3M37 46.5l12 1" stroke="#6b7380" stroke-width="1.1" stroke-linecap="round"/>
+  </svg>`;
+}
+
+// Eisenhower matrix: q1 important+urgent, q2 important, q3 urgent, q4 neither.
+const QUADS = ['q1', 'q2', 'q3', 'q4'];
+const QUAD_RANK = { q1: 0, q2: 1, q3: 2, q4: 3 };
+// Row color class for open tasks (closed tasks stay neutral).
+const quadClass = (x) => (!x.closure && QUADS.includes(x.priority) ? 'quad-' + x.priority : '');
+// Matrix box first (unclassified last), then nearest due date (no due date last).
+const byPriorityThenDue = (a, b) =>
+  (QUAD_RANK[a.priority] ?? 9) - (QUAD_RANK[b.priority] ?? 9) || (a.due || '9999').localeCompare(b.due || '9999');
+
+const COLORS =['blue', 'teal', 'coral', 'purple', 'pink', 'amber', 'green', 'gray'];
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+function todayStr(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function daysBetween(a, b) {
+  const pa = new Date(a + 'T00:00:00'), pb = new Date(b + 'T00:00:00');
+  return Math.round((pb - pa) / 86400000);
+}
+
+// Status is derived, never stored: no closure date => Pending (or Overdue once due has passed).
+function statusOf(t) {
+  if (t.closure) return 'closed';
+  const td = todayStr();
+  if (t.due && t.due < td) return 'overdue';
+  if (t.due && t.due === td) return 'today';
+  return 'pending';
+}
+
+function fmtDate(s, lang) {
+  if (!s) return '';
+  const d = new Date(s + 'T00:00:00');
+  return d.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'short', year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
+}
+
+// Local date-time helpers ('YYYY-MM-DDTHH:MM', the format of <input type=datetime-local>).
+function nowLocal(d = new Date()) {
+  return `${todayStr(d)}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+function fmtTime(at, lang) {
+  if (!at || !at.includes('T')) return '';
+  return new Date(at).toLocaleTimeString(lang === 'ar' ? 'ar-EG' : 'en-GB', { hour: 'numeric', minute: '2-digit' });
+}
+function fmtDur(ms, lang) {
+  const m = Math.max(0, Math.round(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
+  const u = lang === 'ar' ? { d: 'ي', h: 'س', m: 'د' } : { d: 'd', h: 'h', m: 'm' };
+  if (d) return `${d}${u.d}${h ? ' ' + h + u.h : ''}`;
+  if (h) return `${h}${u.h}${mm ? ' ' + mm + u.m : ''}`;
+  return `${mm}${u.m}`;
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Text with clickable links (opened in the default browser by the main process).
+function linkify(s) {
+  return esc(s).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noreferrer">$1</a>');
+}
+
+function applyLang(lang) {
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+}

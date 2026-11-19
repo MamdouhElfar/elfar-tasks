@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+  <title>Elfar Notes</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><span class="logo" id="brandLogo"></span><span id="brandName"></span></div>
+      <div class="scroll">
+        <div id="scopeNav"></div>
+        <div class="sec-title"><span id="areasTitle"></span><button class="icon" id="addAreaBtn" title="+">＋</button></div>
+        <div id="areasNav"></div>
+        <div class="drag-hint small muted" id="dragHint"></div>
+        <div class="sec-title"><span id="peopleTitle"></span><button class="icon" id="addPersonBtn" title="+">＋</button></div>
+        <div id="peopleNav"></div>
+      </div>
+      <div class="stats" id="stats"></div>
+      <div class="credit" id="credit"></div>
+      <div class="foot">
+        <button class="ghost" id="settingsBtn"><span class="ico" data-ico="settings"></span> <span id="settingsLbl"></span></button>
+        <span style="flex:1"></span>
+        <button class="ghost" id="langBtn"></button>
+      </div>
+    </aside>
+    <div class="splitter" id="sideSplit" title="↔"></div>
+    <main class="main">
+      <nav class="tabs" id="tabs"></nav>
+      <div class="work">
+        <section class="list-pane">
+          <div class="list-head">
+            <h2 id="listTitle"></h2>
+            <div class="list-tools">
+              <input type="search" id="search" dir="auto">
+              <select id="personFilter"></select>
+              <select id="sort"></select>
+            </div>
+          </div>
+          <div class="list" id="list"></div>
+          <!-- Floating add button + quick-add card (bottom corner of the task area) -->
+          <div class="composer" id="composer" role="dialog"></div>
+          <button class="fab" id="fab" aria-label="Add task"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+          <div class="toast" id="toast"></div>
+        </section>
+        <div class="splitter" id="listSplit" title="↔"></div>
+        <section class="detail" id="detail"></section>
+      </div>
+    </main>
+  </div>
+  <div id="modalRoot"></div>
+  <script src="common.js"></script>
+  <script src="features.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

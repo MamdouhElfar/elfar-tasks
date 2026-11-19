@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>Elfar Notes widget</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    html, body { background: transparent; }
+    body { padding: 6px; }
+    .note { height: calc(100vh - 12px); display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--border-2); border-radius: 12px; overflow: hidden; }
+    .w-head { -webkit-app-region: drag; display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--border); background: var(--panel-2); user-select: none; }
+    .w-head b { flex: 1; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .w-head button { -webkit-app-region: no-drag; border: none; padding: 2px 6px; color: var(--text-2); }
+    .w-head button.on { color: var(--accent); }
+    .w-list { flex: 1; overflow-y: auto; padding: 6px 8px; }
+    .w-item { display: flex; gap: 8px; align-items: flex-start; padding: 6px 4px; border-bottom: 1px dashed var(--border); }
+    .w-item .t-title { white-space: normal; cursor: pointer; line-height: 1.4; }
+    .w-item .t-title:hover { color: var(--accent); }
+    .w-item .t-meta { margin-top: 2px; }
+    .w-add { border: none !important; border-top: 1px solid var(--border) !important; border-radius: 0 !important; padding: 8px 10px !important; background: var(--panel-2) !important; width: 100%; }
+    .w-empty { text-align: center; color: var(--text-3); padding: 24px 0; font-size: 13px; }
+
+    /* Edge mode: the card hides off the screen edge and a small tab stays visible; hover the tab to slide it out. */
+    .note { transition: transform var(--dur) var(--ease), opacity var(--dur) var(--ease); }
+    body.edge.collapsed[data-edge=right] .note { transform: translateX(105%); opacity: 0; }
+    body.edge.collapsed[data-edge=left] .note { transform: translateX(-105%); opacity: 0; }
+    body.edge .w-head { -webkit-app-region: no-drag; }
+    /* Mode switch: exactly one is active, shown filled */
+    .mode-seg { -webkit-app-region: no-drag; display: inline-flex; background: var(--hover); border-radius: 8px; padding: 2px; gap: 2px; }
+    .mode-seg button { display: grid; place-items: center; width: 26px; height: 22px; padding: 0 !important; border-radius: 6px; color: var(--text-3) !important; }
+    .mode-seg button svg { width: 15px; height: 15px; }
+    .mode-seg button.on { background: var(--accent); color: #fff !important; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+    .mode-seg button:not(.on):hover { background: var(--panel); color: var(--text) !important; }
+    /* The edge tab: a mouse peeking in from the screen edge, tail hanging down */
+    .peek { display: none; position: fixed; top: 6px; width: 34px; height: 74px; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+      background: var(--panel); border: 1px solid var(--border-2); cursor: pointer;
+      transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease); }
+    .peek .pk-face { width: 28px; height: 28px; display: block; }
+    .peek .pk-face svg { width: 28px; height: 28px; transition: transform var(--dur) var(--ease); }
+    .peek .pk-count { min-width: 20px; padding: 1px 5px; border-radius: 99px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 600; text-align: center; }
+    .peek.q1 .pk-count { background: #d64545; }
+    .peek .pk-tail { position: absolute; top: calc(100% - 2px); left: 50%; width: 22px; height: 78px; margin-left: -11px; overflow: visible;
+      transform-origin: 50% 0; animation: tailSway 3.2s ease-in-out infinite; }
+    .peek .pk-tail path { fill: none; stroke: #f3a6b8; stroke-width: 3.2; stroke-linecap: round; }
+    .peek:hover .pk-face svg { transform: scale(1.12) rotate(-6deg); }
+    .peek:hover .pk-tail { animation-duration: .9s; }
+    @keyframes tailSway { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+    @media (prefers-reduced-motion: reduce) { .peek .pk-tail { animation: none; } }
+    body.edge .peek { display: flex; }
+    body[data-edge=right] .peek { right: 0; border-radius: 10px 0 0 10px; }
+    body[data-edge=left] .peek { left: 0; border-radius: 0 10px 10px 0; }
+    body.edge:not(.collapsed) .peek { opacity: 0; pointer-events: none; }
+    body[data-edge=right].edge:not(.collapsed) .peek { transform: translateX(100%); }
+    body[data-edge=left].edge:not(.collapsed) .peek { transform: translateX(-100%); }
+  </style>
+</head>
+<body>
+  <div class="note">
+    <div class="w-head">
+      <b id="wTitle"></b>
+      <span class="mode-seg" role="group">
+        <button id="wPin" aria-pressed="false"></button>
+        <button id="wEdge" aria-pressed="false"></button>
+      </span>
+      <button id="wOpen" title="">↗</button>
+      <button id="wHide" title="">✕</button>
+    </div>
+    <div class="w-list" id="wList"></div>
+    <input type="text" class="w-add" id="wAdd" dir="auto">
+  </div>
+  <div class="peek" id="peek"></div>
+  <script src="common.js"></script>
+  <script src="widget.js"></script>
+</body>
+</html>
