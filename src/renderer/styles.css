@@ -483,3 +483,8 @@ textarea.notes { width: 100%; min-height: 200px; resize: vertical; line-height: 
 .pinned-note span[dir] { flex: 1; white-space: pre-wrap; }
 .pinned-note button { color: inherit; }
 #dRemindBefore { flex: 0 1 auto; font-size: 12px; padding: 3px 6px; }
+
+/* ---------- about: feedback buttons ---------- */
+.about-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.about-btns button { display: inline-flex; align-items: center; gap: 5px; }
+.about-btns .ico { width: 14px; height: 14px; }

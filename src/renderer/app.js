@@ -951,7 +951,12 @@ async function openSettings() {
       <div class="about-top">${mouseLogo('about-logo')}<div><b>${esc(info.name)}</b> <span class="muted small">${t('version')} ${info.version}</span>
         <div class="small">${t('creditBy')}: <b>${esc(info.credit)}</b></div></div></div>
       <p class="small muted">${t('feedbackHint')}</p>
-      <button id="sFeedback">${icon('mail')} ${t('sendFeedback')}</button>
+      <div class="about-btns">
+        <button id="sBug">${icon('bug')} ${t('reportBug')}</button>
+        <button id="sIdea">${icon('idea')} ${t('suggestIdea')}</button>
+        <button id="sIssues">${icon('github')} ${t('seeRequests')}</button>
+        <button id="sFeedback">${icon('mail')} ${t('sendFeedback')}</button>
+      </div>
     </div>
     <div class="actions"><button class="primary" id="mCancel">${t('closeBtn')}</button></div>
   </div></div>`;
@@ -961,6 +966,9 @@ async function openSettings() {
     if (id === 'mBg' || id === 'mCancel') return closeModal();
     if (e.target.dataset.lang) { data.settings.lang = e.target.dataset.lang; save(); renderAll(); openSettings(); }
     if (id === 'sFeedback') window.api.sendFeedback();
+    if (id === 'sBug') window.api.openGithub('bug');
+    if (id === 'sIdea') window.api.openGithub('idea');
+    if (id === 'sIssues') window.api.openGithub('list');
     if (id === 'sExport') window.api.exportData();
     if (id === 'sCsv') window.api.exportCsv(tasksCsv(data.tasks), 'elfar-notes-tasks');
     if (id === 'sOpenBackups') window.api.openBackups();

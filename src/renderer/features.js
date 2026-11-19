@@ -299,6 +299,10 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.0.1': {
+    ar: ['زرار "بلّغ عن مشكلة" و"اقترح فكرة" في الإعدادات ← عن التطبيق، بيفتحوا صفحة التطبيق على GitHub', 'نفس الاختيار موجود في أيقونة التطبيق جنب الساعة', 'التحديثات بتنزل لوحدها من GitHub'],
+    en: ['"Report a problem" and "Suggest an idea" buttons in Settings → About, opening the app\'s GitHub page', 'The same option is in the tray icon menu', 'Updates now arrive automatically from GitHub']
+  },
   '1.0.0': {
     ar: ['تاسكات متكررة (يومي / أسبوعي / شهري / سنوي)', 'تراجع (Undo) بعد القفل أو الحذف', 'إضافة سريعة من أي برنامج: Ctrl+Alt+Space', 'بحث في كل حاجة: Ctrl+K', 'ملفات ولينكات على التاسك', 'ملخص الصبح ومتابعة الأشخاص', 'تقرير أسبوعي ونسخه أو تصديره Excel', 'نسخة احتياطية تلقائية كل يوم ومزامنة عن طريق OneDrive', 'تحكم في حجم الخط: Ctrl + / Ctrl -'],
     en: ['Repeating tasks (daily / weekly / monthly / yearly)', 'Undo after closing or deleting', 'Quick add from any app: Ctrl+Alt+Space', 'Search everything: Ctrl+K', 'Files and links on tasks', 'Morning summary and follow-up nudges', 'Weekly report, copy or export to Excel', 'Automatic daily backups and OneDrive sync', 'Text size: Ctrl + / Ctrl -']

@@ -1,0 +1,20 @@
+name: "💡 فكرة أو طلب / Suggest an idea"
+description: "حاجة نفسك تبقى في التطبيق / Something you'd like the app to do"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        قبل ما تكتب، بُص على الطلبات اللي موجودة. لو لقيت فكرتك، اضغط 👍 عليها بدل ما تكتبها تاني.
+        Before posting, check the open requests. If yours is there, add a 👍 to it instead.
+  - type: textarea
+    id: idea
+    attributes:
+      label: "الفكرة / The idea"
+      placeholder: "مثلًا: عايز أقدر أعمل لون لكل Area"
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: "هتفيدك في إيه؟ / How would it help you?"

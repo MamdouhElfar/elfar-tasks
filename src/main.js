@@ -7,6 +7,7 @@ const store = require('./store');
 const APP_NAME = 'Elfar Notes';
 const CREDIT = 'Mamdouh Elfar';
 const FEEDBACK_EMAIL = 'mamdouhelfar@gmail.com';
+const REPO_URL = 'https://github.com/MamdouhElfar/elfar-notes';
 const QUICK_ADD_KEYS = ['CommandOrControl+Alt+Space', 'CommandOrControl+Shift+Space', 'CommandOrControl+Alt+N'];
 let quickKeyInUse = null;
 const prettyKey = (k) => (k || '').replace('CommandOrControl', 'Ctrl');
@@ -230,6 +231,7 @@ function refreshTray() {
     { label: (ar() ? 'إضافة سريعة' : 'Quick add') + (quickKeyInUse ? '   ' + prettyKey(quickKeyInUse) : ''), click: showQuickAdd },
     { label: ar() ? 'الويدجت على سطح المكتب' : 'Desktop widget', type: 'checkbox', checked: wv, click: () => setWidgetVisible(!wv) },
     { type: 'separator' },
+    { label: ar() ? 'بلّغ عن مشكلة / اقترح فكرة' : 'Report a problem / suggest', click: () => openGithub('list') },
     { label: ar() ? 'خروج' : 'Quit', click: () => { quitting = true; app.quit(); } }
   ]));
 }
@@ -365,6 +367,15 @@ ipcMain.handle('app:feedback', () => {
   const body = `\n\n\n---\nApp version: ${app.getVersion()}\nWindows: ${os.release()}\nLanguage: ${store.get().settings.lang}`;
   shell.openExternal(`mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
 });
+// GitHub issue forms: the "version" field is filled in from the link.
+function openGithub(kind) {
+  const v = encodeURIComponent(app.getVersion());
+  const url = kind === 'bug' ? `${REPO_URL}/issues/new?template=bug.yml&version=${v}`
+    : kind === 'idea' ? `${REPO_URL}/issues/new?template=idea.yml`
+    : `${REPO_URL}/issues`;
+  shell.openExternal(url);
+}
+ipcMain.handle('app:github', (e, kind) => openGithub(kind));
 ipcMain.handle('app:login-item', (e, enabled) => {
   // In dev (npm start) Electron itself must be told which app folder to open.
   const args = app.isPackaged ? ['--hidden'] : [app.getAppPath(), '--hidden'];
