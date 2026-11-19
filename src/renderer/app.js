@@ -258,7 +258,13 @@ function renderList() {
   const list = currentTasks();
   // Pending: all / on me / with others.
   const subBar = ui.view === 'pending' ? pendingSubBar() : '';
-  if (!list.length) { $('list').innerHTML = subBar + `<div class="empty">${t('emptyList')}</div>`; return; }
+  // Pending › All: tasks that haven't started yet sit at the bottom, faded, so a folder
+  // never looks empty while it still has work coming.
+  const later = ui.view === 'pending' && ui.pendingSub === 'all' && !ui.search.trim()
+    ? data.tasks.filter((x) => inScope(x) && statusOf(x) === 'scheduled' && (!ui.person || isPendingWith(x, ui.person))).sort((a, b) => a.start.localeCompare(b.start))
+    : [];
+  const laterHtml = later.length ? `<div class="group-title later-title">${icon('calendar')} ${t('later')} · ${later.length}</div><div class="later-rows">${later.map(rowHtml).join('')}</div>` : '';
+  if (!list.length) { $('list').innerHTML = subBar + (laterHtml || `<div class="empty">${t('emptyList')}</div>`); return; }
   // Today: overdue first, then due today, then starred ones that aren't due yet.
   if (ui.view === 'today') {
     const sec = (title, cls, xs) => (xs.length ? `<div class="group-title ${cls}">${title} · ${xs.length}</div>${xs.map(rowHtml).join('')}` : '');
@@ -281,7 +287,7 @@ function renderList() {
     $('list').innerHTML = subBar + $('list').innerHTML;
     return;
   }
-  $('list').innerHTML = subBar + list.map(rowHtml).join('');
+  $('list').innerHTML = subBar + list.map(rowHtml).join('') + laterHtml;
 }
 
 function pendingSubBar() {
@@ -1201,7 +1207,15 @@ function bind() {
     const sd = e.target.closest('[data-sub-del]');
     if (sd) { x.subtasks = x.subtasks.filter((s) => s.id !== sd.dataset.subDel); touch(x); return refresh(); }
     const ld = e.target.closest('[data-log-del]');
-    if (ld) { x.log = x.log.filter((l) => l.id !== ld.dataset.logDel); touch(x); return refresh(); }
+    if (ld) {
+      // The follow-up log is history, so removing an entry asks first.
+      const entry = x.log.find((l) => l.id === ld.dataset.logDel);
+      askConfirm({ title: t('confirmDelLog'), text: entry ? `${fmtDate(entry.date, lang())} · ${entry.text}` : '', ok: t('del'), danger: true }).then((yes) => {
+        if (!yes) return;
+        x.log = x.log.filter((l) => l.id !== ld.dataset.logDel); touch(x); refresh();
+      });
+      return;
+    }
     const rm = e.target.closest('[data-remind]');
     if (rm) {
       e.preventDefault();

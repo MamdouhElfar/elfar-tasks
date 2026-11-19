@@ -380,6 +380,10 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.4.1': {
+    ar: ['التاسكات المجدولة (اللي لسه ميعادها مجاش) بقت بتظهر تحت في Pending ← الكل، باهتة، عشان الفولدر ميبانش فاضي', 'مسح سطر من سجل المتابعة بقى بيسأل الأول'],
+    en: ['Scheduled tasks (not started yet) now show at the bottom of Pending › All, faded, so a folder never looks empty', 'Deleting an entry from the follow-up log now asks first']
+  },
   '1.4.0': {
     ar: ['فولدرات فرعية جوه الفولدرات الفرعية (لحد ثلاث مستويات)', 'لما مفيش حاجة فاضلة النهارده، الفار اللي فوق في الجنب بيبقى مبسوط وماسك حتة جبنة رومي 🧀', 'لما تقفل آخر تاسك في يومك، فار بيطلع من تحت ويعملك Like 👍'],
     en: ['Subfolders inside subfolders (up to three levels)', 'When nothing is left for today, the mouse at the top of the sidebar is happy and holds a piece of cheese 🧀', 'Close the last task of your day and a mouse pops up from the bottom with a thumbs-up 👍']

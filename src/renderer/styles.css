@@ -721,3 +721,9 @@ input[type=date], input[type=time], input[type=datetime-local] { cursor: pointer
 @media (prefers-reduced-motion: reduce) {
   .cheer-mouse, .cheer-card, .cheer-bits i, .cheer-svg * , .brand .logo .mouse-logo.happy, .brand .logo .mouse-logo.happy * { animation-duration: .01s !important; animation-iteration-count: 1 !important; }
 }
+
+/* ---------- 1.4.1: scheduled tasks at the bottom of Pending ---------- */
+.later-title { margin-top: 18px; display: flex; align-items: center; gap: 6px; }
+.later-title .ico { width: 13px; height: 13px; }
+.later-rows .task-row { opacity: .72; }
+.later-rows .task-row:hover, .later-rows .task-row.sel { opacity: 1; }
