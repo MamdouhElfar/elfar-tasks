@@ -488,3 +488,14 @@ textarea.notes { width: 100%; min-height: 200px; resize: vertical; line-height: 
 .about-btns { display: flex; flex-wrap: wrap; gap: 6px; }
 .about-btns button { display: inline-flex; align-items: center; gap: 5px; }
 .about-btns .ico { width: 14px; height: 14px; }
+
+/* ---------- tabs fit instead of scrolling; "No area" hides when empty ---------- */
+.tabs { overflow: hidden; }
+.tabs.compact .tab:not(.active) .tab-label { display: none; }
+.tabs.compact-all .tab .tab-label { display: none; }
+.tabs.compact .tab { padding-inline: 11px; }
+.tabs.tight .tab { padding-inline: 7px; gap: 4px; }
+.tabs.tight .tab-sep { margin: 0 4px; }
+#scopeNav .nav-item.empty-inbox { display: none; }
+body.is-dragging #scopeNav .nav-item.empty-inbox { display: flex; }
+.tabs.compact-boards .tab.board:not(.active) .tab-label { display: none; }

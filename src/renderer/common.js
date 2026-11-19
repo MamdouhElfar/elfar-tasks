@@ -2,14 +2,14 @@
 const I18N = {
   ar: {
     appName: 'Elfar Notes', views: 'العرض', areas: 'الأقسام', today: 'النهارده', pending: 'Pending', overdue: 'متأخرة',
-    starred: 'مميزة', waiting: 'معلّق عند', closed: 'مقفولة', all: 'الكل', inbox: 'الوارد', calendar: 'التقويم',
+    starred: 'مميزة', waiting: 'معلّق عند', closed: 'مقفولة', all: 'الكل', inbox: 'من غير قسم', calendar: 'التقويم',
     addTask: 'أضف تاسك واضغط Enter…', search: 'بحث…', addArea: 'قسم جديد', addProject: 'مشروع جديد جوه القسم',
     start: 'البداية', due: 'الموعد النهائي', closure: 'الإغلاق', notSet: 'مش محدد', status: 'الحالة',
     stPending: 'Pending', stOverdue: 'متأخرة', stClosed: 'مقفولة', stDueToday: 'النهارده',
     subtasks: 'المهام الفرعية', addSubtask: 'أضف مهمة فرعية…', notes: 'الصفحة / الملاحظات',
     notesPh: 'اكتب أي حاجة تخص التاسك: تفاصيل، لينكات، أفكار…', log: 'سجل المتابعة', addLog: 'حصل إيه النهارده؟',
     closeToday: 'اقفل النهارده', reopen: 'افتح تاني', del: 'حذف', confirmDelTask: 'حذف التاسك ده نهائياً؟',
-    confirmDelArea: 'حذف القسم؟ التاسكات اللي فيه هتتنقل للوارد.', waitingOn: 'مستني رد من…', star: 'تمييز',
+    confirmDelArea: 'حذف القسم؟ التاسكات اللي فيه هتبقى "من غير قسم".', waitingOn: 'مستني رد من…', star: 'تمييز',
     area: 'القسم', noTask: 'اختار تاسك عشان تفتح صفحته', emptyList: 'مفيش تاسكات هنا', showClosed: 'اعرض المقفول',
     allSubsDone: 'كل المهام الفرعية خلصت. تقفل التاسك بتاريخ النهارده؟', settings: 'الإعدادات', language: 'اللغة',
     widget: 'ويدجت سطح المكتب', showWidget: 'اعرض الويدجت', onTop: 'فوق كل الشبابيك', opacity: 'الشفافية',
@@ -45,19 +45,19 @@ const I18N = {
     matrix: 'المصفوفة', priority: 'التصنيف', unclassified: 'مش متصنفة', important: 'مهم', notImportant: 'مش مهم', urgent: 'مستعجل', notUrgent: 'مش مستعجل', sortPriority: 'الأهم أولاً', clearPriority: 'شيل التصنيف',
     q1: 'مهم ومستعجل', q2: 'مهم ومش مستعجل', q3: 'مستعجل ومش مهم', q4: 'لا مهم ولا مستعجل',
     q1a: 'اعملها دلوقتي', q2a: 'خطط لها', q3a: 'فوّضها', q4a: 'استغنى عنها', matrixHint: 'اسحب أي تاسك لمربع تاني عشان تغيّر تصنيفها، أو من "مش متصنفة" لأي مربع.',
-    allAreas: 'كل الأقسام', dragHint: 'سيب التاسك على قسم عشان تنقله', movedTo: 'اتنقلت إلى',
+    allAreas: 'كل التاسكات', dragHint: 'سيب التاسك على قسم عشان تنقله', movedTo: 'اتنقلت إلى',
     calHint: 'اضغط ＋ في أي يوم تضيف تاسك عليه · اسحب تاسك ليوم تاني يغيّر الـ Due · الباهت = المرات الجاية من تاسك متكررة.'
   },
   en: {
     appName: 'Elfar Notes', views: 'Views', areas: 'Areas', today: 'Today', pending: 'Pending', overdue: 'Overdue',
-    starred: 'Starred', waiting: 'Pending with', closed: 'Closed', all: 'All', inbox: 'Inbox', calendar: 'Calendar',
+    starred: 'Starred', waiting: 'Pending with', closed: 'Closed', all: 'All', inbox: 'No area', calendar: 'Calendar',
     addTask: 'Add a task and press Enter…', search: 'Search…', addArea: 'New area', addProject: 'New project in area',
     start: 'Start', due: 'Due', closure: 'Closure', notSet: 'Not set', status: 'Status',
     stPending: 'Pending', stOverdue: 'Overdue', stClosed: 'Closed', stDueToday: 'Due today',
     subtasks: 'Subtasks', addSubtask: 'Add a subtask…', notes: 'Page / notes',
     notesPh: 'Write anything about this task: details, links, ideas…', log: 'Follow-up log', addLog: 'What happened today?',
     closeToday: 'Close today', reopen: 'Reopen', del: 'Delete', confirmDelTask: 'Delete this task permanently?',
-    confirmDelArea: 'Delete this area? Its tasks move to the Inbox.', waitingOn: 'Waiting on…', star: 'Star',
+    confirmDelArea: 'Delete this area? Its tasks will have no area.', waitingOn: 'Waiting on…', star: 'Star',
     area: 'Area', noTask: 'Pick a task to open its page', emptyList: 'No tasks here', showClosed: 'Show closed',
     allSubsDone: 'All subtasks are done. Close the task with today\'s date?', settings: 'Settings', language: 'Language',
     widget: 'Desktop widget', showWidget: 'Show widget', onTop: 'Always on top', opacity: 'Opacity',
@@ -93,7 +93,7 @@ const I18N = {
     matrix: 'Matrix', priority: 'Priority', unclassified: 'Unclassified', important: 'Important', notImportant: 'Not important', urgent: 'Urgent', notUrgent: 'Not urgent', sortPriority: 'Priority first', clearPriority: 'Clear priority',
     q1: 'Important and urgent', q2: 'Important, not urgent', q3: 'Urgent, not important', q4: 'Not important, not urgent',
     q1a: 'Do it now', q2a: 'Schedule it', q3a: 'Delegate it', q4a: 'Drop it', matrixHint: 'Drag a task to another box to change its priority, or from Unclassified into any box.',
-    allAreas: 'All areas', dragHint: 'Drop a task on an area to move it', movedTo: 'Moved to',
+    allAreas: 'All tasks', dragHint: 'Drop a task on an area to move it', movedTo: 'Moved to',
     calHint: 'Click ＋ on a day to add a task there · drag a task to another day to change its due · faded = upcoming repeats.'
   }
 };

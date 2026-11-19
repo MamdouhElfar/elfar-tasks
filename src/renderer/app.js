@@ -120,17 +120,34 @@ function renderAll() {
 function renderTabs() {
   const tab = (v) => {
     const n = v.noCount ? 0 : data.tasks.filter((x) => inScope(x) && v.test(x) && (!ui.person || isPendingWith(x, ui.person))).length;
-    return `<button class="tab ${v.board ? 'board' : ''} ${ui.view === v.id ? 'active' : ''}" data-view="${v.id}">
-      ${icon(v.id)}<span>${esc(t(v.id))}</span>${n ? `<span class="count ${v.cls || ''}">${n}</span>` : ''}</button>`;
+    return `<button class="tab ${v.board ? 'board' : ''} ${ui.view === v.id ? 'active' : ''}" data-view="${v.id}" title="${esc(t(v.id))}">
+      ${icon(v.id)}<span class="tab-label">${esc(t(v.id))}</span>${n ? `<span class="count ${v.cls || ''}">${n}</span>` : ''}</button>`;
   };
   $('tabs').innerHTML = `<div class="tab-group">${VIEWS.filter((v) => !v.board).map(tab).join('')}</div>
     <span class="tab-sep"></span>
     <div class="tab-group boards">${VIEWS.filter((v) => v.board).map(tab).join('')}</div>`;
+  fitTabs();
   // Tools that don't apply to a view are hidden instead of sitting there doing nothing.
   const tools = { search: !['calendar', 'report'].includes(ui.view), sort: !['matrix', 'calendar', 'report'].includes(ui.view) };
   $('search').hidden = !tools.search;
   $('sort').hidden = !tools.sort;
 }
+
+// The tabs never scroll: when they don't fit (narrow window or big text) they drop
+// their labels step by step, keeping the open tab's label for as long as possible.
+function fitTabs() {
+  const el = $('tabs');
+  const over = () => el.scrollWidth > el.clientWidth + 1;
+  el.classList.remove('compact-boards', 'compact', 'compact-all', 'tight');
+  if (!over()) return;
+  el.classList.add('compact-boards');
+  if (!over()) return;
+  el.classList.add('compact');
+  if (!over()) return;
+  el.classList.add('compact-all');
+  if (over()) el.classList.add('tight');
+}
+if (window.ResizeObserver) new ResizeObserver(() => fitTabs()).observe(document.getElementById('tabs'));
 
 // Folders start collapsed. They also open while you're inside one of their projects,
 // or while you hover over them during a drag.
@@ -152,7 +169,8 @@ function renderSidebar() {
 
   $('scopeNav').innerHTML =
     item('all', `${icon('all')}<span>${t('allAreas')}</span>`) +
-    item('inbox', `${icon('inbox')}<span>${t('inbox')}</span>`);
+    // "No area" only shows when it has tasks (or while dragging, as a drop target).
+    item('inbox', `${icon('inbox')}<span>${t('inbox')}</span>`, openCount('inbox') || ui.scope === 'inbox' ? '' : 'empty-inbox');
 
   $('areasNav').innerHTML = topAreas().map((a) => {
     const kids = childrenOf(a.id);

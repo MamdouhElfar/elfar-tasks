@@ -299,6 +299,10 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.0.2': {
+    ar: ['التابات بقت تتظبط لوحدها مع حجم الخط وعرض الشباك: لو مفيش مكان بتبقى أيقونات بس، ومفيش Scroll', '"كل الأقسام" بقى اسمه "كل التاسكات"', '"الوارد" بقى اسمه "من غير قسم"، وبيظهر بس لما يكون فيه تاسكات'],
+    en: ['Tabs now fit any text size or window width: they turn into icons when space is short, with no scrolling', '"All areas" is now "All tasks"', '"Inbox" is now "No area", and only shows when it has tasks']
+  },
   '1.0.1': {
     ar: ['زرار "بلّغ عن مشكلة" و"اقترح فكرة" في الإعدادات ← عن التطبيق، بيفتحوا صفحة التطبيق على GitHub', 'نفس الاختيار موجود في أيقونة التطبيق جنب الساعة', 'التحديثات بتنزل لوحدها من GitHub'],
     en: ['"Report a problem" and "Suggest an idea" buttons in Settings → About, opening the app\'s GitHub page', 'The same option is in the tray icon menu', 'Updates now arrive automatically from GitHub']
