@@ -1,7 +1,7 @@
 {
   "name": "elfar-tasks",
   "productName": "Elfar Tasks",
-  "version": "1.14.1",
+  "version": "1.15.0",
   "description": "Elfar Tasks: a desktop to-do app with areas, subtasks, a priority matrix, follow-ups, reminders and a desktop widget",
   "main": "src/main.js",
   "scripts": {

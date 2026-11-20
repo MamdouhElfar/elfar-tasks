@@ -388,6 +388,18 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.15.0': {
+    ar: ['شاشة التركيز اتعملت من جديد: دايرة أوضح، والفار بالساعة في النص، وأزرار دواير (وقفة في النص، و+5 ووقف على الجنب)، و"التاسك خلصت" تحت',
+      'زرار "▶ ركّز" على الكارت بقى يظهر في آخر الكارت لما الماوس يعدّي عليه',
+      'الإعدادات وأي نافذة بتفتح فوق شاشة التركيز مش وراها',
+      'الوضع الغامق بقى رمادي هادي ومريح بدل الأسود التقيل',
+      'رتّب الفولدرات بالسحب: اسحب الفولدر لفوق أو لتحت، أو حطّه على فولدر تاني يبقى جواه'],
+    en: ['A new focus screen: a clearer ring, the mouse with its stopwatch in the middle, round buttons (pause in the middle, +5 and stop on the sides), and "Task done" below',
+      'The "▶ Focus" button on a card now shows at the end of the card when you hover it',
+      'Settings and other dialogs open above the focus screen, not behind it',
+      'Dark mode is a calm graphite instead of heavy black',
+      'Reorder folders by dragging: drag a folder up or down, or onto another folder to put it inside']
+  },
   '1.14.1': {
     ar: ['وضع التركيز: كل مرة تبدأ بتختار المدة: 15 أو 25 أو 45 دقيقة، أو تكتب الوقت اللي يناسبك. وآخر مدة اخترتها بتتعلّم',
       'زرار الوقفة بقى علامة بس من غير كلمة',

@@ -204,6 +204,7 @@ function renderSidebar() {
     const chev = `<span class="chev ${open ? 'open' : ''} ${kids.length ? '' : 'no-kids'}" data-toggle="${a.id}">${icon('chevron')}</span>`;
     const lead = depth ? chev : `${chev}<span class="dot" style="background:${areaColor(a)}"></span>`;
     return item(a.id, `${lead}<span dir="auto">${esc(a.name)}</span>`, depth ? `child d${Math.min(depth, MAX_DEPTH)}` : '')
+        .replace('<div class="nav-item', `<div draggable="true" title="${esc(t('dragFolder'))}" class="nav-item`)
         .replace('</div>', `<button class="edit" data-edit-area="${a.id}">✎</button></div>`) +
       (kids.length ? `<div class="kids ${open ? 'open' : ''}" data-kids="${a.id}"><div>${kids.map((c) => node(c, depth + 1)).join('')}</div></div>` : '');
   };
@@ -259,7 +260,7 @@ function rowHtml(x) {
         ${isOpen(x) ? pendingOf(x).map((pw) => `<span class="pill person" title="${t('since')} ${fmtDate(pw.since, lang())}">${icon('user')} <bdi>${esc(personById(pw.personId).name)}</bdi> · ${sinceWord(pw.since)}</span>`).join('') : ''}
         ${showArea ? `<span class="pill area">${esc(areaLabel(x.areaId))}</span>` : ''}
       </div>
-    </div>${isOpen(x) && !focusOn ? `<button class="row-focus" data-focus="${x.id}" title="${t('fStartTip')}">▶</button>` : ''}</div>`;
+    </div>${isOpen(x) && !focusOn ? `<button class="row-focus" data-focus="${x.id}" title="${t('fStartTip')}">▶ ${t('fShort')}</button>` : ''}</div>`;
 }
 
 function renderList() {
@@ -1006,6 +1007,69 @@ function bindDragAndDrop() {
   });
 }
 
+// ---------------- reordering folders ----------------
+// Drag a folder in the sidebar: drop on the top or bottom edge of another folder to put it
+// before / after it (same level), or on its middle to put it inside (as a subfolder).
+let dragAreaId = null;
+const treeHeight = (id) => { const k = childrenOf(id); return k.length ? 1 + Math.max(...k.map((c) => treeHeight(c.id))) : 0; };
+function bindFolderDrag() {
+  const clear = () => document.querySelectorAll('.drop-before, .drop-after, .drop-inside, .dragging-area').forEach((el) => el.classList.remove('drop-before', 'drop-after', 'drop-inside', 'dragging-area'));
+  const spot = (e) => {
+    if (!dragAreaId || !e.target.closest) return null;
+    const el = e.target.closest('#areasNav [data-scope]');
+    if (!el) return null;
+    const id = el.dataset.scope;
+    if (id === dragAreaId || descendantsOf(dragAreaId).includes(id)) return null;
+    const r = el.getBoundingClientRect(), f = (e.clientY - r.top) / r.height;
+    const h = treeHeight(dragAreaId);
+    let pos = f < 0.3 ? 'before' : f > 0.7 ? 'after' : 'inside';
+    if (pos === 'inside' && depthOf(id) + 1 + h > MAX_DEPTH) pos = f < 0.5 ? 'before' : 'after';
+    if (pos !== 'inside' && depthOf(id) + h > MAX_DEPTH) return null;
+    return { el, id, pos };
+  };
+  document.addEventListener('dragstart', (e) => {
+    const el = e.target.closest && e.target.closest('#areasNav [data-scope][draggable=true]');
+    if (!el) return;
+    dragAreaId = el.dataset.scope;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', 'folder');
+    el.classList.add('dragging-area');
+    document.body.classList.add('is-dragging-folder');
+  });
+  document.addEventListener('dragover', (e) => {
+    if (!dragAreaId) return;
+    const s = spot(e);
+    document.querySelectorAll('.drop-before, .drop-after, .drop-inside').forEach((el) => el.classList.remove('drop-before', 'drop-after', 'drop-inside'));
+    if (!s) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    s.el.classList.add('drop-' + s.pos);
+  });
+  document.addEventListener('drop', (e) => {
+    if (!dragAreaId) return;
+    const s = spot(e);
+    const a = areaById(dragAreaId);
+    if (s && a) {
+      e.preventDefault();
+      const target = areaById(s.id);
+      data.areas.splice(data.areas.indexOf(a), 1);
+      if (s.pos === 'inside') {
+        a.parentId = s.id;
+        data.areas.push(a);
+        if (!isExpanded(s.id)) toggleExpanded(s.id);
+      } else {
+        a.parentId = target.parentId || null;
+        const i = data.areas.indexOf(target);
+        data.areas.splice(s.pos === 'before' ? i : i + 1, 0, a);
+      }
+      save();
+    }
+    dragAreaId = null; clear(); document.body.classList.remove('is-dragging-folder');
+    refresh();
+  });
+  document.addEventListener('dragend', () => { if (!dragAreaId) return; dragAreaId = null; clear(); document.body.classList.remove('is-dragging-folder'); });
+}
+
 // ---------------- modals ----------------
 function closeModal() {
   const bg = $('modalRoot').firstElementChild;
@@ -1515,6 +1579,7 @@ function bind() {
     if (e.ctrlKey && e.key.toLowerCase() === 'f') { e.preventDefault(); $('search').focus(); }
   });
   bindDragAndDrop();
+  bindFolderDrag();
   bindKeyboard();
   bindAttachments();
   bindNotes();

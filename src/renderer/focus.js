@@ -56,6 +56,18 @@ function focusHead(s) {
   if (m === 'ended') return `🎉 ${t('fEnded').replace('{n}', s.f.mins)}`;
   return `☕ ${t('fBreakOver')}`;
 }
+// The big screen's controls: one large main button (pause / resume / another round) between two small ones.
+function focusControls(s) {
+  const { f } = s;
+  const c = (what, label, cls, tip) => `<button class="fc ${cls}" dir="ltr" data-fdo="${what}" title="${esc(tip)}" aria-label="${esc(tip)}">${label}</button>`;
+  const P = '<svg viewBox="0 0 24 24"><rect x="6.5" y="5" width="4" height="14" rx="1.4"/><rect x="13.5" y="5" width="4" height="14" rx="1.4"/></svg>';
+  const R = '<svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg>';
+  const S = '<svg viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/></svg>';
+  if (f.mode === 'work') return c('add5', '+5', 'small', t('fAdd5')) + (s.running ? c('pause', P, 'main', t('fPause')) : c('resume', R, 'main', t('fResume'))) + c('stop', S, 'small', t('fStop'));
+  if (f.mode === 'break') return c('more', R, 'main', t('fSkipBreak')) + c('stop', S, 'small', t('fStop'));
+  if (f.mode === 'ended') return c('break', '☕', 'small', `${t('fBreak')} ${data.settings.breakMins || 5} ${t('minShort')}`) + c('more', R, 'main', `${t('fMore')} ${data.settings.focusMins || 25} ${t('minShort')}`) + c('stop', S, 'small', t('fEnough'));
+  return c('more', R, 'main', t('fBack')) + c('stop', S, 'small', t('fEnough'));
+}
 const nextStepHtml = (s, big) => s.next
   ? `<label class="f-next ${big ? 'big' : ''}"><input type="checkbox" data-fnext="${s.next.id}"><span><small>${t('nextStep')}</small><span dir="auto">${esc(s.next.title)}</span></span></label>`
   : big ? `<div class="f-next none small muted">${t('fNoSteps')}</div>` : '';
@@ -77,28 +89,36 @@ function renderFocus(force) {
   const timing = s.f.mode === 'work' || s.f.mode === 'break';
   if (force || sig !== focusSig) {
     focusSig = sig;
-    bar.className = `focus-bar on mode-${s.f.mode} ${s.running ? 'running' : ''}`;
+    // While the big screen is open the bar steps aside, so the time isn't shown twice.
+    bar.className = `focus-bar on mode-${s.f.mode} ${s.running ? 'running' : ''} ${ui.focusView ? 'under-view' : ''}`;
     bar.innerHTML = `<span class="fb-mouse">${mouseLogo('fb-logo', s.f.mode === 'ended' ? 'happy' : s.running ? 'timer' : '')}</span>
       <div class="fb-main"><small>${focusHead(s)}</small><b dir="auto" data-fopen>${esc(s.x.title)}</b></div>
       ${s.f.mode === 'work' ? nextStepHtml(s) : ''}
       ${timing ? `<div class="fb-time"><b id="fbClock">${fmtClock(s.left)}</b><i><em id="fbProg" style="width:${pct * 100}%"></em></i></div>` : ''}
       <div class="fb-acts">${focusButtons(s)}<button class="icon fb-expand" data-fview title="${t('fExpand')}">⤢</button></div>`;
-    const R = 92, C = 2 * Math.PI * R;
+    const R = 100, C = 2 * Math.PI * R;
     const subs = (s.x.subtasks || []);
+    const later = subs.filter((y) => !y.done && (!s.next || y.id !== s.next.id));
     view.classList.toggle('on', ui.focusView);
+    view.className = `focus-view mode-${s.f.mode} ${ui.focusView ? 'on' : ''}`;
     view.innerHTML = !ui.focusView ? '' : `<div class="fv-card">
-      <button class="icon fv-min" data-fview title="${t('fMinimize')}">⤡ ${t('fMinimize')}</button>
+      <button class="fv-min" data-fview title="${t('fMinimize')}">⤡ ${t('fMinimize')}</button>
       <div class="fv-head">${focusHead(s)}</div>
-      <h2 dir="auto">${esc(s.x.title)}</h2>
-      <div class="fv-ring ${s.f.mode}">
-        <svg viewBox="0 0 220 220"><circle cx="110" cy="110" r="${R}" class="bg"/><circle id="fvArc" cx="110" cy="110" r="${R}" class="fg" stroke-dasharray="${C}" stroke-dashoffset="${C * pct}"/></svg>
-        <div class="fv-clock"><b id="fvClock">${timing ? fmtClock(s.left) : '✓'}</b><small>${timing ? `${t('fOf')} ${s.f.mins} ${t('minShort')}` : ''}</small></div>
+      <h2 dir="auto" data-fopen>${esc(s.x.title)}</h2>
+      <div class="fv-ring ${s.f.mode} ${s.running ? 'running' : ''}">
+        <svg viewBox="0 0 240 240"><defs><linearGradient id="fvGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="g1"/><stop offset="1" class="g2"/></linearGradient></defs>
+          <circle cx="120" cy="120" r="${R}" class="bg"/><circle id="fvArc" cx="120" cy="120" r="${R}" class="fg" stroke="url(#fvGrad)" stroke-dasharray="${C}" stroke-dashoffset="${C * pct}"/></svg>
+        <div class="fv-clock"><span class="fv-mouse">${mouseLogo('fv-logo', s.f.mode === 'ended' ? 'happy' : s.running ? 'timer' : '')}</span>
+          <b id="fvClock">${timing ? fmtClock(s.left) : '✓'}</b><small>${timing ? `${t('fOf')} ${s.f.mins} ${t('minShort')}` : t('fNice')}</small></div>
       </div>
-      ${s.f.mode === 'work' || s.f.mode === 'ended' ? nextStepHtml(s, true) : ''}
-      ${subs.length > 1 ? `<div class="fv-steps">${subs.filter((y) => !y.done && (!s.next || y.id !== s.next.id)).slice(0, 4).map((y) => `<div dir="auto">○ ${esc(y.title)}</div>`).join('')}</div>` : ''}
-      <input type="text" class="fv-add" id="fvAdd" dir="auto" placeholder="＋ ${t('fAddStep')}">
-      <div class="fv-acts">${focusButtons(s, true)}</div>
-      ${focusMinsOf(s.x) ? `<p class="small muted">${t('fSoFar')} ${focusTimeLabel(focusMinsOf(s.x))}</p>` : ''}
+      <div class="fv-ctrls">${focusControls(s)}</div>
+      ${s.f.mode !== 'break' && s.f.mode !== 'breakEnded' ? `<div class="fv-work">
+        ${nextStepHtml(s, true)}
+        ${later.length ? `<div class="fv-steps">${later.slice(0, 4).map((y) => `<div dir="auto"><i></i>${esc(y.title)}</div>`).join('')}${later.length > 4 ? `<div class="muted">+${later.length - 4}</div>` : ''}</div>` : ''}
+        <input type="text" class="fv-add" id="fvAdd" dir="auto" placeholder="＋ ${t('fAddStep')}">
+      </div>` : ''}
+      <div class="fv-foot"><button class="fv-done" data-fdo="done">✓ ${t('fTaskDone')}</button>
+        ${focusMinsOf(s.x) ? `<span>⏱ ${t('fSoFar')} ${focusTimeLabel(focusMinsOf(s.x))}</span>` : ''}</div>
     </div>`;
     return;
   }
@@ -106,7 +126,7 @@ function renderFocus(force) {
   if ($('fbClock')) $('fbClock').textContent = fmtClock(s.left);
   if ($('fbProg')) $('fbProg').style.width = pct * 100 + '%';
   if ($('fvClock') && timing) $('fvClock').textContent = fmtClock(s.left);
-  if ($('fvArc')) $('fvArc').style.strokeDashoffset = 2 * Math.PI * 92 * pct;
+  if ($('fvArc')) $('fvArc').style.strokeDashoffset = 2 * Math.PI * 100 * pct;
 }
 setInterval(() => { if (data) renderFocus(); }, 1000);
 

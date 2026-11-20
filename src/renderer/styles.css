@@ -1093,7 +1093,7 @@ button.ok:hover { background: var(--ok-bg); }
 .fv-head { font-size: 12.5px; color: var(--text-3); letter-spacing: .02em; }
 .fv-card h2 { margin: 0; font-size: 22px; line-height: 1.35; max-width: 100%; overflow-wrap: anywhere; }
 .fv-ring { position: relative; width: 220px; height: 220px; }
-.fv-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.fv-ring > svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .fv-ring circle { fill: none; stroke-width: 10; }
 .fv-ring .bg { stroke: color-mix(in srgb, var(--accent) 14%, transparent); }
 .fv-ring .fg { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
@@ -1243,3 +1243,81 @@ body.pk-annoyed .pk-say { display: block; animation: popIn .18s var(--ease); }
 .wf-mouse svg { width: 30px; height: 30px; display: block; flex: none; }
 body.pk-timing .peek .pk-face svg { animation: none; }
 @media (prefers-reduced-motion: reduce) { .mouse-logo .ml-hand { animation: none; } }
+
+/* ================= 1.15 ================= */
+/* Dialogs (settings, folders…) always open above the focus screen. */
+.focus-view { z-index: 9; }
+
+/* A softer dark theme: graphite instead of near-black, clearer edges and text. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #25262a; --panel: #2e3034; --panel-2: #33353a; --hover: rgba(255,255,255,.07); --sel: rgba(90,160,230,.24);
+    --text: #f1f0ec; --text-2: #c9c7c0; --text-3: #9d9b95; --border: rgba(255,255,255,.11); --border-2: rgba(255,255,255,.2);
+    --accent: #5fa6ec; --accent-bg: #23476e; --accent-text: #cfe3f8;
+    --warn-bg: #54401c; --warn: #f6cf86; --danger-bg: #5b2a2b; --danger: #f6b7b7; --ok-bg: #2f4823; --ok: #c3e09f;
+    --today-bg: #3b3770; --today: #d8d5fa;
+  }
+  .sidebar { background: #2a2b30; }
+  .modal-bg { background: rgba(0,0,0,.45); }
+}
+
+/* Focus pill on a task card: at the far end of the card, on hover. */
+.task-row .row-focus { position: absolute; inset-inline-end: 10px; top: 50%; bottom: auto; transform: translateY(-50%); width: auto; height: 28px;
+  padding: 0 12px; border-radius: 99px; font-size: 12px; font-weight: 600; color: var(--accent-text); background: var(--accent-bg);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); box-shadow: 0 2px 8px rgba(0,0,0,.12); white-space: nowrap; }
+.task-row .row-focus:hover { background: var(--accent); color: #fff; }
+.h-row .row-focus { width: auto; padding: 0 8px; font-size: 11px; border-radius: 99px; height: 22px; }
+
+/* ---------- the focus screen ---------- */
+.focus-bar.under-view { display: none; }
+.focus-view { background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--accent) 10%, var(--bg)) 0%, var(--bg) 65%); backdrop-filter: none; }
+.focus-view.mode-break, .focus-view.mode-breakEnded { background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--ok) 12%, var(--bg)) 0%, var(--bg) 65%); }
+.focus-view.mode-ended { background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--c-amber) 12%, var(--bg)) 0%, var(--bg) 65%); }
+.focus-view.on { padding: 22px 16px 28px; }
+.fv-card { max-width: 480px; gap: 12px; }
+.fv-min { position: absolute; top: -6px; inset-inline-end: 0; border: none; font-size: 12px; color: var(--text-3); padding: 4px 8px; border-radius: 99px; }
+.fv-min:hover { color: var(--text); }
+.fv-head { font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--text-3); text-transform: uppercase; }
+.fv-card h2 { font-size: 21px; font-weight: 700; cursor: pointer; }
+.fv-card h2:hover { color: var(--accent); }
+.fv-ring { width: 240px; height: 240px; margin: 4px 0 2px; }
+.fv-ring circle { stroke-width: 12; }
+.fv-ring .bg { stroke: color-mix(in srgb, var(--text) 8%, transparent); }
+.fv-ring .fg { stroke-linecap: round; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 45%, transparent)); }
+.fv-ring .g1 { stop-color: #6bb8ff; } .fv-ring .g2 { stop-color: var(--accent); }
+.fv-ring.break .g1, .fv-ring.breakEnded .g1 { stop-color: #9bd67a; } .fv-ring.break .g2, .fv-ring.breakEnded .g2 { stop-color: var(--ok); }
+.fv-ring.ended .g1 { stop-color: #ffd36b; } .fv-ring.ended .g2 { stop-color: var(--c-amber); }
+.fv-ring:not(.running) .fg { filter: none; opacity: .7; }
+.fv-clock { gap: 2px; }
+.fv-clock b { font-size: 50px; font-weight: 700; line-height: 1; }
+.fv-ring:not(.running) .fv-clock b { opacity: .6; }
+.fv-mouse { position: static; margin-bottom: 4px; }
+.fv-ring .fv-mouse svg { width: 46px; height: 46px; transform: none; display: block; }
+.fv-ctrls { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 2px 0 6px; }
+.fc { display: grid; place-items: center; padding: 0; border-radius: 50%; border: 1px solid var(--border-2); background: var(--panel); color: var(--text-2);
+  box-shadow: 0 2px 8px rgba(0,0,0,.08); transition: transform var(--dur-fast) var(--ease), background var(--dur-fast); }
+.fc:hover { transform: translateY(-1px); color: var(--text); }
+.fc:active { transform: scale(.95); }
+.fc svg { fill: currentColor; }
+.fc.small { width: 46px; height: 46px; font-size: 14px; font-weight: 700; }
+.fc.small svg { width: 18px; height: 18px; }
+.fc.main { width: 68px; height: 68px; border: none; color: #fff; background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 80%, #fff), var(--accent));
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 40%, transparent); }
+.fc.main svg { width: 26px; height: 26px; }
+.fc.main:hover { color: #fff; background: var(--accent); }
+.fv-work { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.fv-steps { padding-inline: 4px; gap: 3px; max-width: 440px; }
+.fv-steps div { display: flex; align-items: center; gap: 8px; }
+.fv-steps i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--border-2); flex: none; }
+.fv-add { border-style: dashed; background: transparent; }
+.fv-add:focus { border-style: solid; background: var(--panel); }
+.fv-foot { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-3); margin-top: 4px; }
+.fv-done { border: none; color: var(--ok); font-weight: 600; font-size: 13px; padding: 4px 10px; border-radius: 99px; }
+.fv-done:hover { background: var(--ok-bg); }
+
+/* ---------- reordering folders ---------- */
+#areasNav .nav-item[draggable=true] { cursor: grab; }
+#areasNav .nav-item.dragging-area { opacity: .45; }
+#areasNav .nav-item.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
+#areasNav .nav-item.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
+#areasNav .nav-item.drop-inside { background: var(--accent-bg); box-shadow: inset 0 0 0 1.5px var(--accent); }
