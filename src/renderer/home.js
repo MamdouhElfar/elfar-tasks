@@ -4,7 +4,7 @@
 
 function renderHome() {
   const td = todayStr();
-  const loc = lang() === 'ar' ? 'ar-EG' : 'en-GB';
+  const loc = lang() === 'ar' ? 'ar-EG-u-nu-latn' : 'en-GB';
   const plus = (n) => { const d = new Date(td + 'T00:00'); d.setDate(d.getDate() + n); return todayStr(d); };
   const in7 = plus(7);
   const mine = data.tasks.filter((x) => inScope(x) && (!ui.person || isPendingWith(x, ui.person)));
@@ -24,17 +24,18 @@ function renderHome() {
   const stat = (go, n, label, cls, ico) => `<button class="h-stat ${cls} ${n ? '' : 'zero'}" data-go="${go}">
     <span class="h-ico">${icon(ico)}</span><b>${n}</b><span>${label}</span></button>`;
 
-  const meta = (x) => {
+  const meta = (x, noDate) => {
     const bits = [];
-    if (x.due) bits.push(`<span class="${statusOf(x) === 'overdue' ? 'od' : ''}">${fmtDate(x.due, lang())}</span>`);
+    const w = !noDate && whenInfo(x);
+    if (w) bits.push(`<span class="${w.cls === 'overdue' ? 'od' : ''}" title="${esc(w.title || '')}">${w.text}</span>`);
     const ppl = peopleNames(x);
     if (ppl.length) bits.push(`${icon('user')} <span dir="auto">${esc(ppl.join('، '))}</span>`);
     if (ui.scope !== x.areaId && areaById(x.areaId)) bits.push(`<span dir="auto">${esc(areaLabel(x.areaId))}</span>`);
     return bits.join(' · ');
   };
-  const row = (x) => `<div class="h-row ${quadClass(x)} ${ui.selected === x.id ? 'sel' : ''}" data-task="${x.id}">
+  const row = (x, noDate) => `<div class="h-row ${quadClass(x)} ${ui.selected === x.id ? 'sel' : ''}" data-task="${x.id}">
     <span class="h-bar"></span><span class="h-title" dir="auto">${x.starred ? '<span class="star">★</span> ' : ''}${esc(x.title)}</span>
-    <span class="h-meta">${meta(x)}</span></div>`;
+    <span class="h-meta">${meta(x, noDate === true)}</span></div>`;
   const panel = (title, ico, body, go) => `<section class="h-panel">
     <header>${icon(ico)}<b>${title}</b>${go ? `<button class="link" data-go="${go}">${t('hSeeAll')}</button>` : ''}</header>${body}</section>`;
   const empty = (text) => `<div class="h-empty">${text}</div>`;
@@ -51,7 +52,7 @@ function renderHome() {
   for (const x of week.slice(0, 10)) { if (!days.has(x.due)) days.set(x.due, []); days.get(x.due).push(x); }
   const dayName = (ds) => (ds === plus(1) ? t('tomorrowLbl') : new Date(ds + 'T00:00').toLocaleDateString(loc, { weekday: 'long' }));
   const coming = [...days.entries()].map(([ds, xs]) =>
-    `<div class="h-day"><span>${dayName(ds)}</span><small>${fmtDate(ds, lang())}</small></div>${xs.map(row).join('')}`).join('');
+    `<div class="h-day"><span>${dayName(ds)}</span><small>${fmtDate(ds, lang())}</small></div>${xs.map((x) => row(x, true)).join('')}`).join('');
 
   // Waiting on: who holds what, and for how long.
   const people = new Map();
@@ -64,7 +65,7 @@ function renderHome() {
   const waiting = [...people.entries()].sort((a, b) => a[1].since.localeCompare(b[1].since)).map(([pid, p]) => {
     const d = Math.max(0, daysBetween(p.since, td));
     return `<button class="h-person" data-go="person:${pid}">${icon('user')}<b dir="auto">${esc(personById(pid).name)}</b>
-      <span class="h-n">${p.n}</span><span class="h-age ${d >= nudge ? 'old' : ''}">${t('oldestDays')} ${d} ${t('days')}</span></button>`;
+      <span class="h-n">${p.n}</span><span class="h-age ${d >= nudge ? 'old' : ''}">${t('oldestDays')} ${daysWord(d, lang())}</span></button>`;
   }).join('');
 
   // Areas: open work per area, with what's overdue.
@@ -123,7 +124,7 @@ function renderHome() {
         ${areaList.length ? panel(t('hAreasTitle'), 'folder', `<div class="h-areas">${areas}</div>`) : ''}
       </div>
     </div>
-    <p class="h-foot small muted">${t('openTasks')}: ${open.length} · ${t('closedThisMonth')}: ${closedMonth}${avg !== null ? ` · ${t('avgClose')}: ${avg} ${t('days')}` : ''}</p>
+    <p class="h-foot small muted">${t('openTasks')}: ${open.length} · ${t('closedThisMonth')}: ${closedMonth}${avg !== null ? ` · ${t('avgClose')}: ${daysWord(avg, lang())}` : ''}</p>
   </div>`;
 }
 

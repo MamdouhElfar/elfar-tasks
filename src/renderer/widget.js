@@ -57,7 +57,7 @@ function render() {
   applyLang(data.settings.lang);
   const w = data.settings.widget;
   const f = filterInfo();
-  $('wTitle').textContent = `${f.title} · ${new Date().toLocaleDateString(data.settings.lang === 'ar' ? 'ar-EG' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}`;
+  $('wTitle').textContent = `${f.title} · ${new Date().toLocaleDateString(data.settings.lang === 'ar' ? 'ar-EG-u-nu-latn' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}`;
   $('wOpen').title = t('openApp');
   $('wHide').title = t('hide');
   $('wAdd').placeholder = '＋ ' + t('addTask');
@@ -89,11 +89,12 @@ function render() {
   $('wList').innerHTML = list.map((x) => {
     const subs = x.subtasks || [];
     const s = statusOf(x);
-    const pill = s === 'overdue' ? `<span class="pill overdue">${t('stOverdue')}</span>` : s === 'today' ? `<span class="pill today">${t('stDueToday')}</span>` : '';
+    const w = whenOf(x, data.settings.lang);
+    const pill = w ? `<span class="when ${w.cls}" title="${esc(w.title || '')}">${w.text}</span>` : '';
     return `<div class="w-item ${quadClass(x)}">
       <button class="check" data-check="${x.id}" title="${t('closeToday')}">✓</button>
       <div class="t-main"><div class="t-title" dir="auto" data-open="${x.id}">${x.starred ? '<span class="star">★</span> ' : ''}${esc(x.title)}</div>
-        <div class="t-meta">${pill}${remindPill(x)}${QUADS.includes(x.priority) ? `<span class="pill ${x.priority}" title="${t(x.priority + 'a')}">${t(x.priority)}</span>` : ''}${(x.pendingWith || []).map((pw) => data.people.find((p) => p.id === pw.personId)).filter(Boolean).map((p) => `<span class="pill person" dir="auto">${esc(p.name)}</span>`).join('')}${subs.length ? `<span>${subs.filter((y) => y.done).length}/${subs.length}</span>` : ''}${x.due && s !== 'today' ? `<span>${fmtDate(x.due, data.settings.lang)}</span>` : ''}</div>
+        <div class="t-meta">${QUADS.includes(x.priority) ? `<span class="pnum ${x.priority}" title="${PRIO_NUM[x.priority]} · ${esc(t(x.priority))}">${PRIO_NUM[x.priority]}</span>` : ''}${pill}${remindPill(x)}${(x.pendingWith || []).map((pw) => data.people.find((p) => p.id === pw.personId)).filter(Boolean).map((p) => `<span class="pill person" dir="auto">${esc(p.name)}</span>`).join('')}${subs.length ? `<span>${subs.filter((y) => y.done).length}/${subs.length}</span>` : ''}</div>
       </div></div>`;
   }).join('');
 }

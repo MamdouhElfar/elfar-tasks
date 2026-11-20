@@ -45,7 +45,7 @@ function repeatLabel(r, due) {
   let s = r.every > 1 ? `${t('every')} ${r.every} ${names[r.unit]}` : t('r1' + r.unit);
   if (due) {
     const d = new Date(due + 'T00:00');
-    const loc = lang() === 'ar' ? 'ar-EG' : 'en-GB';
+    const loc = lang() === 'ar' ? 'ar-EG-u-nu-latn' : 'en-GB';
     if (r.unit === 'week') s += ` · ${d.toLocaleDateString(loc, { weekday: 'long' })}`;
     if (r.unit === 'month') s += ` · ${t('onDay')} ${d.getDate()}`;
     if (r.unit === 'year') s += ` · ${d.toLocaleDateString(loc, { day: 'numeric', month: 'long' })}`;
@@ -347,22 +347,22 @@ function renderReport() {
       <button id="rCsv">${icon('download')} ${t('exportCsv')}</button>
     </div>
     <div class="r-stats">
-      <div><b>${closed.length}</b><span>${t('rClosed')}</span></div>
-      <div><b>${added.length}</b><span>${t('rAdded')}</span></div>
-      <div><b>${open.length}</b><span>${t('openTasks')}</span></div>
+      <div><b>${closed.length}</b><span>${t('rClosed')} <small>${t('sinceDate')} ${fmtDate(from, lang())}</small></span></div>
+      <div><b>${added.length}</b><span>${t('rAdded')} <small>${t('sinceDate')} ${fmtDate(from, lang())}</small></span></div>
+      <div><b>${open.length}</b><span>${t('openNow')}</span></div>
       <div class="${overdue.length ? 'bad' : ''}"><b>${overdue.length}</b><span>${t('overdue')}</span></div>
     </div>
-    ${Object.keys(byArea).length ? `<div class="r-sec"><h4>${t('rByArea')}</h4>${Object.entries(byArea).sort((a, b) => b[1] - a[1]).map(([a, n]) => `<div class="r-bar"><span dir="auto">${esc(a)}</span><i style="width:${(n / closed.length) * 100}%"></i><b>${n}</b></div>`).join('')}</div>` : ''}
-    <div class="r-sec"><h4>${t('rStuck')} (${days}+ ${t('days')})</h4>${stuck.length ? stuck.map((s) => row(s.x, `${icon('user')} ${esc(s.p.name)} · ${s.d} ${t('days')}`)).join('') : `<div class="muted small">—</div>`}</div>
+    ${Object.keys(byArea).length ? `<div class="r-sec"><h4>${t('rByArea')}</h4>${Object.entries(byArea).sort((a, b) => b[1] - a[1]).map(([a, n]) => `<div class="r-bar"><span dir="auto">${esc(a)}</span><span class="r-track"><i style="width:${(n / Math.max(...Object.values(byArea))) * 100}%"></i><b>${n}</b></span></div>`).join('')}</div>` : ''}
+    <div class="r-sec"><h4>${t('rStuck')} (${days}+ ${t('days')})</h4>${stuck.length ? stuck.map((s) => row(s.x, `${icon('user')} <bdi>${esc(s.p.name)}</bdi> · ${daysWord(s.d, lang())}`)).join('') : `<div class="muted small">—</div>`}</div>
     <div class="r-sec"><h4>${t('overdue')}</h4>${overdue.length ? overdue.map((x) => row(x, fmtDate(x.due, lang()))).join('') : `<div class="muted small">—</div>`}</div>
-    <div class="r-sec"><h4>${t('rClosed')}</h4>${closed.length ? closed.map((x) => row(x, fmtDate(x.closure, lang()) + (x.start ? ` · ${daysBetween(x.start, x.closure)} ${t('days')}` : ''))).join('') : `<div class="muted small">—</div>`}</div>
+    <div class="r-sec"><h4>${t('rClosed')}</h4>${closed.length ? closed.map((x) => row(x, fmtDate(x.closure, lang()) + (x.start ? ` · ${daysWord(daysBetween(x.start, x.closure), lang())}` : ''))).join('') : `<div class="muted small">—</div>`}</div>
   </div>`;
   $('rFrom').onchange = (e) => { ui.reportFrom = e.target.value || null; renderList(); };
   $('rCopy').onclick = async () => {
     const lines = [`${t('report')} · ${areaLabel(ui.scope === 'all' ? null : ui.scope) === t('inbox') && ui.scope === 'all' ? t('allAreas') : areaLabel(ui.scope)} · ${fmtDate(from, lang())} → ${fmtDate(todayStr(), lang())}`, '',
       `${t('rClosed')}: ${closed.length} · ${t('rAdded')}: ${added.length} · ${t('openTasks')}: ${open.length} · ${t('overdue')}: ${overdue.length}`, ''];
     if (closed.length) lines.push(`✓ ${t('rClosed')}:`, ...closed.map((x) => `  - ${x.title}`), '');
-    if (stuck.length) lines.push(`⏳ ${t('rStuck')}:`, ...stuck.map((s) => `  - ${s.x.title} → ${s.p.name} (${s.d} ${t('days')})`), '');
+    if (stuck.length) lines.push(`⏳ ${t('rStuck')}:`, ...stuck.map((s) => `  - ${s.x.title} → ${s.p.name} (${daysWord(s.d, lang())})`), '');
     if (overdue.length) lines.push(`⚠ ${t('overdue')}:`, ...overdue.map((x) => `  - ${x.title} (${x.due})`));
     await navigator.clipboard.writeText(lines.join('\n'));
     showToast(t('copied'));
@@ -380,6 +380,20 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.11.0': {
+    ar: ['شكل أهدى: كارت التاسك بقى أبيض وعليه خط بلون التصنيف بس، والتصنيف رقم صغير (وقّف الماوس عليه يقولك معناه)',
+      'التاريخ بقى بالكلام: "متأخرة يومين"، "النهارده · 2:00 م"، "بكرة"، "الأحد"، وتاريخ البداية بقى في صفحة التاسك بس',
+      'نتيجة جديدة لاختيار التاريخ بالعربي، فيها النهارده وبكرة وكمان أسبوع بدوسة، بدل نتيجة ويندوز الإنجليزي',
+      'الأرقام كلها بقت بنفس الشكل (20 مش ٢٠)',
+      'زرار + مبقاش بيغطي آخر تاسك، و"الإغلاق" مبيظهرش غير للتاسك المقفولة، والمدد بقت مكتوبة "3 أيام و6 ساعات"',
+      'المصفوفة والتقويم والتقرير بقوا أنضف'],
+    en: ['A calmer look: task cards are white with just a stripe in the priority color, and the priority is a small number (hover it to see what it means)',
+      'Dates read like words: "2 days late", "Today · 2:00 PM", "Tomorrow", "Sunday". The start date now lives on the task page only',
+      'A new date picker in the app\'s language, with Today, Tomorrow and In a week one click away',
+      'Numbers look the same everywhere',
+      'The + button no longer covers the last task, "Closure" only shows on closed tasks, and durations read "3 days 6 hours"',
+      'Tidier Matrix, Calendar and Report']
+  },
   '1.10.0': {
     ar: ['الويدجت اللي على جنب الشاشة: تقدر تخليه يفتح لما تدوس على الفار بس، مش أول ما الماوس يعدّي عليه (الإعدادات ← الويدجت ← يفتح إمتى)'],
     en: ['The widget at the screen edge can open only when you click the mouse, not as soon as the cursor passes over it (Settings › Desktop widget › Opens when)']

@@ -224,19 +224,30 @@ function statusPill(x) {
   return `<span class="pill ${s}">${t(key)}</span>`;
 }
 
+// The one date a task needs, said the way you'd say it: "2 days late", "Today · 2:00 PM",
+// "Tomorrow", "Sunday", "29 Nov". The full date is in the tooltip.
+const whenInfo = (x) => whenOf(x, lang());
+function whenChip(x, hideToday) {
+  if (statusOf(x) === 'scheduled') return statusPill(x);
+  const w = whenInfo(x);
+  if (!w || (hideToday && w.cls === 'today' && !x.dueTime)) return '';
+  return `<span class="when ${w.cls}" ${w.title ? `title="${esc(w.title)}"` : ''}>${w.cls === 'overdue' ? icon('overdue') : ''}${w.text}</span>`;
+}
+const prioNum = (x) => (x.priority && isOpen(x) ? `<span class="pnum ${x.priority}" title="${PRIO_NUM[x.priority]} · ${esc(t(x.priority))} — ${esc(t(x.priority + 'a'))}">${PRIO_NUM[x.priority]}</span>` : '');
+const sinceWord = (since) => { const n = Math.max(0, daysBetween(since || todayStr(), todayStr())); return n ? daysWord(n, lang()) : t('stDueToday'); };
+
 function rowHtml(x) {
   const subs = x.subtasks || [];
   const done = subs.filter((s) => s.done).length;
   const showArea = ui.scope !== x.areaId;
-  const dates = [x.start && fmtDate(x.start, lang()), `→ ${x.closure ? fmtDate(x.closure, lang()) : x.due ? fmtDate(x.due, lang()) : '—'}`].filter(Boolean).join(' ');
+  const remindDay = x.remindAt && x.remindAt.slice(0, 10);
   return `<div class="task-row ${quadClass(x)} ${x.closure ? 'closed' : ''} ${ui.selected === x.id ? 'sel' : ''}" data-task="${x.id}" draggable="true">
     <button class="check ${x.closure ? 'on' : ''}" data-check="${x.id}" title="${x.closure ? t('reopen') : t('closeToday')}">✓</button>
     <div class="t-main">
       <div class="t-title" dir="auto">${x.starred ? '<span class="star">★</span> ' : ''}${esc(x.title) || '<span class="muted">' + t('title') + '</span>'}</div>
-      <div class="t-meta">${statusPill(x)}${x.repeat && isOpen(x) ? `<span class="pill repeat" title="${esc(repeatLabel(x.repeat))}">${icon('repeat')}</span>` : ''}${(x.files || []).length ? `<span class="pill area">${icon('clip')} ${x.files.length}</span>` : ''}${x.remindAt && isOpen(x) ? `<span class="pill remind ${x.remindAt <= nowLocal() ? 'past' : ''}">${icon('bell')} ${fmtDate(x.remindAt.slice(0, 10), lang())} ${fmtTime(x.remindAt, lang())}</span>` : ''}${x.priority && isOpen(x) ? `<span class="pill ${x.priority}" title="${t(x.priority + 'a')}"><b>${PRIO_NUM[x.priority]}</b> ${t(x.priority)}</span>` : ''}
+      <div class="t-meta">${prioNum(x)}${whenChip(x, ui.view === 'today')}${x.remindAt && isOpen(x) ? `<span class="pill remind ${x.remindAt <= nowLocal() ? 'past' : ''}">${icon('bell')} ${remindDay === todayStr() ? '' : fmtDate(remindDay, lang()) + ' '}${fmtTime(x.remindAt, lang())}</span>` : ''}${x.repeat && isOpen(x) ? `<span class="pill repeat" title="${esc(repeatLabel(x.repeat))}">${icon('repeat')}</span>` : ''}${(x.files || []).length ? `<span class="pill area">${icon('clip')} ${x.files.length}</span>` : ''}
         ${subs.length ? `<span class="progress"><span class="bar"><i style="width:${(done / subs.length) * 100}%"></i></span>${done}/${subs.length}</span>` : ''}
-        <span>${dates}</span>
-        ${isOpen(x) ? pendingOf(x).map((pw) => `<span class="pill person" dir="auto">${icon('user')} ${esc(personById(pw.personId).name)} · ${Math.max(0, daysBetween(pw.since || todayStr(), todayStr()))}${lang() === 'ar' ? 'ي' : 'd'}</span>`).join('') : ''}
+        ${isOpen(x) ? pendingOf(x).map((pw) => `<span class="pill person" title="${t('since')} ${fmtDate(pw.since, lang())}">${icon('user')} <bdi>${esc(personById(pw.personId).name)}</bdi> · ${sinceWord(pw.since)}</span>`).join('') : ''}
         ${showArea ? `<span class="pill area">${esc(areaLabel(x.areaId))}</span>` : ''}
       </div>
     </div></div>`;
@@ -307,7 +318,7 @@ function renderCalendar() {
   const base = ui.calMonth || todayStr().slice(0, 7);
   const [y, m] = base.split('-').map(Number);
   const first = new Date(y, m - 1, 1);
-  const loc = lang() === 'ar' ? 'ar-EG' : 'en-GB';
+  const loc = lang() === 'ar' ? 'ar-EG-u-nu-latn' : 'en-GB';
   // Week starts Saturday in Arabic, Monday in English.
   const weekStart = lang() === 'ar' ? 6 : 1;
   const offset = (first.getDay() - weekStart + 7) % 7;
@@ -360,8 +371,8 @@ function renderCalendar() {
     <div class="cal-filters">
       <div class="cf-group"><span class="cf-label">${t('show')}</span>
         <span class="seg-joined">${chip('status', 'open', t('openTasks'), f.status === 'open')}${chip('status', 'closed', t('closed'), f.status === 'closed')}${chip('status', 'all', t('all'), f.status === 'all')}</span></div>
-      <div class="cf-group"><span class="cf-label">${t('priority')}</span>
-        <span class="seg-f">${QUADS.map((q) => chip('prio', q, `${PRIO_NUM[q]} · ${t(q)}`, f.prios.includes(q))).join('')}${chip('prio', 'none', t('unclassified'), f.prios.includes('none'))}</span></div>
+      <div class="cf-group"><span class="cf-label">${t('prioFilter')}</span>
+        <span class="seg-f nums">${QUADS.map((q) => chip('prio', q, PRIO_NUM[q], f.prios.includes(q)).replace('<button', `<button title="${PRIO_NUM[q]} · ${esc(t(q))}"`)).join('')}${chip('prio', 'none', '—', f.prios.includes('none')).replace('<button', `<button title="${esc(t('unclassified'))}"`)}</span></div>
       <div class="cf-group cf-end">${chip('repeats', '1', `${icon('repeat')} ${t('upcomingRepeats')}`, f.repeats)}</div>
     </div>
     <div class="cal-grid">${dows.map((d) => `<div class="cal-dow">${d}</div>`).join('')}${cells}</div>
@@ -397,7 +408,6 @@ function renderMatrix() {
   const quad = (q) => {
     const xs = list.filter((x) => x.priority === q);
     return `<div class="quad ${q}" data-quad="${q}" dir="${lang() === 'ar' ? 'rtl' : 'ltr'}">
-      <span class="q-num">${PRIO_NUM[q]}</span>
       <div class="q-head"><b>${t(q + 'a')}</b><span>${PRIO_NUM[q]} · ${t(q)}</span><i class="q-n">${xs.length}</i></div>
       <div class="q-body">${xs.map(card).join('') || `<div class="q-empty">${t(q + 'tip')}</div>`}</div></div>`;
   };
@@ -405,7 +415,7 @@ function renderMatrix() {
   // Drawn like a chart (left to right in both languages): the further right, the more urgent;
   // the higher, the more important. So "not urgent" sits next to the origin.
   $('list').innerHTML = `<div class="mx-chart" dir="ltr">
-      <div class="mx-ylab"><span>${t('importance')} ↑</span></div>
+      <div class="mx-ylab"><i>↑</i><span>${t('importance')}</span></div>
       <div class="mx-yticks"><span>${t('important')}</span><span>${t('notImportant')}</span></div>
       <div class="mx-plot">${quad('q2')}${quad('q1')}${quad('q4')}${quad('q3')}</div>
       <span class="mx-origin">0</span>
@@ -453,7 +463,7 @@ function renderDetail() {
   renderDetail.shown = x.id;
   work.classList.add('has-detail');
   const subs = x.subtasks || [];
-  const span = statusOf(x) === 'scheduled' ? '' : x.start ? (x.closure ? `${t('tookDays')} ${daysBetween(x.start, x.closure)} ${t('days')}` : `${t('openedFor')} ${Math.max(0, daysBetween(x.start, todayStr()))} ${t('days')}`) : '';
+  const span = statusOf(x) === 'scheduled' ? '' : x.start ? (x.closure ? `${t('tookDays')} ${daysWord(daysBetween(x.start, x.closure), lang())}` : `${t('openedFor')} ${daysWord(Math.max(0, daysBetween(x.start, todayStr())), lang())}`) : '';
   el.innerHTML = `<div class="inner">
     <div class="d-top">
       ${statusPill(x)} <span class="small muted">${span}</span>
@@ -471,7 +481,7 @@ function renderDetail() {
       <div class="d-field"><label>${icon('today')} ${t('start')}</label><input type="date" id="dStart" value="${x.start || ''}"></div>
       <div class="d-field"><label>${icon('calendar')} ${t('due')}</label><input type="date" id="dDue" value="${x.due || ''}"></div>
       <div class="d-field"><label>${icon('pending')} ${t('dueTimeShort')}</label>${timeBox('dDueTime', x.dueTime, `title="${t('dueTime')}"`)}</div>
-      <div class="d-field"><label>${icon('closed')} ${t('closure')}</label><input type="date" id="dClosure" value="${x.closure || ''}"></div>
+      ${x.closure ? `<div class="d-field"><label>${icon('closed')} ${t('closure')}</label><input type="date" id="dClosure" value="${x.closure}"></div>` : ''}
     </div>
     ${reminderFieldHtml(x)}
     <div class="d-row">
@@ -490,7 +500,7 @@ function renderDetail() {
           const days = Math.max(0, daysBetween(pw.since || todayStr(), todayStr()));
           return `<span class="chip ${days >= 7 ? 'old' : ''}">
             <b dir="auto">${esc(p.name)}</b>
-            <span class="muted">${t('since')} ${fmtDate(pw.since, lang())} · ${days} ${t('days')}</span>
+            <span class="muted">${t('since')} ${fmtDate(pw.since, lang())} · ${sinceWord(pw.since)}</span>
             <button class="icon" data-follow="${p.id}" title="${t('followUp')}">${icon('waiting')}</button>
             <button class="icon" data-unpend="${p.id}" title="${t('remove')}">✕</button></span>`;
         }).join('')}

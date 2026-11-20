@@ -60,7 +60,7 @@ const I18N = {
     quickMode: 'سريع', fullMode: 'كامل', subsPh: 'مهمة فرعية في كل سطر', composerHintFull: 'Ctrl+Enter للإضافة · Esc للإغلاق',
     remindStyle: 'شكل التذكير', remindStyleDesc: 'فار بيطلع على جنب الشاشة ومعاه جرس، أو إشعار ويندوز العادي', styleMouse: 'فار بيرن الجرس 🐭🔔', styleNotif: 'إشعار ويندوز', remindSound: 'صوت التذكير',
     soundChime: 'نغمة', soundBell: 'جرس', soundSqueak: 'صوت فار 🐭', soundNone: 'من غير صوت', tryIt: 'جرّب', testReminder: 'كده هيبان التذكير 🐭', snoozeLbl: 'فكّرني تاني بعد', minShort: 'د', hourShort: 'س',
-    confirmDelLog: 'تمسح السطر ده من سجل المتابعة؟', hDoneToday: 'خلصت من النهارده', openOn: 'يفتح إمتى', openOnDesc: 'لما الويدجت مستخبي على جنب: يفتح أول ما الماوس يعدّي على الفار، ولا لما تدوس عليه بس', openHover: 'لما الماوس يعدّي', openClick: 'لما أدوس عليه', langSwitch: 'غيّر اللغة', closeTaskQ: 'تقفل التاسك دي؟', closeTaskQText: 'هتتسجل إنها خلصت النهارده.', yesClose: 'أيوه، اقفلها', noBack: 'لا، رجوع', closedThanks: 'اتقفلت ✓ شكرًا!', closedThanksSub: 'الفار مبسوط منك 🧀', stopReminder: 'وقف التذكير بس', closeTaskBtn: 'اقفل التاسك', dayClear: 'مفيش حاجة فاضلة النهارده، الفار مبسوط 🧀', cheerTitle: 'عاش! خلصت كل تاسكات النهارده 🎉', cheerSub: 'الفار فخور بيك', stScheduled: 'يبدأ', later: 'مجدولة', scheduledHint: 'دي تاسكات لسه ميعادها مجاش (زي المرة الجاية من تاسك متكررة). هتظهر في Pending يوم ما تبدأ.', wWeek: '7 أيام', wOthers: 'عند غيري',
+    confirmDelLog: 'تمسح السطر ده من سجل المتابعة؟', hDoneToday: 'خلصت من النهارده', lateBy: 'متأخرة', closedOn: 'اتقفلت', sinceDate: 'من', openNow: 'مفتوحة دلوقتي', prioFilter: 'التصنيف', openOn: 'يفتح إمتى', openOnDesc: 'لما الويدجت مستخبي على جنب: يفتح أول ما الماوس يعدّي على الفار، ولا لما تدوس عليه بس', openHover: 'لما الماوس يعدّي', openClick: 'لما أدوس عليه', langSwitch: 'غيّر اللغة', closeTaskQ: 'تقفل التاسك دي؟', closeTaskQText: 'هتتسجل إنها خلصت النهارده.', yesClose: 'أيوه، اقفلها', noBack: 'لا، رجوع', closedThanks: 'اتقفلت ✓ شكرًا!', closedThanksSub: 'الفار مبسوط منك 🧀', stopReminder: 'وقف التذكير بس', closeTaskBtn: 'اقفل التاسك', dayClear: 'مفيش حاجة فاضلة النهارده، الفار مبسوط 🧀', cheerTitle: 'عاش! خلصت كل تاسكات النهارده 🎉', cheerSub: 'الفار فخور بيك', stScheduled: 'يبدأ', later: 'مجدولة', scheduledHint: 'دي تاسكات لسه ميعادها مجاش (زي المرة الجاية من تاسك متكررة). هتظهر في Pending يوم ما تبدأ.', wWeek: '7 أيام', wOthers: 'عند غيري',
     calHint: 'اضغط ＋ في أي يوم تضيف تاسك عليه · اسحب تاسك ليوم تاني يغيّر الـ Due · الباهت = المرات الجاية من تاسك متكررة.',
     ok: 'تمام', home: 'الرئيسية', mine: 'عندي أنا', withOthers: 'عند حد تاني', show: 'عرض', remindCustom: 'وقت محدد…', remindNeedsDue: 'حط Due عشان تقدر تتفكّر قبله بوقت', remindAt9: 'الـ Due من غير وقت، فالتذكير محسوب على 9 الصبح', dueTimeShort: 'الوقت',
     gMorning: 'صباح الخير', gAfternoon: 'مساء الخير', gEvening: 'مساء الخير', hWeek: 'الـ 7 أيام الجايين', hOthers: 'عند ناس تانية', hClosedWeek: 'اتقفلت الأسبوع ده',
@@ -126,7 +126,7 @@ const I18N = {
     quickMode: 'Quick', fullMode: 'Full', subsPh: 'One subtask per line', composerHintFull: 'Ctrl+Enter to add · Esc to close',
     remindStyle: 'Reminder style', remindStyleDesc: 'A mouse with a bell at the side of the screen, or the usual Windows notification', styleMouse: 'A mouse ringing a bell 🐭🔔', styleNotif: 'Windows notification', remindSound: 'Reminder sound',
     soundChime: 'Chime', soundBell: 'Bell', soundSqueak: 'Mouse squeak 🐭', soundNone: 'No sound', tryIt: 'Try it', testReminder: 'This is how a reminder looks 🐭', snoozeLbl: 'Remind me again in', minShort: 'min', hourShort: 'h',
-    confirmDelLog: 'Delete this entry from the follow-up log?', hDoneToday: 'done today', openOn: 'Opens when', openOnDesc: 'When the widget is tucked at the screen edge: open it as soon as your cursor touches the little mouse, or only when you click it', openHover: 'Mouse passes over', openClick: 'I click it', langSwitch: 'Switch language', closeTaskQ: 'Close this task?', closeTaskQText: 'It will be marked done today.', yesClose: 'Yes, close it', noBack: 'No, go back', closedThanks: 'Closed ✓ Thank you!', closedThanksSub: 'The mouse is proud of you 🧀', stopReminder: 'Just stop the reminder', closeTaskBtn: 'Close the task', dayClear: 'Nothing left for today. Happy mouse 🧀', cheerTitle: 'Nice! Every task for today is done 🎉', cheerSub: 'The mouse is proud of you', stScheduled: 'Starts', later: 'Scheduled', scheduledHint: "Tasks that haven't started yet (like the next round of a repeating task). They move to Pending on their start day.", wWeek: '7 days', wOthers: 'Others',
+    confirmDelLog: 'Delete this entry from the follow-up log?', hDoneToday: 'done today', lateBy: 'late', closedOn: 'Closed', sinceDate: 'since', openNow: 'Open now', prioFilter: 'Priority', openOn: 'Opens when', openOnDesc: 'When the widget is tucked at the screen edge: open it as soon as your cursor touches the little mouse, or only when you click it', openHover: 'Mouse passes over', openClick: 'I click it', langSwitch: 'Switch language', closeTaskQ: 'Close this task?', closeTaskQText: 'It will be marked done today.', yesClose: 'Yes, close it', noBack: 'No, go back', closedThanks: 'Closed ✓ Thank you!', closedThanksSub: 'The mouse is proud of you 🧀', stopReminder: 'Just stop the reminder', closeTaskBtn: 'Close the task', dayClear: 'Nothing left for today. Happy mouse 🧀', cheerTitle: 'Nice! Every task for today is done 🎉', cheerSub: 'The mouse is proud of you', stScheduled: 'Starts', later: 'Scheduled', scheduledHint: "Tasks that haven't started yet (like the next round of a repeating task). They move to Pending on their start day.", wWeek: '7 days', wOthers: 'Others',
     calHint: 'Click ＋ on a day to add a task there · drag a task to another day to change its due · faded = upcoming repeats.',
     ok: 'OK', home: 'Home', mine: 'On me', withOthers: 'With others', show: 'Show', remindCustom: 'Specific time…', remindNeedsDue: 'Set a due date to be reminded before it', remindAt9: 'No due time set, so this counts from 9:00 AM', dueTimeShort: 'Time',
     gMorning: 'Good morning', gAfternoon: 'Good afternoon', gEvening: 'Good evening', hWeek: 'Next 7 days', hOthers: 'With others', hClosedWeek: 'Closed this week',
@@ -348,17 +348,37 @@ function statusOf(t) {
 // Open and already started (scheduled ones don't count yet).
 const isActive = (x) => !x.closure && statusOf(x) !== 'scheduled';
 
-// Clicking anywhere on a date / time box opens its picker, not just on the small icon.
-document.addEventListener('click', (e) => {
-  const el = e.target;
-  if (!el.matches || !el.matches('input[type=date]') || el.disabled || el.readOnly) return;
-  try { el.showPicker(); } catch { /* picker already open */ }
-});
+// Arabic counts: 1 يوم, 2 يومين, 3–10 أيام, 11+ يوم.
+function arCount(n, one, two, few, many) {
+  if (n === 1) return one;
+  if (n === 2) return two;
+  return `${n} ${n >= 3 && n <= 10 ? few : many}`;
+}
+const daysWord = (n, lang) => (lang === 'ar' ? arCount(n, 'يوم', 'يومين', 'أيام', 'يوم') : `${n} ${n === 1 ? 'day' : 'days'}`);
+
+// The one date a task needs, said the way you'd say it: "2 days late", "Today · 2:00 PM",
+// "Tomorrow", "Sunday", "29 Nov". The full date goes in the tooltip.
+function whenOf(x, L) {
+  const t = (k) => (I18N[L] || I18N.ar)[k] || k, lang = () => L;
+  const s = statusOf(x), td = todayStr();
+  const ar = lang() === 'ar';
+  if (s === 'closed') return { cls: 'closed', text: `${t('closedOn')} ${fmtDate(x.closure, lang())}` };
+  if (!x.due) return null;
+  const time = x.dueTime ? fmtTime(`${x.due}T${x.dueTime}`, lang()) : '';
+  const n = daysBetween(td, x.due);
+  let text, cls = '';
+  if (n < 0) { cls = 'overdue'; text = ar ? `${t('lateBy')} ${daysWord(-n, 'ar')}` : `${daysWord(-n, 'en')} ${t('lateBy')}`; }
+  else if (n === 0) { cls = 'today'; text = t('stDueToday') + (time ? ` · ${time}` : ''); }
+  else if (n === 1) { cls = 'soon'; text = t('tomorrowLbl') + (time ? ` · ${time}` : ''); }
+  else if (n < 7) { cls = 'soon'; text = new Date(x.due + 'T00:00').toLocaleDateString(ar ? 'ar-EG-u-nu-latn' : 'en-GB', { weekday: 'long' }); }
+  else text = fmtDate(x.due, lang());
+  return { cls, text, title: `${t('due')}: ${fmtDate(x.due, lang())}${time ? ' · ' + time : ''}` };
+}
 
 function fmtDate(s, lang) {
   if (!s) return '';
   const d = new Date(s + 'T00:00:00');
-  return d.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'short', year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
+  return d.toLocaleDateString(lang === 'ar' ? 'ar-EG-u-nu-latn' : 'en-GB', { day: 'numeric', month: 'short', year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
 }
 
 // Local date-time helpers ('YYYY-MM-DDTHH:MM', the format of <input type=datetime-local>).
@@ -367,11 +387,17 @@ function nowLocal(d = new Date()) {
 }
 function fmtTime(at, lang) {
   if (!at || !at.includes('T')) return '';
-  return new Date(at).toLocaleTimeString(lang === 'ar' ? 'ar-EG' : 'en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return new Date(at).toLocaleTimeString(lang === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 function fmtDur(ms, lang) {
   const m = Math.max(0, Math.round(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
-  const u = lang === 'ar' ? { d: 'ي', h: 'س', m: 'د' } : { d: 'd', h: 'h', m: 'm' };
+  if (lang === 'ar') {
+    const hw = (n) => arCount(n, 'ساعة', 'ساعتين', 'ساعات', 'ساعة'), mw = (n) => arCount(n, 'دقيقة', 'دقيقتين', 'دقايق', 'دقيقة');
+    if (d) return daysWord(d, 'ar') + (h ? ` و${hw(h)}` : '');
+    if (h) return hw(h) + (mm ? ` و${mw(mm)}` : '');
+    return mw(mm);
+  }
+  const u = { d: 'd', h: 'h', m: 'm' };
   if (d) return `${d}${u.d}${h ? ' ' + h + u.h : ''}`;
   if (h) return `${h}${u.h}${mm ? ' ' + mm + u.m : ''}`;
   return `${mm}${u.m}`;
