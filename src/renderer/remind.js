@@ -16,13 +16,13 @@ function render() {
   $('root').innerHTML = `<div class="rm" id="rm">
     <div class="rm-mouse">${remindMouseSvg()}</div>
     <div class="rm-card">
-      <button class="rm-x" data-act="dismiss" title="${t('closeBtn')}">✕</button>
+      <button class="rm-x" data-act="dismiss" title="${t('stopReminder')}">✕</button>
       <div class="rm-top">${icon('bell')} ${t('reminder')}${state.items.length > 1 ? `<span class="more">+${state.items.length - 1} ${t('more')}</span>` : ''}</div>
       <div class="rm-title" dir="auto">${esc(x.title)}</div>
       ${when ? `<div class="rm-meta">${t('due')}: ${when}${x.subs ? ` · ${x.subs}` : ''}</div>` : ''}
       ${x.pinnedNote ? `<div class="rm-pin" dir="auto">📌 ${esc(x.pinnedNote)}</div>` : ''}
       <div class="rm-acts">
-        ${x.test ? '' : `<button class="primary" data-act="done">✓ ${t('done')}</button>`}
+        ${x.test ? '' : `<button class="primary" data-ask="done">✓ ${t('closeTaskBtn')}</button>`}
         ${x.test ? `<button class="primary" data-act="dismiss">${t('gotIt')}</button>` : `<button data-act="open">${t('open')}</button>`}
       </div>
       ${x.test ? '' : `<div class="rm-snooze">${t('snoozeLbl')} ${later.map(([m, l]) => `<button data-act="snooze" data-min="${m}">${l}</button>`).join('')}</div>`}
@@ -31,12 +31,36 @@ function render() {
   else setTimeout(() => playSound(state.sound), 850);
 }
 
+// "Close the task" asks first (it's easy to click it just to make the reminder go away),
+// then the mouse says thanks before leaving.
+function askClose() {
+  const card = document.querySelector('.rm-card');
+  card.classList.add('asking');
+  card.innerHTML = `<div class="rm-top">${icon('help')} ${t('closeTaskQ')}</div>
+    <div class="rm-title" dir="auto">${esc(state.items[0].title)}</div>
+    <div class="rm-meta">${t('closeTaskQText')}</div>
+    <div class="rm-acts"><button class="primary" data-act="done">✓ ${t('yesClose')}</button><button data-act="dismiss">🔕 ${t('stopReminder')}</button></div>
+    <button class="rm-back" data-back>‹ ${t('noBack')}</button>`;
+}
+function thanks(then) {
+  const card = document.querySelector('.rm-card');
+  card.classList.add('thanks');
+  card.innerHTML = `<div class="rm-thanks"><b>${t('closedThanks')}</b><span>${t('closedThanksSub')}</span></div>`;
+  document.querySelector('.rm-mouse').innerHTML = mouseLogo('rm-happy', 'happy');
+  playSound(state.sound === 'none' ? 'none' : 'chime');
+  setTimeout(then, 1700);
+}
 document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-ask]')) return askClose();
+  if (e.target.closest('[data-back]')) return render(); // same reminder: no walk-in, no sound again
   const b = e.target.closest('[data-act]'); if (!b) return;
   const x = state.items[0]; if (!x) return;
   const act = b.dataset.act;
-  $('rm').classList.add('leaving');
-  setTimeout(() => window.api.remindAction({ id: x.id, action: act, minutes: Number(b.dataset.min) || 0 }), 380);
+  const go = () => {
+    $('rm').classList.add('leaving');
+    setTimeout(() => window.api.remindAction({ id: x.id, action: act, minutes: Number(b.dataset.min) || 0 }), 380);
+  };
+  if (act === 'done') thanks(go); else go();
 });
 
 window.api.onRemindList((s) => { state = s; render(); });

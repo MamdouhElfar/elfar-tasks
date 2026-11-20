@@ -86,8 +86,24 @@ function renderHome() {
   const month = td.slice(0, 7);
   const closedMonth = mine.filter((x) => x.closure && x.closure.startsWith(month)).length;
 
+  // One line that sums up the day, and how much of today's list is already done.
+  const ar = lang() === 'ar';
+  const bits = [];
+  if (dueToday.length) bits.push(ar ? `${dueToday.length} عليها الدور النهارده` : `${dueToday.length} due today`);
+  if (overdue.length) bits.push(ar ? `${overdue.length} متأخرة` : `${overdue.length} overdue`);
+  if (withOthers.length) bits.push(ar ? `${withOthers.length} مستنية حد تاني` : `${withOthers.length} waiting on others`);
+  const summary = bits.length ? (ar ? `عندك ${bits.join('، ')}.` : `You have ${bits.join(', ')}.`) : t('hAllClear');
+  const doneToday = mine.filter((x) => x.closure === td).length;
+  const dayTotal = doneToday + dueToday.length + overdue.length;
+  const pct = dayTotal ? Math.round((doneToday / dayTotal) * 100) : 0;
+
   $('list').innerHTML = `<div class="home">
-    <div class="h-hello"><h2>${greet} 👋</h2><span class="muted">${longDate}</span></div>
+    <div class="h-hello">
+      <div class="h-hi"><h2>${greet} 👋</h2><span class="muted">${longDate}</span><p class="h-sum">${summary}</p></div>
+      ${dayTotal ? `<div class="h-day-prog" title="${doneToday} / ${dayTotal}">
+        <div class="h-ring" style="--p:${pct}"><b>${doneToday}<small>/${dayTotal}</small></b></div>
+        <span>${t('hDoneToday')}</span></div>` : ''}
+    </div>
     <div class="h-stats">
       ${stat('today', overdue.length, t('overdue'), 'danger', 'overdue')}
       ${stat('today', dueToday.length, t('stDueToday'), 'warn', 'today')}
@@ -95,13 +111,17 @@ function renderHome() {
       ${stat('others', withOthers.length, t('hOthers'), 'violet', 'waiting')}
       ${stat('closed', closedWeek.length, t('hClosedWeek'), 'ok', 'closed')}
     </div>
-    <div class="h-grid">
-      ${panel(t('hFocus'), 'today', focus.length ? capped(focus, 7, 'today') : empty(t('hAllClear')), focus.length > 7 ? 'today' : '')}
-      ${panel(t('hComing'), 'calendar', coming || empty(t('hNothing')), 'calendar')}
-      ${people.size ? panel(t('hWaiting'), 'waiting', `<div class="h-people">${waiting}</div>`, 'others') : ''}
-      ${areaList.length ? panel(t('hAreasTitle'), 'folder', `<div class="h-areas">${areas}</div>`) : ''}
-      ${reminders.length ? panel(t('hReminders'), 'bell', reminders.map((x) =>
-        `<div class="h-row" data-task="${x.id}"><span class="h-time">${fmtTime(x.remindAt, lang())}</span><span class="h-title" dir="auto">${esc(x.title)}</span></div>`).join('')) : ''}
+    <div class="h-cols">
+      <div class="h-col">
+        ${panel(t('hFocus'), 'today', focus.length ? capped(focus, 7, 'today') : empty(t('hAllClear')), focus.length > 7 ? 'today' : '')}
+        ${panel(t('hComing'), 'calendar', coming || empty(t('hNothing')), 'calendar')}
+      </div>
+      <div class="h-col">
+        ${reminders.length ? panel(t('hReminders'), 'bell', reminders.map((x) =>
+          `<div class="h-row" data-task="${x.id}"><span class="h-time ${x.remindAt <= nowLocal() ? 'past' : ''}">${fmtTime(x.remindAt, lang())}</span><span class="h-title" dir="auto">${esc(x.title)}</span></div>`).join('')) : ''}
+        ${people.size ? panel(t('hWaiting'), 'waiting', `<div class="h-people">${waiting}</div>`, 'others') : ''}
+        ${areaList.length ? panel(t('hAreasTitle'), 'folder', `<div class="h-areas">${areas}</div>`) : ''}
+      </div>
     </div>
     <p class="h-foot small muted">${t('openTasks')}: ${open.length} · ${t('closedThisMonth')}: ${closedMonth}${avg !== null ? ` · ${t('avgClose')}: ${avg} ${t('days')}` : ''}</p>
   </div>`;

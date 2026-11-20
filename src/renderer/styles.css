@@ -919,3 +919,27 @@ kbd { font: inherit; font-size: 11.5px; font-weight: 600; color: var(--text); ba
 /* "Unclassified" only takes room when it has tasks, or while you drag one (to clear its priority). */
 .unclassified.is-empty { display: none; }
 body.is-dragging .unclassified.is-empty { display: block; }
+
+/* ---------- 1.9: Home in two columns ---------- */
+.home { container-type: inline-size; }
+.h-hello { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 4px 2px 16px; }
+.h-hi { display: flex; align-items: baseline; gap: 4px 12px; flex-wrap: wrap; min-width: 0; }
+.h-hi h2 { margin: 0; font-size: 20px; }
+.h-sum { flex-basis: 100%; margin: 2px 0 0; font-size: 13.5px; color: var(--text-2); }
+.h-day-prog { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-2); background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 8px 14px 8px 10px; }
+.h-ring { --p: 0; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--ok) calc(var(--p) * 1%), var(--hover) 0); position: relative; }
+.h-ring::before { content: ''; position: absolute; inset: 5px; border-radius: 50%; background: var(--panel); }
+.h-ring b { position: relative; font-size: 14px; }
+.h-ring small { font-size: 10px; color: var(--text-3); font-weight: 600; }
+.h-cols { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.h-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+@container (max-width: 720px) { .h-cols { grid-template-columns: minmax(0, 1fr); } }
+.h-time.past { color: var(--text-3); text-decoration: line-through; }
+/* Arabic and English titles line up with the rest of the page. */
+[dir=ltr] .home :is(.h-title, .h-an, .h-person b) { text-align: left; }
+[dir=rtl] .home :is(.h-title, .h-an, .h-person b) { text-align: right; }
+
+/* ---------- 1.9: language button ---------- */
+#langBtn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-2); background: var(--panel); border-radius: 99px; padding: 4px 12px 4px 9px; font-size: 12.5px; color: var(--text-2); }
+#langBtn .ico { width: 15px; height: 15px; color: var(--accent); }
+#langBtn:hover { border-color: var(--accent); color: var(--accent-text); background: var(--accent-bg); }

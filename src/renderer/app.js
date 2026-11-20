@@ -123,7 +123,8 @@ function renderAll() {
   $('addPersonBtn').title = t('addPerson');
   $('addAreaBtn').title = t('addArea');
   $('settingsLbl').textContent = t('settings');
-  $('langBtn').textContent = lang() === 'ar' ? 'English' : 'عربي';
+  $('langBtn').innerHTML = `${icon('globe')}<span>${lang() === 'ar' ? 'English' : 'عربي'}</span>`;
+  $('langBtn').title = t('langSwitch');
   $('search').placeholder = t('search');
   $('fab').title = t('newTask') + ' (Ctrl+N)';
   if ($('composer').classList.contains('open')) renderComposer();

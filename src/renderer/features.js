@@ -380,6 +380,10 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.9.0': {
+    ar: ['الرئيسية اتنظمت في عمودين، وفوق فيها جملة بتلخص يومك ودايرة بتوريك خلصت كام من تاسكات النهارده', 'زرار اللغة بقى شكله زرار واضح', 'في التذكير: "اقفل التاسك" بيسأل الأول، وبعدها الفار بيقولك شكرًا. و✕ بيوقف التذكير بس'],
+    en: ['Home is laid out in two columns, with a line that sums up your day and a ring showing how much of today is done', 'The language button now looks like a button', 'In a reminder, "Close the task" asks first, then the mouse says thanks. ✕ just stops the reminder']
+  },
   '1.8.0': {
     ar: ['المصفوفة بقت زي الرسم البياني: الاستعجال على المحور اللي تحت والأهمية على الجنب، و"مش مستعجل" جنب الصفر', 'الأولويات بقت بأرقام: 1 مهم ومستعجل، 2 مهم ومش مستعجل، 3 مش مهم ومستعجل، 4 لا ده ولا ده. وقّف الماوس على الرقم يظهر معناه', 'نافذة إضافة التاسك متقسمة ومكتوب على كل جزء: الفولدر، الموعد، التصنيف', '"مش متصنفة" بتختفي من المصفوفة لما تبقى فاضية', 'التحديثات بتظهر لوحدها: التطبيق بيدوّر كل نص ساعة ولما ترجعله'],
     en: ['The Matrix is drawn like a chart: urgency along the bottom axis, importance up the side, with "not urgent" next to zero', 'Priorities are numbered: 1 important & urgent, 2 important & not urgent, 3 not important & urgent, 4 neither. Hover a number to see what it means', 'The add card is split into labeled parts: folder, due, priority', '"Unclassified" is hidden in the Matrix when it is empty', 'Updates show up by themselves: the app looks every 30 minutes and when you come back to it']
