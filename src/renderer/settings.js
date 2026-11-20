@@ -5,9 +5,11 @@
 async function openSettings(section) {
   const s = data.settings, w = s.widget;
   ui.setSec = section || ui.setSec || 'general';
+  if (ui.setSec === 'updates') window.api.checkUpdate();
   const [login, info, displays, folder, backups] = await Promise.all([
     window.api.loginItem(), window.api.appInfo(), window.api.displays(), window.api.dataFolder(), window.api.listBackups()
   ]);
+  ui.appVersion = info.version;
   const filterOpts = [['focus', t('focus')], ['overdue', t('overdue')], ['week', t('hWeek')], ['others', t('hOthers')], ['pending', t('pending')], ['starred', t('starred')]]
     .concat(topAreas().map((a) => ['area:' + a.id, a.name]))
     .concat(data.people.map((p) => ['person:' + p.id, `${t('waiting')}: ${p.name}`]));
@@ -21,7 +23,7 @@ async function openSettings(section) {
     : `${fmtDate(b.date, lang())} · ${b.tasks} ${t('tasksWord')}`;
   const SECTIONS = [
     ['general', 'settings', t('general')], ['notifications', 'bell', t('notifications')], ['widget', 'edgeRight', t('widget')],
-    ['data', 'folder', t('dataTitle')], ['updates', 'download', t('updates')], ['about', 'help', t('about')]
+    ['data', 'folder', t('dataTitle')], ['updates', 'download', t('updates')], ['guide', 'idea', t('guide')], ['about', 'help', t('about')]
   ];
   const sec = (id, title, body) => `<section class="set-sec-body" data-sec="${id}" ${ui.setSec === id ? '' : 'hidden'}><h4>${title}</h4>${body}</section>`;
 
@@ -92,10 +94,9 @@ async function openSettings(section) {
           <div class="set-txt"><b>${t('excelTitle')}</b><span>${t('excelDesc')}</span></div>
           <div class="set-ctl"><button id="sCsv">${t('excelBtn')}</button></div></div>`)}`)}
 
-      ${sec('updates', t('updates'), card(
-        row(`${t('version')} ${info.version}`, `<span id="sUpd">${updateLine(info.update) || t('updatesDesc')}</span>`,
-          info.update?.status === 'ready' ? `<button class="primary" id="sInstall">${t('restartUpdate')}</button>` : `<button id="sCheck" ${info.update?.status === 'dev' ? 'disabled' : ''}>${t('checkNow')}</button>`)
-      ))}
+      ${sec('updates', t('updates'), card(`<div id="sUpdRow">${updRowHtml(info.update)}</div>`) + changelogHtml())}
+
+      ${sec('guide', t('guide'), guideHtml())}
 
       ${sec('about', t('about'), card(`<div class="about-top">${mouseLogo('about-logo')}<div><b>${esc(info.name)}</b> <span class="muted small">${t('version')} ${info.version}</span>
           <div class="small">${t('creditBy')}: <b>${esc(info.credit)}</b></div></div></div>
@@ -125,6 +126,7 @@ async function openSettings(section) {
     const nav = e.target.closest('[data-setsec]');
     if (nav) {
       ui.setSec = nav.dataset.setsec;
+      if (ui.setSec === 'updates') window.api.checkUpdate(); // look again whenever you open it
       document.querySelectorAll('[data-setsec]').forEach((b) => b.classList.toggle('on', b === nav));
       document.querySelectorAll('.set-sec-body').forEach((x) => { x.hidden = x.dataset.sec !== ui.setSec; if (!x.hidden) animateIn(x); });
       return;
@@ -144,6 +146,7 @@ async function openSettings(section) {
     if (id === 'sOpenBackups') window.api.openBackups();
     if (id === 'sRemTry') { if ((data.settings.remindStyle || 'mouse') === 'mouse') window.api.testReminder(); else playSound(data.settings.remindSound || 'chime'); }
     if (id === 'sCheck') { window.api.checkUpdate(); $('sUpd').textContent = t('upChecking'); }
+    if (id === 'sCheckNewer') { window.api.checkUpdate(); $('sUpd').textContent = t('upCheckingNewer'); }
     if (id === 'sInstall') window.api.installUpdate();
     if (id === 'sFolder') {
       const dir = await window.api.chooseDataFolder();
@@ -194,3 +197,14 @@ function shortcutList(quickKey) {
   ];
 }
 
+
+// The update line in Settings › Updates. An update that's ready can be installed now, and you can
+// still look for a newer one first (if there is, it downloads and replaces it).
+function updRowHtml(u) {
+  const ver = ui.appVersion || '';
+  const ready = u && u.status === 'ready';
+  const line = updateLine(u) || t('updatesDesc');
+  return `<div class="set-row"><div class="set-txt"><b>${t('version')} ${ver}</b><span id="sUpd">${line}${ready ? ` · <span class="muted">${t('upNewestHint')}</span>` : ''}</span></div>
+    <div class="set-ctl">${ready ? `<button id="sCheckNewer">${t('checkNewer')}</button><button class="primary" id="sInstall">${t('restartUpdate')}</button>`
+      : `<button id="sCheck" ${u && ['dev', 'downloading', 'checking'].includes(u.status) ? 'disabled' : ''}>${t('checkNow')}</button>`}</div></div>`;
+}

@@ -598,18 +598,23 @@ function setupAutoUpdate() {
   try { ({ autoUpdater } = require('electron-updater')); } catch { return; }
   autoUpdater.autoDownload = true;
   const send = (s) => { updateState = s; mainWin && mainWin.webContents.send('update-status', s); };
-  autoUpdater.on('checking-for-update', () => send({ status: 'checking' }));
-  autoUpdater.on('update-not-available', () => send({ status: 'latest' }));
-  autoUpdater.on('update-available', (i) => send({ status: 'downloading', version: i.version }));
+  // An update that's already downloaded stays ready while we keep looking for a newer one;
+  // if a newer one shows up it's downloaded too, and "Restart and update" installs the newest.
+  let downloaded = null;
+  const readyOr = (s) => send(downloaded ? { status: 'ready', version: downloaded, checked: Date.now() } : s);
+  autoUpdater.on('checking-for-update', () => readyOr({ status: 'checking' }));
+  autoUpdater.on('update-not-available', () => readyOr({ status: 'latest', checked: Date.now() }));
+  autoUpdater.on('update-available', (i) => send({ status: 'downloading', version: i.version, ready: downloaded }));
   autoUpdater.on('update-downloaded', (i) => {
-    send({ status: 'ready', version: i.version });
+    downloaded = i.version;
+    send({ status: 'ready', version: i.version, checked: Date.now() });
     notify(ar() ? `تحديث جديد جاهز (${i.version})` : `Update ready (${i.version})`, ar() ? 'هيتسطب لما تقفل البرنامج، أو من الإعدادات دلوقتي.' : 'It installs when you quit, or from Settings now.');
   });
-  autoUpdater.on('error', () => send({ status: 'error' }));
+  autoUpdater.on('error', () => readyOr({ status: 'error' }));
   // The app stays open all day, so look often: every 30 min, and when you come back to a window.
   let lastCheck = 0;
   const check = () => {
-    if (['downloading', 'ready'].includes(updateState?.status)) return;
+    if (updateState?.status === 'downloading') return;
     lastCheck = Date.now();
     autoUpdater.checkForUpdates().catch(() => send({ status: 'error' }));
   };

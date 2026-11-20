@@ -379,6 +379,14 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.17.1': {
+    ar: ['التحديثات: لو في تحديث نزل وجاهز، التطبيق بقى يفضل يدوّر على الأحدث منه، ولو لقى أحدث بينزّله ويتسطب هو بدل القديم. وفي الإعدادات ← التحديثات زرار "شوف لو في أحدث"، وكل مرة تفتحها بيدوّر لوحده',
+      'في الإعدادات ← التحديثات: "كل الجديد في كل إصدار"',
+      'قسم جديد في الإعدادات: "دليل التطبيق". فيه كل المميزات، ومكان كل واحدة، وزرار "وريني" يوديك لها'],
+    en: ['Updates: when an update is downloaded and ready, the app keeps looking for a newer one; if it finds one it downloads it and installs that instead. Settings › Updates has "Look for a newer one", and it checks by itself whenever you open it',
+      'Settings › Updates: "What’s new in every version"',
+      'A new Settings section, "App guide": every feature, where to find it, and a "Show me" button that takes you there']
+  },
   '1.17.0': {
     ar: ['صفحة النهارده أهدى: الأرقام بقت سطر صغير بدل 5 مربعات، وأهداف الأسبوع فوق، وكارت "دلوقتي" فيه حاجة واحدة تبدأ بيها على طول (و"مش دلوقتي" يوريك اللي بعدها)',
       'التاسك هتاخد قد إيه: حدد الوقت من صفحة التاسك أو من الخطة. الخطة بتقولك "خططت 5 ساعات من 6 متاحين" وبتحذّرك لو يومك اتملى، والتركيز بيقترح الوقت الباقي',
@@ -560,6 +568,7 @@ function updateLine(u) {
 }
 
 function showUpdateBanner(u) {
+  if ($('sUpdRow')) $('sUpdRow').innerHTML = updRowHtml(u); // Settings › Updates is open: keep it current
   let b = document.getElementById('updateBanner');
   if (u.status !== 'ready') { b && b.remove(); return; }
   if (!b) { b = document.createElement('div'); b.id = 'updateBanner'; b.className = 'update-banner'; document.querySelector('.main').prepend(b); }
