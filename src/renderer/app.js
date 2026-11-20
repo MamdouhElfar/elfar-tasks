@@ -800,7 +800,7 @@ function bindComposer() {
   };
   // Clicking anywhere outside closes it (unless you've typed something).
   document.addEventListener('mousedown', (e) => {
-    if (!c.classList.contains('open') || c.contains(e.target) || $('fab').contains(e.target) || e.target.closest?.('.tp-pop')) return;
+    if (!c.classList.contains('open') || c.contains(e.target) || $('fab').contains(e.target) || e.target.closest?.('.tp-pop, .dp-pop')) return;
     if (!$('cTitle').value.trim()) closeComposer();
   });
 }
@@ -1137,6 +1137,7 @@ async function openSettings(section) {
         row(t('language'), '', `<div class="seg"><button data-lang="ar" class="${s.lang === 'ar' ? 'on' : ''}">عربي</button><button data-lang="en" class="${s.lang === 'en' ? 'on' : ''}">English</button></div>`) +
         row(t('launch'), t('launchDesc'), toggle('sLogin', login)) +
         row(t('planTitle'), t('planAuto'), toggle('sPlanAuto', s.planAuto !== false)) +
+        row(t('theme'), t('themeDesc'), `<div class="seg">${['system', 'light', 'dark'].map((m) => `<button data-theme="${m}" class="${(s.theme || 'system') === m ? 'on' : ''}">${t('theme_' + m)}</button>`).join('')}</div>`) +
         row(t('focusLen'), t('focusLenDesc'), `<div class="seg">${[15, 25, 45, 60].map((m) => `<button data-fmins="${m}" class="${(s.focusMins || 25) === m ? 'on' : ''}">${m}</button>`).join('')}</div>
           <span class="small muted" style="margin-inline:8px 4px">${t('breakLen')}</span><div class="seg">${[5, 10].map((m) => `<button data-bmins="${m}" class="${(s.breakMins || 5) === m ? 'on' : ''}">${m}</button>`).join('')}</div>`) +
         row(`${t('textSize')} <span class="muted" id="sZoomVal">${zoom}%</span>`, t('textSizeDesc'), `<input type="range" id="sZoom" min="80" max="160" step="10" value="${zoom}">`)
@@ -1229,6 +1230,7 @@ async function openSettings(section) {
       return;
     }
     if (e.target.dataset.lang) { data.settings.lang = e.target.dataset.lang; save(); renderAll(); openSettings(); }
+    if (e.target.dataset.theme) { data.settings.theme = e.target.dataset.theme; save(); document.querySelectorAll('[data-theme]').forEach((b) => b.classList.toggle('on', b === e.target)); }
     if (e.target.dataset.fmins) { data.settings.focusMins = Number(e.target.dataset.fmins); save(); document.querySelectorAll('[data-fmins]').forEach((b) => b.classList.toggle('on', b === e.target)); }
     if (e.target.dataset.bmins) { data.settings.breakMins = Number(e.target.dataset.bmins); save(); document.querySelectorAll('[data-bmins]').forEach((b) => b.classList.toggle('on', b === e.target)); }
     if (e.target.dataset.openon) { setW({ openOn: e.target.dataset.openon }); document.querySelectorAll('[data-openon]').forEach((b) => b.classList.toggle('on', b === e.target)); }

@@ -388,6 +388,16 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.14.0': {
+    ar: ['شكل التطبيق: فاتح، غامق، أو زي ويندوز (الإعدادات ← عام)',
+      'أسماء التاسكات العربي والإنجليزي بقت كلها جنب الدايرة بتاعتها، مهما كانت لغة التطبيق',
+      'نافذة إضافة تاسك مبقتش بتختفي لما تختار التاريخ قبل ما تكتب الاسم',
+      'الفار اللي على جنب الشاشة: لما مفيش تاسكات بياكل جبنة ومش واخد باله من حد 🧀، ولما الماوس يقرب عينه بتلف معاه وودانه بتقف، ولو شديت ديله بيتضايق 😤'],
+    en: ['App theme: light, dark, or the same as Windows (Settings › General)',
+      'Arabic and English task names now all sit next to their circle, whatever the app language',
+      'The add-task card no longer disappears when you pick a date before typing the name',
+      'The mouse at the screen edge: with nothing to do it munches cheese and ignores everyone 🧀, when the cursor comes near its eyes follow it and its ears perk up, and pulling its tail makes it cross 😤']
+  },
   '1.13.0': {
     ar: ['تابات أقل: "النهارده" بقت فيها الرئيسية والنهارده مع بعض، و"المقفولة" بقت جوه "المراجعة" جنب التقرير. 5 تابات بدل 7',
       'خطة النهارده: أول ما تفتح التطبيق الصبح، تختار 3 لـ 5 حاجات بس تخلّصهم. بيظهروا أول حاجة في "النهارده"، ومعاهم عدّاد (1/4)',

@@ -80,7 +80,9 @@ function render() {
   const list = data.tasks.filter(f.test).sort(byPriorityThenDue);
   // The edge tab shows how many tasks are waiting, red if any are "do it now".
   // The edge tab is a little mouse peeking in, with its tail hanging below 🐭
-  $('peek').innerHTML = `<span class="pk-face">${mouseLogo()}</span><span class="pk-count" data-n="${list.length}">${list.length}</span>
+  const idle = !list.length;
+  document.body.classList.toggle('pk-idle', idle);
+  $('peek').innerHTML = `<span class="pk-face">${tailDragging ? mouseLogo('', 'annoyed') : idle ? mouseLogo('', 'happy') : mouseLogo()}</span><span class="pk-say">${esc(t('pkAnnoyed'))}</span><span class="pk-count" data-n="${list.length}">${list.length}</span>
     <svg class="pk-tail" viewBox="0 0 30 100" aria-hidden="true"><path d="M15 0 C 3 16, 27 28, 15 46 S 3 74, 18 88 Q 24 94, 20 99"/></svg>
     <span class="pk-grab" id="pkGrab" title="${esc(t('dragTail'))}"></span>`;
   $('peek').classList.toggle('q1', list.some((x) => x.priority === 'q1' || statusOf(x) === 'overdue'));
@@ -234,13 +236,24 @@ document.addEventListener('pointerdown', (e) => {
   tailDragging = true;
   const x0 = e.screenX, y0 = e.screenY;
   document.body.classList.add('tail-drag');
+  // Pulled by the tail: the mouse is not amused 😤 (only once it's really being dragged).
+  let cross = false;
+  const pulled = (ev) => {
+    if (cross || Math.abs(ev.screenX - x0) + Math.abs(ev.screenY - y0) < 6) return;
+    cross = true;
+    document.body.classList.add('pk-annoyed');
+    const f = document.querySelector('#peek .pk-face'); if (f) f.innerHTML = mouseLogo('', 'annoyed');
+  };
+  e.target.addEventListener('pointermove', pulled);
   window.api.tailDrag('start');
   const up = (ev) => {
+    e.target.removeEventListener('pointermove', pulled);
     e.target.removeEventListener('pointerup', up);
     e.target.removeEventListener('pointercancel', up);
     window.api.tailDrag('end');
     tailDragging = false;
     document.body.classList.remove('tail-drag');
+    if (cross) setTimeout(() => { document.body.classList.remove('pk-annoyed'); render(); }, 900); // stays cross for a moment
     // A click without dragging opens the card.
     if (Math.abs(ev.screenX - x0) + Math.abs(ev.screenY - y0) < 4) openCard();
   };
@@ -267,6 +280,21 @@ $('wAdd').onkeydown = (e) => {
   e.target.value = '';
   save(); render();
 };
+
+// The cursor nearby (sent by the main process while the widget is tucked at the edge):
+// the mouse's eyes follow it, and its ears perk up when it gets close.
+window.api.onWidgetCursor && window.api.onWidgetCursor((p) => {
+  const svg = document.querySelector('#peek .pk-face svg');
+  if (!svg || !collapsed || tailDragging || document.body.classList.contains('pk-idle')) return document.body.classList.remove('pk-near', 'pk-watch');
+  if (!p) { document.body.classList.remove('pk-near', 'pk-watch'); svg.style.removeProperty('--lx'); svg.style.removeProperty('--ly'); return; }
+  const r = svg.getBoundingClientRect();
+  const dx = p.x - (r.left + r.width / 2), dy = p.y - (r.top + r.height / 2);
+  const d = Math.hypot(dx, dy) || 1;
+  svg.style.setProperty('--lx', ((dx / d) * Math.min(1.8, d / 40)).toFixed(2));
+  svg.style.setProperty('--ly', ((dy / d) * Math.min(1.8, d / 40)).toFixed(2));
+  document.body.classList.add('pk-watch');
+  document.body.classList.toggle('pk-near', d < 150);
+});
 
 (async () => {
   data = await window.api.getData();

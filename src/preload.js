@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld('api', {
   onCloseTask: (cb) => ipcRenderer.on('task:close', (e, id) => cb(id)),
 
   onDataChanged: (cb) => ipcRenderer.on('data-changed', (e, d) => cb(d)),
+  onWidgetCursor: (cb) => ipcRenderer.on('widget:cursor', (e, p) => cb(p)),
   onOpenReview: (cb) => ipcRenderer.on('review:open', () => cb()),
   onOpenTask: (cb) => ipcRenderer.on('open-task', (e, id) => cb(id))
 });

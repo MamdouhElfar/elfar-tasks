@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, screen, shell, Notification, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, screen, shell, Notification, globalShortcut, nativeTheme } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -250,6 +250,19 @@ function startHoverWatch() {
       widgetWin.webContents.send('widget:collapse');
     }
   }, 100);
+}
+let cursorTimer = null, cursorNear = false;
+function startCursorWatch() {
+  if (cursorTimer) return;
+  cursorTimer = setInterval(() => {
+    if (!widgetWin || widgetWin.isDestroyed()) { clearInterval(cursorTimer); cursorTimer = null; return; }
+    if (edgeOf() === 'off' || hoverTimer || tailDrag) return;
+    const p = screen.getCursorScreenPoint(), b = widgetWin.getBounds();
+    const gap = Math.max(b.x - p.x, p.x - (b.x + b.width), b.y - p.y, p.y - (b.y + b.height), 0);
+    const z = widgetWin.webContents.getZoomFactor() || 1;
+    if (gap < 260) { cursorNear = true; widgetWin.webContents.send('widget:cursor', { x: (p.x - b.x) / z, y: (p.y - b.y) / z }); }
+    else if (cursorNear) { cursorNear = false; widgetWin.webContents.send('widget:cursor', null); }
+  }, 80);
 }
 function stopHoverWatch() { clearInterval(hoverTimer); hoverTimer = null; outsideSince = 0; }
 
@@ -545,6 +558,11 @@ function setupAutoUpdate() {
   ipcMain.handle('app:check-update', () => check());
 }
 
+function applyTheme() {
+  const m = store.get().settings.theme;
+  nativeTheme.themeSource = ['light', 'dark'].includes(m) ? m : 'system';
+}
+
 // ---------- IPC ----------
 ipcMain.handle('data:get', () => store.get());
 ipcMain.handle('data:save', (e, data) => {
@@ -574,6 +592,7 @@ ipcMain.handle('data:save', (e, data) => {
   store.replace(data);
   broadcast(e.sender);
   if (focusEnded) e.sender.send('data-changed', store.get());
+  applyTheme();
   refreshTray();
   const w = store.get().settings.widget;
   if (widgetWin && `${edgeOf()}|${w.display}` !== before) applyWidgetMode();
@@ -699,6 +718,7 @@ app.whenReady().then(() => {
   // First run follows the Windows language.
   const lang = (app.getLocale() || '').startsWith('ar') ? 'ar' : 'en';
   store.init(USER_DIR, { lang, onExternalChange: () => broadcast() });
+  applyTheme();
   createMain();
   if (store.get().settings.widget.visible) createWidget();
   tray = new Tray(makeIcon(32));
@@ -711,6 +731,7 @@ app.whenReady().then(() => {
   setTimeout(tick, 5000);
   setInterval(tick, 30000);
   setInterval(focusTick, 2000);
+  setInterval(() => { if (widgetWin && !cursorTimer) startCursorWatch(); }, 2000);
   setupAutoUpdate();
 });
 

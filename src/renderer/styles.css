@@ -1185,3 +1185,37 @@ button.link:hover { text-decoration: underline; background: none; }
 .rv-t .when { font-size: 11.5px; margin-inline-start: 4px; }
 .rv-acts { display: flex; gap: 5px; flex: none; }
 .rv-acts button { font-size: 12px; padding: 3px 9px; }
+
+/* ================= 1.14 ================= */
+/* Titles line up on the app's side (next to the circle) whatever language they're written in.
+   The text itself still reads in its own direction. Typing boxes and notes keep their own alignment. */
+html[dir=rtl] [dir=auto]:not(input, textarea, [contenteditable], [contenteditable] *) { text-align: right; }
+html[dir=ltr] [dir=auto]:not(input, textarea, [contenteditable], [contenteditable] *) { text-align: left; }
+.fv-card [dir=auto], .modal.nudge [dir=auto] { text-align: center !important; }
+
+/* The mouse's moods */
+.mouse-logo .ml-pupils { transform: translate(calc(var(--lx, 0) * 1px), calc(var(--ly, 0) * 1px)); transition: transform .12s ease-out; }
+.mouse-logo .ml-ear { transform-box: fill-box; transform-origin: 50% 85%; transition: transform .28s cubic-bezier(.3, 1.6, .5, 1); }
+.mouse-logo .ml-anger { transform-box: fill-box; transform-origin: center; animation: mlPop .45s ease-in-out infinite alternate; }
+@keyframes mlPop { from { transform: scale(.8); } to { transform: scale(1.15); } }
+
+/* Edge mouse: notices the cursor coming… */
+body.pk-watch .peek .pk-face svg { transform: scale(1.04); }
+body.pk-near .peek .ml-ear.l { transform: rotate(-14deg) scale(1.14); }
+body.pk-near .peek .ml-ear.r { transform: rotate(14deg) scale(1.14); }
+body.pk-near .peek .pk-face svg { transform: scale(1.12) translateY(-1px); }
+body.pk-near .peek .pk-tail { animation-duration: .7s; }
+/* …munches cheese and ignores everyone when there's nothing to do… */
+body.pk-idle .peek .pk-face svg { animation: pkMunch 2.2s ease-in-out infinite; }
+body.pk-idle .peek .ml-cheese { transform-box: fill-box; transform-origin: 30% 50%; animation: pkNibble .5s ease-in-out infinite alternate; }
+@keyframes pkMunch { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-6deg) translateY(1px); } 50% { transform: rotate(2deg); } 75% { transform: rotate(-3deg) translateY(1px); } }
+@keyframes pkNibble { from { transform: rotate(0); } to { transform: rotate(-7deg) translateY(-1px); } }
+/* …and is cross when you pull its tail. */
+body.pk-annoyed .peek .pk-face svg { animation: pkShake .2s linear infinite; }
+@keyframes pkShake { 0%, 100% { transform: translateX(0) rotate(0); } 25% { transform: translateX(-1.5px) rotate(-5deg); } 75% { transform: translateX(1.5px) rotate(5deg); } }
+body.pk-annoyed .peek .pk-tail path { stroke: #e5484d; }
+.pk-say { display: none; position: absolute; top: 2px; right: calc(100% + 8px); white-space: nowrap; font-size: 12px; font-weight: 600; padding: 5px 10px;
+  border-radius: 12px; background: var(--panel); color: var(--danger); border: 1px solid var(--border-2); box-shadow: 0 4px 14px rgba(0,0,0,.18); pointer-events: none; }
+body[data-edge=left] .pk-say { right: auto; left: calc(100% + 8px); }
+body.pk-annoyed .pk-say { display: block; animation: popIn .18s var(--ease); }
+@media (prefers-reduced-motion: reduce) { body.pk-idle .peek .pk-face svg, body.pk-idle .peek .ml-cheese, body.pk-annoyed .peek .pk-face svg { animation: none; } }
