@@ -68,8 +68,8 @@ document.addEventListener('keydown', (e) => {
 });
 
 (async () => {
-  data = await window.api.getData();
+  adoptData(await window.api.getData());
   render();
-  window.api.onDataChanged((d) => { data = d; });
+  window.api.onDataChanged((d) => { adoptData(d); });
   window.api.onQuickReset(() => render());
 })();

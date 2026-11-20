@@ -92,7 +92,7 @@ function hStartFocus(h, rest) {
   const left = rest && h.duration ? Math.max(1, Math.round(h.duration - hMins(h, todayStr()))) : null;
   askFocusMins(t, left || Number(h.duration) || Number(data.settings.focusMins) || 25, (mins) => {
     ui.focusView = true;
-    window.api.focus('start', 'habit:' + h.id, { mins }).then((d) => { data = d; refreshLists(); renderFocus(true); });
+    window.api.focus('start', 'habit:' + h.id, { mins }).then((d) => { receiveData(d); refreshLists(); renderFocus(true); });
   });
 }
 
@@ -168,9 +168,9 @@ function habitCardHtml(h) {
       <button class="icon" data-hedit="${h.id}" title="${t('edit')}">✎</button></header>
     ${now}
     <div class="hbc-stats">
-      <span title="${t(st.streakUnit === 'd' ? 'hbStreakDays' : 'hbStreakWeeks')}">🔥 <b>${st.streak}</b> ${st.streakUnit === 'd' ? t('hbDaysShort') : t('hbWeeksShort')}</span>
-      <span title="${t('hbRateTip')}">🎯 <b>${st.rate === null ? '—' : st.rate + '%'}</b> ${t('hbRate')}</span>
-      <span>${h.kind === 'minutes' ? `⏱ <b>${hMinsLabel(st.total)}</b>` : `✓ <b>${st.total}</b> ${t('hbTimes')}`}${h.end && h.end.type === 'count' ? ` / ${h.end.count}` : ''}</span>
+      <span title="${t(st.streakUnit === 'd' ? 'hbStreakDays' : 'hbStreakWeeks')}">${icon('flame')} <b>${st.streak}</b> ${st.streakUnit === 'd' ? t('hbDaysShort') : t('hbWeeksShort')}</span>
+      <span title="${t('hbRateTip')}">${icon('target')} <b>${st.rate === null ? '—' : st.rate + '%'}</b> ${t('hbRate')}</span>
+      <span>${h.kind === 'minutes' ? `${icon('clock')} <b>${hMinsLabel(st.total)}</b>` : `${icon('closed')} <b>${st.total}</b> ${t('hbTimes')}`}${h.end && h.end.type === 'count' ? ` / ${h.end.count}` : ''}</span>
     </div>
     ${h.kind === 'minutes' ? hWeekBars(h) : hWeekStrip(h)}
     ${hHistory(h)}
@@ -388,7 +388,7 @@ function maybeAskHabits() {
   const dayLbl = (d) => (d === hAdd(td, -1) ? t('hbYesterday') : hDayName(hDow(d), 'long') + ' ' + fmtDate(d, lang()));
   const bg = document.createElement('div');
   bg.className = 'modal-bg hb-check-bg';
-  bg.innerHTML = `<div class="modal hb-check"><div class="pl-head"><span class="pl-sun">🌤</span><div><h3>${t('hbCheckTitle').replace('{g}', (() => { const hr = new Date().getHours(); return hr < 12 ? t('gMorning') : hr < 18 ? t('gAfternoon') : t('gEvening'); })())}</h3><p class="small muted">${t('hbCheckSub')}</p></div></div>
+  bg.innerHTML = `<div class="modal hb-check"><div class="pl-head"><span class="pl-ico">${icon('today')}</span><div><h3>${t('hbCheckTitle').replace('{g}', (() => { const hr = new Date().getHours(); return hr < 12 ? t('gMorning') : hr < 18 ? t('gAfternoon') : t('gEvening'); })())}</h3><p class="small muted">${t('hbCheckSub')}</p></div></div>
     <div class="hbk-list">${rows.map(({ h, d }, i) => `<div class="hbk-row" data-i="${i}"><span class="hb-emoji">${esc(h.emoji || '🔁')}</span><span class="hbk-t"><b dir="auto">${esc(h.name)}</b><small>${dayLbl(d)}${hPartial(h, d) ? ` · ⏳ ${hMinsLabel(hMins(h, d))} / ${hMinsLabel(h.duration)}` : ''}</small></span>
       <span class="hbk-btns"><button class="ok" data-ans="done">✓ ${t('hbYes')}</button><button data-ans="no">✗ ${t('hbNo')}</button><button data-ans="skip" title="${t('hbSkipTip')}">🌴</button></span></div>`).join('')}</div>
     <p class="small muted">${t('hbCheckNote')} ${t('hbCheckPartial')}</p>

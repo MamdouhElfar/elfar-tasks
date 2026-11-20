@@ -12,7 +12,7 @@ const tomorrowStr = () => { const d = new Date(); d.setDate(d.getDate() + 1); re
 function reviewSubBar() {
   const b = (v, label) => `<button class="${ui.view === v ? 'on' : ''}" data-rview="${v}">${label}</button>`;
   return `<div class="sub-bar review-bar"><span class="seg-joined">${b('report', `${icon('report')} ${t('report')}`)}${b('closed', `${icon('closed')} ${t('closed')}`)}</span>
-    <button class="link" data-review>🌙 ${t('reviewBtn')}</button></div>`;
+    <button class="link" data-review>${icon('moon')} ${t('reviewBtn')}</button><button class="link" data-weekreview>${icon('calendar')} ${t('wkBtn')}</button></div>`;
 }
 
 function planCandidates() {
@@ -42,23 +42,26 @@ function openPlan() {
     const w = whenInfo(x);
     return `<label class="pl-row"><input type="checkbox" data-pick="${x.id}" ${picked.has(x.id) ? 'checked' : ''}>
       ${x.priority ? `<span class="pnum ${x.priority}">${PRIO_NUM[x.priority]}</span>` : '<span class="pnum none"></span>'}
-      <span class="pl-t" dir="auto">${esc(x.title)}</span>${w ? `<span class="when ${w.cls}">${w.text}</span>` : ''}</label>`;
+      <span class="pl-t" dir="auto">${esc(x.title)}</span>${w ? `<span class="when ${w.cls}">${w.text}</span>` : ''}
+      <select class="pl-est" data-est-for="${x.id}" title="${t('estimate')}"><option value="">⏱ ?</option>${[15, 30, 45, 60, 90, 120, 180, 240].map((m) => `<option value="${m}" ${x.estimate === m ? 'selected' : ''}>${fmtMins(m, lang())}</option>`).join('')}${x.estimate && ![15, 30, 45, 60, 90, 120, 180, 240].includes(x.estimate) ? `<option value="${x.estimate}" selected>${fmtMins(x.estimate, lang())}</option>` : ''}</select></label>`;
   };
   const bg = document.createElement('div');
   bg.className = 'modal-bg plan-bg';
   bg.innerHTML = `<div class="modal plan" role="dialog">
-    <div class="pl-head"><span class="pl-sun">☀</span><div><h3>${t('planTitle')}</h3><p class="small muted">${t('planIntro').replace('{n}', PLAN_MAX)}</p></div></div>
+    <div class="pl-head"><span class="pl-ico">${icon('today')}</span><div><h3>${t('planTitle')}</h3><p class="small muted">${t('planIntro').replace('{n}', PLAN_MAX)}</p></div></div>
     <div class="pl-list">${groups.length ? groups.map(([k, xs], i) => `<details class="pl-group" ${i < 4 || k === 'fromYesterday' ? 'open' : ''}><summary>${t(k)} · ${xs.length}</summary>${xs.slice(0, 30).map(row).join('')}</details>`).join('') : `<div class="h-empty">${t('planNothing')}</div>`}</div>
-    <div class="pl-count" id="plCount"></div>
+    <div class="pl-count" id="plCount"></div><div id="plCap"></div>
     <label class="pl-auto small"><input type="checkbox" id="plAuto" ${data.settings.planAuto !== false ? 'checked' : ''}> ${t('planAuto')}</label>
-    <div class="actions"><button id="plSkip">${t('planSkip')}</button><span style="flex:1"></span><button class="primary" id="plGo">☀ ${t('planGo')}</button></div></div>`;
+    <div class="actions"><button id="plSkip">${t('planSkip')}</button><span style="flex:1"></span><button class="primary" id="plGo">${icon('today')} ${t('planGo')}</button></div></div>`;
   document.body.appendChild(bg);
   const count = () => {
     const n = picked.size;
     $('plCount').className = 'pl-count' + (n > PLAN_MAX ? ' warn' : '');
     $('plCount').textContent = n > PLAN_MAX ? t('planTooMany').replace('{n}', n) : `${t('planPicked')} ${n} / ${PLAN_MAX}`;
     $('plGo').disabled = !n;
+    $('plCap').innerHTML = capacityHtml(plannedLoad([...picked].map(taskById).filter(Boolean)));
   };
+  bg.addEventListener('est-changed', count);
   count();
   const close = () => { document.removeEventListener('keydown', onKey, true); bg.classList.add('leaving'); setTimeout(() => bg.remove(), 150); };
   const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); close(); } };
@@ -75,6 +78,9 @@ function openPlan() {
       const all = groups.flatMap(([, xs]) => xs).map((x) => x.id);
       const ids = [...(cur ? cur.ids.filter((id) => picked.has(id)) : []), ...all.filter((id) => picked.has(id) && !(cur && cur.ids.includes(id)))];
       data.plan = { date: todayStr(), ids };
+      data.planLog = data.planLog || {};
+      data.planLog[todayStr()] = ids;
+      for (const d of Object.keys(data.planLog)) if (d < hAdd(todayStr(), -90)) delete data.planLog[d];
       save(); close();
       ui.view = 'today'; ui.selected = null; refresh(); animateIn($('list'));
     }
@@ -112,7 +118,7 @@ function openReview() {
       <span class="rv-t" dir="auto">${x.priority ? `<span class="pnum ${x.priority}">${PRIO_NUM[x.priority]}</span> ` : ''}${esc(x.title)}${w ? ` <span class="when ${w.cls}">${w.text}</span>` : ''}</span>
       <span class="rv-acts"><button data-rva="tomorrow">${t('tomorrowLbl')} →</button><button class="ok" data-rva="done">✓</button></span></div>`; };
   bg.innerHTML = `<div class="modal review" role="dialog">
-    <div class="pl-head"><span class="pl-sun">🌙</span><div><h3>${t('reviewTitle')}</h3><p class="small muted">${new Date().toLocaleDateString(loc, { weekday: 'long', day: 'numeric', month: 'long' })}</p></div></div>
+    <div class="pl-head"><span class="pl-ico">${icon('moon')}</span><div><h3>${t('reviewTitle')}</h3><p class="small muted">${new Date().toLocaleDateString(loc, { weekday: 'long', day: 'numeric', month: 'long' })}</p></div></div>
     <div class="rv-win">
       <div class="rv-big"><b>${doneToday.length}</b><span>${t('rvDone')}</span></div>
       ${focusMs >= 60000 ? `<div class="rv-big"><b>${focusTimeLabel(Math.round(focusMs / 60000))}</b><span>${t('rvFocus')}</span></div>` : ''}
@@ -160,4 +166,7 @@ document.addEventListener('click', (e) => {
   const rv = e.target.closest('[data-rview]');
   if (rv && ui.view !== rv.dataset.rview) { ui.view = rv.dataset.rview; ui.selected = null; refresh(); }
 });
-window.api.onOpenReview && window.api.onOpenReview(() => { if (!document.querySelector('.modal.review')) openReview(); });
+window.api.onOpenReview && window.api.onOpenReview((kind) => {
+  if (kind === 'week') { if (!document.querySelector('.modal.week')) openWeekReview(); }
+  else if (!document.querySelector('.modal.review')) openReview();
+});

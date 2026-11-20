@@ -3,15 +3,6 @@
 
 // ---------------- recurring tasks ----------------
 // task.repeat = { every: n, unit: 'day' | 'week' | 'month' | 'year' }
-function shiftDate(ds, n, unit) {
-  const d = new Date(ds + 'T00:00');
-  if (unit === 'day') d.setDate(d.getDate() + n);
-  if (unit === 'week') d.setDate(d.getDate() + 7 * n);
-  if (unit === 'month') { const day = d.getDate(); d.setDate(1); d.setMonth(d.getMonth() + n); d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate())); }
-  if (unit === 'year') d.setFullYear(d.getFullYear() + n);
-  return todayStr(d);
-}
-
 // Closing a repeating task creates the next one (same details, fresh subtasks, next due date).
 function spawnNext(x) {
   if (!x.repeat || x.spawned) return null;
@@ -388,6 +379,18 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.17.0': {
+    ar: ['صفحة النهارده أهدى: الأرقام بقت سطر صغير بدل 5 مربعات، وأهداف الأسبوع فوق، وكارت "دلوقتي" فيه حاجة واحدة تبدأ بيها على طول (و"مش دلوقتي" يوريك اللي بعدها)',
+      'التاسك هتاخد قد إيه: حدد الوقت من صفحة التاسك أو من الخطة. الخطة بتقولك "خططت 5 ساعات من 6 متاحين" وبتحذّرك لو يومك اتملى، والتركيز بيقترح الوقت الباقي',
+      'مراجعة الأسبوع: آخر يوم في الأسبوع الفار بيعرض عليك تراجع أسبوعك. هتشوف خلصت كام، وركزت قد إيه، والتزامك بالعادات، وإيه اللي بيتأجل، وحاجات عن نفسك (أحسن ساعات تركيزك، وأكتر يوم بتخلّص فيه، ودقة تقديرك). وبعدها تختار 3 أهداف للأسبوع الجاي',
+      'أولوية 1 بقى لونها برتقالي، والأحمر بقى للمتأخر بس، والأيقونات اتوحّدت',
+      'من جوه: حفظ أأمن (التطبيق والويدجت مش بيمسحوا تعديلات بعض)، واختبارات أوتوماتيك قبل كل إصدار، وسجل للأخطاء (الإعدادات ← عن التطبيق)، وتنضيف ملف الشكل'],
+    en: ['A calmer Today page: the numbers are one small line instead of five cards, this week’s goals sit on top, and a "Now" card gives you one thing to start right away ("Not now" shows the next one)',
+      'How long a task takes: set it on the task page or in the plan. The plan tells you "Planned 5h of 6h available" and warns when your day is full, and focus suggests the time left',
+      'Weekly review: on the last day of the week the mouse offers to review it. See what got done, focus time, habits, what keeps getting put off, and what your data says about you (best focus hours, best day, how good your estimates are). Then pick up to 3 goals for next week',
+      'Priority 1 is orange now, red only means late, and the icons are consistent',
+      'Under the hood: safer saving (the app and the widget no longer undo each other), automatic tests before every release, an error log (Settings › About), and a cleaned-up stylesheet']
+  },
   '1.16.2': {
     ar: ['زرار "▶ ركّز" رجع مكانه الصح: صغير في آخر الكارت، بعيد عن دايرة القفل ومش بيغطي الكلام',
       'متابعة العادات بقت زي النتيجة: الأسبوع ده أيام بالتاريخ واسم اليوم، و"السجل" بيفتح شهر كامل تقلّب فيه، وجنب كل أسبوع نتيجته لو العادة أسبوعية'],

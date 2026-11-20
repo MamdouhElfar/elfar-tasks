@@ -22,17 +22,17 @@ function focusNow() {
   const worked = (f.workedMs || 0) + (f.runFrom ? Date.now() - f.runFrom : 0);
   return { f, x, total, left: total - worked, running: !!f.runFrom, next: (x.subtasks || []).find((s) => !s.done) };
 }
-const focusDo = (what, id) => window.api.focus(what, id).then((d) => { data = d; refreshLists(); renderFocus(true); });
+const focusDo = (what, id) => window.api.focus(what, id).then((d) => { receiveData(d); refreshLists(); renderFocus(true); });
 function startFocus(id) {
   const x = taskById(id); if (!x || x.closure) return;
   ui.focusView = true;
   // Already working on it: just show the focus screen.
   if (data.focus && data.focus.taskId === id && data.focus.mode === 'work') return renderFocus(true);
   ui.focusView = false;
-  askFocusMins(t, Number(data.settings.focusMins) || 25, (mins) => {
-    data.settings.focusMins = mins; save();
+  const left = minutesLeft(x);
+  askFocusMins(t, left ? Math.max(5, Math.min(240, left)) : Number(data.settings.focusMins) || 25, (mins) => {
     ui.focusView = true;
-    window.api.focus('start', id, { mins }).then((d) => { data = d; refreshLists(); renderFocus(true); });
+    window.api.focus('start', id, { mins }).then((d) => { receiveData(d); refreshLists(); renderFocus(true); });
   });
 }
 const focusMinsOf = (x) => Math.round((x.focusMs || 0) / 60000);

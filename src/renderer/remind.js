@@ -73,10 +73,10 @@ function renderReviewAsk(x, fresh) {
     <div class="rm-mouse">${mouseLogo('rm-happy', 'happy')}</div>
     <div class="rm-card">
       <button class="rm-x" data-act="dismiss" title="${t('rvLater')}">✕</button>
-      <div class="rm-top">🌙 ${t('rvAsk')}</div>
+      <div class="rm-top">🌙 ${t(x.week ? 'rvWeekAsk' : 'rvAsk')}</div>
       <div class="rm-title">${x.done ? `${x.done} ${t('rvDone')} 🎉` : t('reviewTitle')}</div>
-      <div class="rm-meta">${t('rvAskSub')}</div>
-      <div class="rm-acts"><button class="primary" data-act="review">${t('rvGo')}</button><button data-act="dismiss">${t('rvLater')}</button></div>
+      <div class="rm-meta">${t(x.week ? 'rvWeekAskSub' : 'rvAskSub')}</div>
+      <div class="rm-acts">${x.week ? `<button class="primary" data-act="weekreview">${t('rvWeekGo')}</button><button data-act="review">${t('rvTodayOnly')}</button>` : `<button class="primary" data-act="review">${t('rvGo')}</button>`}<button data-act="dismiss">${t('rvLater')}</button></div>
     </div></div>`;
   if (!fresh) $('rm').style.animation = 'none';
   else setTimeout(() => playSound(state.sound === 'none' ? 'none' : 'chime'), 850);

@@ -2,7 +2,7 @@ let data = null;
 const $ = (id) => document.getElementById(id);
 const t = (k) => (I18N[data.settings.lang] || I18N.ar)[k] || k;
 
-function save() { window.api.saveData(data); }
+function save() { sendChanges(); }
 
 const in7 = () => { const d = new Date(); d.setDate(d.getDate() + 7); return todayStr(d); };
 const hasPeople = (x) => (x.pendingWith || []).some((pw) => data.people.some((p) => p.id === pw.personId));
@@ -140,7 +140,7 @@ $('wHabits').onclick = (e) => {
   if (f) {
     const h = (data.habits || []).find((x) => x.id === f.dataset.whfocus);
     const left = hPartial(h, todayStr()) ? Math.max(1, Math.round(h.duration - hMins(h, todayStr()))) : null;
-    askFocusMins(t, left || Number(h.duration) || Number(data.settings.focusMins) || 25, (mins) => window.api.focus('start', 'habit:' + h.id, { mins }).then((nd) => { data = nd; render(); }));
+    askFocusMins(t, left || Number(h.duration) || Number(data.settings.focusMins) || 25, (mins) => window.api.focus('start', 'habit:' + h.id, { mins }).then((nd) => { receiveData(nd); render(); }));
   }
 };
 
@@ -186,7 +186,7 @@ setInterval(() => {
 $('wFocus').onclick = (e) => {
   const d = e.target.closest('[data-fdo]');
   const s = focusNowW();
-  if (d && s) return window.api.focus(d.dataset.fdo, s.x.id).then((nd) => { data = nd; render(); });
+  if (d && s) return window.api.focus(d.dataset.fdo, s.x.id).then((nd) => { receiveData(nd); render(); });
   const o = e.target.closest('[data-open]');
   if (o) window.api.openTask(o.dataset.open);
 };
@@ -195,7 +195,7 @@ $('wList').onclick = (e) => {
   const p = e.target.closest('[data-wfocus]');
   if (p) return askFocusMins(t, Number(data.settings.focusMins) || 25, (mins) => {
     data.settings.focusMins = mins; save();
-    window.api.focus('start', p.dataset.wfocus, { mins }).then((nd) => { data = nd; render(); });
+    window.api.focus('start', p.dataset.wfocus, { mins }).then((nd) => { receiveData(nd); render(); });
   });
   const c = e.target.closest('[data-check]');
   if (c) {
@@ -342,8 +342,8 @@ window.api.onWidgetCursor && window.api.onWidgetCursor((p) => {
 });
 
 (async () => {
-  data = await window.api.getData();
+  adoptData(await window.api.getData());
   render();
-  window.api.onDataChanged((d) => { data = d; render(); });
+  window.api.onDataChanged((d) => { receiveData(d); render(); });
   setInterval(render, 60000);
 })();

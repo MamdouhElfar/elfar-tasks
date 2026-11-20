@@ -3,6 +3,9 @@ const { contextBridge, ipcRenderer, webUtils } = require('electron');
 contextBridge.exposeInMainWorld('api', {
   getData: () => ipcRenderer.invoke('data:get'),
   saveData: (d) => ipcRenderer.invoke('data:save', d),
+  savePatch: (p) => ipcRenderer.invoke('data:patch', p),
+  logError: (msg) => ipcRenderer.send('log:error', String(msg).slice(0, 2000)),
+  openLogs: () => ipcRenderer.invoke('log:open'),
   exportData: () => ipcRenderer.invoke('data:export'),
   importData: () => ipcRenderer.invoke('data:import'),
   pickCopy: () => ipcRenderer.invoke('data:pick-copy'),
@@ -46,6 +49,6 @@ contextBridge.exposeInMainWorld('api', {
 
   onDataChanged: (cb) => ipcRenderer.on('data-changed', (e, d) => cb(d)),
   onWidgetCursor: (cb) => ipcRenderer.on('widget:cursor', (e, p) => cb(p)),
-  onOpenReview: (cb) => ipcRenderer.on('review:open', () => cb()),
+  onOpenReview: (cb) => ipcRenderer.on('review:open', (e, kind) => cb(kind)),
   onOpenTask: (cb) => ipcRenderer.on('open-task', (e, id) => cb(id))
 });

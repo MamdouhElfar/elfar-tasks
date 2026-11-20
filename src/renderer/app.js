@@ -11,7 +11,7 @@ const lang = () => data.settings.lang;
 
 function save() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => window.api.saveData(data), 250);
+  saveTimer = setTimeout(sendChanges, 250);
 }
 function touch(task) { task.updated = Date.now(); save(); }
 
@@ -155,7 +155,10 @@ function renderTabs() {
   fitTabs();
   // Tools that don't apply to a view are hidden instead of sitting there doing nothing.
   const tools = { search: !['today', 'calendar', 'report', 'habits'].includes(ui.view), sort: !['today', 'matrix', 'calendar', 'report', 'habits'].includes(ui.view) };
-  $('personFilter').hidden = ui.view === 'habits';
+  $('personFilter').hidden = ['habits', 'today'].includes(ui.view);
+  const bare = ['habits', 'today'].includes(ui.view) && ui.scope === 'all';
+  $('listTitle').hidden = bare;
+  document.querySelector('.list-head').classList.toggle('is-bare', bare);
   $('search').hidden = !tools.search;
   $('sort').hidden = !tools.sort;
 }
@@ -256,7 +259,7 @@ function rowHtml(x) {
     <div class="t-main">
       <div class="t-title" dir="auto">${focusOn ? '<span class="in-focus" title="' + t('fWorkingOn') + '">◉</span> ' : ''}${x.starred ? '<span class="star">★</span> ' : ''}${esc(x.title) || '<span class="muted">' + t('title') + '</span>'}</div>
       ${next ? `<div class="t-next" title="${t('nextStep')}"><span class="arrow">↳</span> <span dir="auto">${esc(next.title)}</span></div>` : ''}
-      <div class="t-meta">${prioNum(x)}${whenChip(x, ui.view === 'today')}${x.remindAt && isOpen(x) ? `<span class="pill remind ${x.remindAt <= nowLocal() ? 'past' : ''}">${icon('bell')} ${remindDay === todayStr() ? '' : fmtDate(remindDay, lang()) + ' '}${fmtTime(x.remindAt, lang())}</span>` : ''}${x.repeat && isOpen(x) ? `<span class="pill repeat" title="${esc(repeatLabel(x.repeat))}">${icon('repeat')}</span>` : ''}${(x.files || []).length ? `<span class="pill area">${icon('clip')} ${x.files.length}</span>` : ''}
+      <div class="t-meta">${prioNum(x)}${whenChip(x, ui.view === 'today')}${estChip(x)}${x.remindAt && isOpen(x) ? `<span class="pill remind ${x.remindAt <= nowLocal() ? 'past' : ''}">${icon('bell')} ${remindDay === todayStr() ? '' : fmtDate(remindDay, lang()) + ' '}${fmtTime(x.remindAt, lang())}</span>` : ''}${x.repeat && isOpen(x) ? `<span class="pill repeat" title="${esc(repeatLabel(x.repeat))}">${icon('repeat')}</span>` : ''}${(x.files || []).length ? `<span class="pill area">${icon('clip')} ${x.files.length}</span>` : ''}
         ${subs.length ? `<span class="progress"><span class="bar"><i style="width:${(done / subs.length) * 100}%"></i></span>${done}/${subs.length}</span>` : ''}
         ${isOpen(x) && (x.postponed || 0) >= 2 ? `<span class="postponed" title="${t('postponedTip')}">↻ ${lang() === 'ar' ? 'اتأجلت ' + timesWord(x.postponed, 'ar') : 'put off ' + timesWord(x.postponed, 'en')}</span>` : ''}
         ${isOpen(x) ? pendingOf(x).map((pw) => `<span class="pill person" title="${t('since')} ${fmtDate(pw.since, lang())}">${icon('user')} <bdi>${esc(personById(pw.personId).name)}</bdi> · ${sinceWord(pw.since)}</span>`).join('') : ''}
@@ -497,6 +500,7 @@ function renderDetail() {
       <div class="d-field"><label>${icon('pending')} ${t('dueTimeShort')}</label>${timeBox('dDueTime', x.dueTime, `title="${t('dueTime')}"`)}</div>
       ${x.closure ? `<div class="d-field"><label>${icon('closed')} ${t('closure')}</label><input type="date" id="dClosure" value="${x.closure}"></div>` : ''}
     </div>
+    ${x.closure ? '' : estimateFieldHtml(x)}
     ${reminderFieldHtml(x)}
     <div class="d-row">
       <div class="d-field grow"><label>${icon('folder')} ${t('area')}</label><select id="dArea">${areaOptions(x.areaId)}</select></div>
@@ -685,130 +689,6 @@ function addTask(title, opts = {}) {
   return x;
 }
 
-// ---------------- quick-add card (floating + button) ----------------
-// Defaults follow where you are: current area, today's date on Today/Overdue tabs, the matrix box you're in.
-const composer = { title: '', areaId: null, due: null, priority: null };
-
-function openComposer(preset = {}) {
-  composer.title = '';
-  composer.areaId = ui.scope === 'all' || ui.scope === 'inbox' ? null : ui.scope;
-  composer.due = preset.due || (ui.view === 'today' ? todayStr() : null);
-  composer.priority = null;
-  composer.repeat = '';
-  composer.remindBefore = '';
-  composer.dueTime = null;
-  composer.start = null; composer.notes = ''; composer.subs = ''; composer.person = '';
-  renderComposer();
-  $('composer').classList.add('open');
-  $('fab').classList.add('open');
-  setTimeout(() => $('cTitle')?.focus(), 30);
-}
-
-function closeComposer() {
-  $('composer').classList.remove('open');
-  $('fab').classList.remove('open');
-}
-
-// Quick: title, folder, dates, repeat, reminder, priority. Full: also start, notes, subtasks
-// and who it's with, for when you want to write the details as you add it. Remembered.
-function renderComposer() {
-  const full = !!data.settings.composerFull;
-  $('composer').classList.toggle('full', full);
-  $('composer').innerHTML = `
-    <div class="c-top"><span class="c-name">${icon('note')} ${t('newTask')}</span>
-      <span class="seg-joined c-mode"><button class="${full ? '' : 'on'}" data-cmode="quick">${t('quickMode')}</button><button class="${full ? 'on' : ''}" data-cmode="full">${t('fullMode')}</button></span></div>
-    <input type="text" class="c-title" id="cTitle" dir="auto" placeholder="${t('newTask')}…" value="${esc(composer.title)}" autocomplete="off">
-    <div class="err" id="cErr">${t('titleRequired')}</div>
-    <div class="c-sec"><span class="c-sec-lbl">${icon('folder')} ${t('area')}</span>
-      <select id="cArea" title="${t('area')}">${areaOptions(composer.areaId)}</select></div>
-    <div class="c-sec"><span class="c-sec-lbl">${icon('calendar')} ${t('due')}</span>
-      <div class="c-row"><input type="date" id="cDue" title="${t('due')}" value="${composer.due || ''}">${timeBox('cDueTime', composer.dueTime, `title="${t('dueTime')}"`)}</div>
-      <div class="c-row"><select id="cRepeat" title="${t('repeat')}">${repeatOptions(composer.repeat ? parseRepeat(composer.repeat) : null, composer.due)}</select>
-        <select id="cRemind" title="${composer.due ? t('reminder') : t('remindNeedsDue')}" ${composer.due ? '' : 'disabled'}>${composerRemindOptions()}</select></div></div>
-    <div class="c-sec"><span class="c-sec-lbl">${icon('matrix')} ${t('priority')}</span>
-      ${prioPicker(composer.priority, 'data-cprio', prioNames(), t('noPrio'))}</div>
-    ${full ? `<div class="c-full">
-      <div class="c-row"><label class="c-lbl"><span>${icon('today')} ${t('start')}</span><input type="date" id="cStart" value="${composer.start || todayStr()}"></label>
-        <label class="c-lbl"><span>${icon('user')} ${t('waiting')}</span><input type="text" id="cPerson" dir="auto" list="cPeople" value="${esc(composer.person)}" placeholder="${t('noOne')}" autocomplete="off"></label>
-        <datalist id="cPeople">${data.people.map((p) => `<option value="${esc(p.name)}"></option>`).join('')}</datalist></div>
-      <label class="c-lbl"><span>${icon('list')} ${t('subtasks')}</span><textarea id="cSubs" dir="auto" rows="3" placeholder="${t('subsPh')}">${esc(composer.subs)}</textarea></label>
-      <label class="c-lbl"><span>${icon('note')} ${t('notes')}</span><textarea id="cNotes" dir="auto" rows="4" placeholder="${t('notesPh')}">${esc(composer.notes)}</textarea></label>
-    </div>` : ''}
-    <div class="c-foot"><span class="hint">${full ? t('composerHintFull') : t('composerHint')}</span><button class="primary" id="cAdd">${t('addBtn')}</button></div>`;
-}
-
-const composerRemindOptions = () =>
-  remindBeforeOptions(composer.remindBefore === '' ? null : Number(composer.remindBefore), composer.due, composer.dueTime);
-
-// Date or time changed: the reminder choices show new times (and switch off with no date).
-function refreshComposerRemind() {
-  if (!composer.due) composer.remindBefore = '';
-  const sel = $('cRemind');
-  sel.innerHTML = composerRemindOptions();
-  sel.disabled = !composer.due;
-  sel.title = composer.due ? t('reminder') : t('remindNeedsDue');
-}
-
-function submitComposer() {
-  const title = $('cTitle').value.trim();
-  if (!title) { $('cErr').classList.add('show'); $('cTitle').focus(); return; }
-  const full = !!data.settings.composerFull;
-  addTask(title, { areaId: $('cArea').value || null, due: $('cDue').value || null, dueTime: ($('cDue').value && timeValue($('cDueTime'))) || null, priority: composer.priority,
-    repeat: parseRepeat($('cRepeat').value), remindBefore: $('cRemind').value === '' ? null : Number($('cRemind').value),
-    ...(full ? { start: $('cStart').value || null, person: $('cPerson').value.trim(), notes: $('cNotes').value.trim(),
-      subtasks: $('cSubs').value.split('\n').map((s) => s.trim()).filter(Boolean) } : {}) });
-  // Stay open for the next one, keeping folder/date/priority — handy for adding a batch.
-  composer.title = '';
-  $('cTitle').value = '';
-  if (full) { composer.notes = composer.subs = composer.person = ''; $('cNotes').value = $('cSubs').value = $('cPerson').value = ''; }
-  $('cTitle').focus();
-}
-
-function bindComposer() {
-  $('fab').onclick = () => ($('composer').classList.contains('open') ? closeComposer() : openComposer());
-  const c = $('composer');
-  c.onclick = (e) => {
-    const p = e.target.closest('[data-cprio]');
-    if (p) {
-      composer.priority = composer.priority === p.dataset.cprio ? null : p.dataset.cprio;
-      syncPrioPicker(p.closest('.pp'), composer.priority);
-      return $('cTitle').focus();
-    }
-    if (e.target.id === 'cAdd') submitComposer();
-    const m = e.target.closest('[data-cmode]');
-    if (m) {
-      data.settings.composerFull = m.dataset.cmode === 'full'; save();
-      renderComposer();
-      setTimeout(() => $('cTitle').focus(), 20);
-    }
-  };
-  c.oninput = (e) => {
-    if (e.target.id === 'cTitle') { composer.title = e.target.value; $('cErr').classList.remove('show'); }
-    if (e.target.id === 'cNotes') composer.notes = e.target.value;
-    if (e.target.id === 'cSubs') composer.subs = e.target.value;
-    if (e.target.id === 'cPerson') composer.person = e.target.value;
-  };
-  c.onchange = (e) => {
-    if (e.target.id === 'cArea') composer.areaId = e.target.value || null;
-    if (e.target.id === 'cDue') { composer.due = e.target.value || null; $('cRepeat').innerHTML = repeatOptions(parseRepeat(composer.repeat), composer.due); refreshComposerRemind(); }
-    if (e.target.id === 'cDueTime') { composer.dueTime = timeValue(e.target) || null; refreshComposerRemind(); }
-    if (e.target.id === 'cRepeat') composer.repeat = e.target.value;
-    if (e.target.id === 'cRemind') composer.remindBefore = e.target.value;
-    if (e.target.id === 'cStart') composer.start = e.target.value || null;
-  };
-  // Enter adds; in the notes / subtasks boxes Enter is a new line and Ctrl+Enter adds.
-  c.onkeydown = (e) => {
-    if (e.key !== 'Enter' || e.target.tagName === 'BUTTON') return;
-    if (e.target.tagName === 'TEXTAREA' && !e.ctrlKey) return;
-    e.preventDefault(); submitComposer();
-  };
-  // Clicking anywhere outside closes it (unless you've typed something).
-  document.addEventListener('mousedown', (e) => {
-    if (!c.classList.contains('open') || c.contains(e.target) || $('fab').contains(e.target) || e.target.closest?.('.tp-pop, .dp-pop')) return;
-    if (!$('cTitle').value.trim()) closeComposer();
-  });
-}
-
 function showToast(text, onAction, label) {
   const el = $('toast');
   el.innerHTML = `<span dir="auto">${esc(text)}</span>${onAction ? `<button id="toastOpen">${label || t('open')}</button>` : ''}`;
@@ -935,144 +815,6 @@ function maybeAutoClose(x) {
   askConfirm({ title: t('allSubsDone'), ok: t('closeToday') }).then((yes) => { if (yes) { setClosed(x, true); refresh(); } });
 }
 
-// ---------------- drag and drop ----------------
-function bindDragAndDrop() {
-  document.addEventListener('dragstart', (e) => {
-    const el = e.target.closest && e.target.closest('[data-task][draggable=true]');
-    if (!el) return;
-    dragTaskId = el.dataset.task;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', dragTaskId);
-    el.classList.add('dragging');
-    document.body.classList.add('is-dragging');
-  });
-  let hoverTimer = null, hoverId = null;
-  // Runs on dragend, and also right after a drop: the drop re-renders the list, and a
-  // re-rendered source row never fires its own dragend.
-  const endDrag = () => {
-    if (!dragTaskId && !document.body.classList.contains('is-dragging')) return;
-    dragTaskId = null;
-    clearTimeout(hoverTimer); hoverId = null;
-    // Folders opened only for the drag close again, smoothly.
-    const temp = [...dragExpanded];
-    dragExpanded.clear();
-    for (const id of temp) {
-      if (isExpanded(id)) continue;
-      document.querySelector(`.kids[data-kids="${id}"]`)?.classList.remove('open');
-      document.querySelector(`[data-toggle="${id}"]`)?.classList.remove('open');
-    }
-    document.body.classList.remove('is-dragging');
-    document.querySelectorAll('.dragging, .drop-ok').forEach((el) => el.classList.remove('dragging', 'drop-ok'));
-  };
-  document.addEventListener('dragend', endDrag);
-  const target = (e) => {
-    if (!dragTaskId || !e.target.closest) return null;
-    const scope = e.target.closest('#scopeNav [data-scope=inbox], #areasNav [data-scope]');
-    if (scope) return scope;
-    return e.target.closest('.cal-cell[data-date], [data-quad]');
-  };
-  document.addEventListener('dragover', (e) => {
-    const el = target(e);
-    document.querySelectorAll('.drop-ok').forEach((d) => d !== el && d.classList.remove('drop-ok'));
-    // Hovering a closed folder that has projects opens it after a moment, so you can drop inside.
-    const sid = el && el.dataset.scope;
-    if (sid !== hoverId) {
-      clearTimeout(hoverTimer); hoverId = sid;
-      if (sid && childrenOf(sid).length && !isExpanded(sid)) {
-        hoverTimer = setTimeout(() => {
-          dragExpanded.add(sid);
-          document.querySelector(`.kids[data-kids="${sid}"]`)?.classList.add('open');
-          document.querySelector(`[data-toggle="${sid}"]`)?.classList.add('open');
-        }, 500);
-      }
-    }
-    if (!el) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    el.classList.add('drop-ok');
-  });
-  document.addEventListener('drop', (e) => {
-    const el = target(e);
-    const x = dragTaskId && taskById(dragTaskId);
-    if (!el || !x) return;
-    e.preventDefault();
-    if (el.dataset.quad) {
-      x.priority = el.dataset.quad === 'none' ? null : el.dataset.quad;
-    } else if (el.dataset.date) {
-      if (!x.closure) { const before = x.due; x.due = el.dataset.date; notePostpone(x, before); syncReminder(x); }
-    } else {
-      x.areaId = el.dataset.scope === 'inbox' ? null : el.dataset.scope;
-    }
-    touch(x);
-    refresh();
-    // Two frames later, so a folder opened for the drag animates closed instead of snapping.
-    requestAnimationFrame(() => requestAnimationFrame(endDrag));
-  });
-}
-
-// ---------------- reordering folders ----------------
-// Drag a folder in the sidebar: drop on the top or bottom edge of another folder to put it
-// before / after it (same level), or on its middle to put it inside (as a subfolder).
-let dragAreaId = null;
-const treeHeight = (id) => { const k = childrenOf(id); return k.length ? 1 + Math.max(...k.map((c) => treeHeight(c.id))) : 0; };
-function bindFolderDrag() {
-  const clear = () => document.querySelectorAll('.drop-before, .drop-after, .drop-inside, .dragging-area').forEach((el) => el.classList.remove('drop-before', 'drop-after', 'drop-inside', 'dragging-area'));
-  const spot = (e) => {
-    if (!dragAreaId || !e.target.closest) return null;
-    const el = e.target.closest('#areasNav [data-scope]');
-    if (!el) return null;
-    const id = el.dataset.scope;
-    if (id === dragAreaId || descendantsOf(dragAreaId).includes(id)) return null;
-    const r = el.getBoundingClientRect(), f = (e.clientY - r.top) / r.height;
-    const h = treeHeight(dragAreaId);
-    let pos = f < 0.3 ? 'before' : f > 0.7 ? 'after' : 'inside';
-    if (pos === 'inside' && depthOf(id) + 1 + h > MAX_DEPTH) pos = f < 0.5 ? 'before' : 'after';
-    if (pos !== 'inside' && depthOf(id) + h > MAX_DEPTH) return null;
-    return { el, id, pos };
-  };
-  document.addEventListener('dragstart', (e) => {
-    const el = e.target.closest && e.target.closest('#areasNav [data-scope][draggable=true]');
-    if (!el) return;
-    dragAreaId = el.dataset.scope;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', 'folder');
-    el.classList.add('dragging-area');
-    document.body.classList.add('is-dragging-folder');
-  });
-  document.addEventListener('dragover', (e) => {
-    if (!dragAreaId) return;
-    const s = spot(e);
-    document.querySelectorAll('.drop-before, .drop-after, .drop-inside').forEach((el) => el.classList.remove('drop-before', 'drop-after', 'drop-inside'));
-    if (!s) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    s.el.classList.add('drop-' + s.pos);
-  });
-  document.addEventListener('drop', (e) => {
-    if (!dragAreaId) return;
-    const s = spot(e);
-    const a = areaById(dragAreaId);
-    if (s && a) {
-      e.preventDefault();
-      const target = areaById(s.id);
-      data.areas.splice(data.areas.indexOf(a), 1);
-      if (s.pos === 'inside') {
-        a.parentId = s.id;
-        data.areas.push(a);
-        if (!isExpanded(s.id)) toggleExpanded(s.id);
-      } else {
-        a.parentId = target.parentId || null;
-        const i = data.areas.indexOf(target);
-        data.areas.splice(s.pos === 'before' ? i : i + 1, 0, a);
-      }
-      save();
-    }
-    dragAreaId = null; clear(); document.body.classList.remove('is-dragging-folder');
-    refresh();
-  });
-  document.addEventListener('dragend', () => { if (!dragAreaId) return; dragAreaId = null; clear(); document.body.classList.remove('is-dragging-folder'); });
-}
-
 // ---------------- modals ----------------
 function closeModal() {
   const bg = $('modalRoot').firstElementChild;
@@ -1168,195 +910,6 @@ function openPersonModal(person) {
     }
   };
   $('mName').onkeydown = (e) => { if (e.key === 'Enter') $('mSave').click(); };
-}
-
-// Settings: sections on the side, each option with a one-line explanation of what it does.
-async function openSettings(section) {
-  const s = data.settings, w = s.widget;
-  ui.setSec = section || ui.setSec || 'general';
-  const [login, info, displays, folder, backups] = await Promise.all([
-    window.api.loginItem(), window.api.appInfo(), window.api.displays(), window.api.dataFolder(), window.api.listBackups()
-  ]);
-  const filterOpts = [['focus', t('focus')], ['overdue', t('overdue')], ['week', t('hWeek')], ['others', t('hOthers')], ['pending', t('pending')], ['starred', t('starred')]]
-    .concat(topAreas().map((a) => ['area:' + a.id, a.name]))
-    .concat(data.people.map((p) => ['person:' + p.id, `${t('waiting')}: ${p.name}`]));
-  const zoom = Math.round((s.zoom || 1) * 100);
-  // One setting: title + what it does on one side, the control on the other.
-  const row = (title, desc, control, cls = '') => `<div class="set-row ${cls}"><div class="set-txt"><b>${title}</b>${desc ? `<span>${desc}</span>` : ''}</div><div class="set-ctl">${control}</div></div>`;
-  const toggle = (id, on) => `<label class="switch"><input type="checkbox" id="${id}" ${on ? 'checked' : ''}><i></i></label>`;
-  const card = (inner) => `<div class="set-card">${inner}</div>`;
-  const backupLabel = (b) => b.kind === 'safety'
-    ? `🛟 ${t('safetyCopy')} · ${fmtDate(b.date, lang())} ${fmtTime(`${b.date}T${b.time}`, lang())} · ${b.tasks} ${t('tasksWord')}`
-    : `${fmtDate(b.date, lang())} · ${b.tasks} ${t('tasksWord')}`;
-  const SECTIONS = [
-    ['general', 'settings', t('general')], ['notifications', 'bell', t('notifications')], ['widget', 'edgeRight', t('widget')],
-    ['data', 'folder', t('dataTitle')], ['updates', 'download', t('updates')], ['about', 'help', t('about')]
-  ];
-  const sec = (id, title, body) => `<section class="set-sec-body" data-sec="${id}" ${ui.setSec === id ? '' : 'hidden'}><h4>${title}</h4>${body}</section>`;
-
-  $('modalRoot').innerHTML = `<div class="modal-bg" id="mBg"><div class="modal settings2">
-    <nav class="set-nav">
-      <div class="set-nav-title">${t('settings')}</div>
-      ${SECTIONS.map(([id, ico, label]) => `<button class="${ui.setSec === id ? 'on' : ''}" data-setsec="${id}">${icon(ico)}<span>${label}</span></button>`).join('')}
-    </nav>
-    <div class="set-main">
-      ${sec('general', t('general'), card(
-        row(t('language'), '', `<div class="seg"><button data-lang="ar" class="${s.lang === 'ar' ? 'on' : ''}">عربي</button><button data-lang="en" class="${s.lang === 'en' ? 'on' : ''}">English</button></div>`) +
-        row(t('launch'), t('launchDesc'), toggle('sLogin', login)) +
-        row(t('planTitle'), t('planAuto'), toggle('sPlanAuto', s.planAuto !== false)) +
-        row(t('weekStartLbl'), t('weekStartDesc'), `<div class="seg">${[6, 0, 1].map((d) => `<button data-wstart="${d}" class="${appWeekStart() === d ? 'on' : ''}">${new Date(2024, 0, 7 + d).toLocaleDateString(lang() === 'ar' ? 'ar-EG-u-nu-latn' : 'en-GB', { weekday: 'long' })}</button>`).join('')}</div>`) +
-        row(t('theme'), t('themeDesc'), `<div class="seg">${['system', 'light', 'dark'].map((m) => `<button data-theme="${m}" class="${(s.theme || 'system') === m ? 'on' : ''}">${t('theme_' + m)}</button>`).join('')}</div>`) +
-        row(t('breakLen'), t('focusLenDesc'), `<div class="seg">${[5, 10].map((m) => `<button data-bmins="${m}" class="${(s.breakMins || 5) === m ? 'on' : ''}">${m}</button>`).join('')}</div>`) +
-        row(`${t('textSize')} <span class="muted" id="sZoomVal">${zoom}%</span>`, t('textSizeDesc'), `<input type="range" id="sZoom" min="80" max="160" step="10" value="${zoom}">`)
-      ) + card(`<div class="set-txt"><b>${t('shortcuts')}</b></div>
-        <div class="keys">${shortcutList(info.quickKey).map(([k, d]) => `<div><kbd>${k}</kbd><span>${d}</span></div>`).join('')}</div>`))}
-
-      ${sec('notifications', t('notifications'), card(
-        row(t('morningSummary'), t('summaryDesc'), `${timeBox('sSumTime', s.summary.time)} ${toggle('sSum', s.summary.enabled)}`) +
-        row(t('reviewSet'), t('reviewSetDesc'), `${timeBox('sRevTime', (s.review || {}).time || '17:00')} ${toggle('sRev', (s.review || {}).enabled !== false)}`) +
-        row(t('nudgeTitle'), t('nudgeAfter'), `<span class="num-days"><input type="number" id="sNudge" min="1" max="30" value="${s.nudgeDays || 3}"> ${t('days')}</span>`)
-      ) + card(
-        row(t('remindStyle'), t('remindStyleDesc'), `<select id="sRemStyle"><option value="mouse" ${(s.remindStyle || 'mouse') === 'mouse' ? 'selected' : ''}>${t('styleMouse')}</option><option value="notification" ${s.remindStyle === 'notification' ? 'selected' : ''}>${t('styleNotif')}</option></select>`) +
-        row(t('remindSound'), '', `<select id="sRemSound">${REMIND_SOUNDS.map((k) => `<option value="${k}" ${(s.remindSound || 'chime') === k ? 'selected' : ''}>${t('sound' + k[0].toUpperCase() + k.slice(1))}</option>`).join('')}</select>
-          <button id="sRemTry">▶ ${t('tryIt')}</button>`)
-      ))}
-
-      ${sec('widget', t('widget'), card(
-        row(t('showWidget'), t('widgetDesc'), toggle('sWidget', w.visible)) +
-        row(t('widgetMode'), t('widgetModeDesc'), `<select id="sEdge">
-          <option value="off" ${(w.edge || 'off') === 'off' ? 'selected' : ''}>${t('onTop')}</option>
-          <option value="right" ${w.edge === 'right' ? 'selected' : ''}>${t('autoHide')} · ${t('edgeRight')}</option>
-          <option value="left" ${w.edge === 'left' ? 'selected' : ''}>${t('autoHide')} · ${t('edgeLeft')}</option>
-          <option value="top" ${w.edge === 'top' ? 'selected' : ''}>${t('autoHide')} · ${t('edgeTop')}</option></select>`) +
-        row(t('openOn'), t('openOnDesc'), `<div class="seg"><button data-openon="hover" class="${(w.openOn || 'hover') === 'hover' ? 'on' : ''}">${t('openHover')}</button><button data-openon="click" class="${w.openOn === 'click' ? 'on' : ''}">${t('openClick')}</button></div>`) +
-        row(t('widgetShows'), t('widgetShowsDesc'), `<select id="sFilter">${filterOpts.map(([v, l]) => `<option value="${v}" ${w.filter === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`) +
-        (displays.length > 1 ? row(t('screen'), '', `<select id="sDisplay">${displays.map((d) => `<option value="${d.id}" ${w.display === d.id ? 'selected' : ''}>${d.label}</option>`).join('')}</select>`) : '') +
-        row(t('opacity'), '', `<input type="range" id="sOpacity" min="0.4" max="1" step="0.05" value="${w.opacity || 1}">`)
-      ))}
-
-      ${sec('data', t('dataTitle'), `
-        ${card(`<div class="data-item">
-          <span class="di-ico">${icon('folder')}</span>
-          <div class="set-txt"><b>${t('dataWhere')}</b><span>${t('syncHint')}</span>
-            <div class="path-row"><code dir="ltr" title="${esc(folder)}">${esc(folder)}</code></div></div>
-          <div class="set-ctl"><button id="sFolder">${t('changeFolder')}</button></div></div>`)}
-        ${card(`<div class="data-item">
-          <span class="di-ico ok">${icon('repeat')}</span>
-          <div class="set-txt"><b>${t('autoBk')}</b><span>${t('autoBkDesc')}</span>
-            <div class="path-row"><select id="sBackup">${backups.map((b) => `<option value="${esc(b.file)}">${esc(backupLabel(b))}</option>`).join('') || `<option>—</option>`}</select>
-              <button class="icon-btn" id="sOpenBackups" title="${t('openBackups')}">${icon('folder')}</button></div></div>
-          <div class="set-ctl"><button id="sRestore" ${backups.length ? '' : 'disabled'}>${t('restoreBtn')}</button></div></div>`)}
-        <div class="set-group-title">${t('manualCopies')}</div>
-        ${card(`<div class="data-item">
-          <span class="di-ico">${icon('download')}</span>
-          <div class="set-txt"><b>${t('saveCopy')}</b><span>${t('saveCopyDesc')}</span></div>
-          <div class="set-ctl"><button id="sExport">${t('saveCopyBtn')}</button></div></div>
-          <div class="data-item">
-          <span class="di-ico warn">${icon('waiting')}</span>
-          <div class="set-txt"><b>${t('loadCopy')}</b><span>${t('loadCopyDesc')}</span></div>
-          <div class="set-ctl"><button id="sImport">${t('loadCopyBtn')}</button></div></div>`)}
-        ${card(`<div class="data-item">
-          <span class="di-ico xl">${icon('report')}</span>
-          <div class="set-txt"><b>${t('excelTitle')}</b><span>${t('excelDesc')}</span></div>
-          <div class="set-ctl"><button id="sCsv">${t('excelBtn')}</button></div></div>`)}`)}
-
-      ${sec('updates', t('updates'), card(
-        row(`${t('version')} ${info.version}`, `<span id="sUpd">${updateLine(info.update) || t('updatesDesc')}</span>`,
-          info.update?.status === 'ready' ? `<button class="primary" id="sInstall">${t('restartUpdate')}</button>` : `<button id="sCheck" ${info.update?.status === 'dev' ? 'disabled' : ''}>${t('checkNow')}</button>`)
-      ))}
-
-      ${sec('about', t('about'), card(`<div class="about-top">${mouseLogo('about-logo')}<div><b>${esc(info.name)}</b> <span class="muted small">${t('version')} ${info.version}</span>
-          <div class="small">${t('creditBy')}: <b>${esc(info.credit)}</b></div></div></div>
-        <p class="small muted">${t('feedbackHint')}</p>
-        <div class="about-btns">
-          <button id="sBug">${icon('bug')} ${t('reportBug')}</button>
-          <button id="sIdea">${icon('idea')} ${t('suggestIdea')}</button>
-          <button id="sIssues">${icon('github')} ${t('seeRequests')}</button>
-        </div>`))}
-      <div class="set-foot"><button class="primary" id="mCancel">${t('closeBtn')}</button></div>
-    </div>
-  </div></div>`;
-
-  const setW = (patch) => { data.settings.widget = { ...data.settings.widget, ...patch }; save(); };
-  // Load a copy / restore: confirm with what you're about to load, then replace (a safety copy is kept first).
-  const loadFrom = async (file, label, tasks) => {
-    if (!(await askConfirm({ title: t('confirmLoadTitle'), text: `${label}${tasks != null ? ` · ${tasks} ${t('tasksWord')}` : ''}\n${t('confirmLoadText')}`, ok: t('restoreBtn'), danger: true }))) return;
-    await window.api.restoreBackup(file);
-    data = await window.api.getData(); ui.selected = null; renderAll();
-    showToast(t('restoredMsg'));
-    openSettings('data');
-  };
-  $('mBg').onclick = async (e) => {
-    const id = e.target.closest('button')?.id || e.target.id;
-    if (id === 'mBg' || id === 'mCancel') return closeModal();
-    const nav = e.target.closest('[data-setsec]');
-    if (nav) {
-      ui.setSec = nav.dataset.setsec;
-      document.querySelectorAll('[data-setsec]').forEach((b) => b.classList.toggle('on', b === nav));
-      document.querySelectorAll('.set-sec-body').forEach((x) => { x.hidden = x.dataset.sec !== ui.setSec; if (!x.hidden) animateIn(x); });
-      return;
-    }
-    if (e.target.dataset.lang) { data.settings.lang = e.target.dataset.lang; save(); renderAll(); openSettings(); }
-    if (e.target.dataset.wstart) { data.settings.weekStart = Number(e.target.dataset.wstart); save(); document.querySelectorAll('[data-wstart]').forEach((b) => b.classList.toggle('on', b === e.target)); renderList(); }
-    if (e.target.dataset.theme) { data.settings.theme = e.target.dataset.theme; save(); document.querySelectorAll('[data-theme]').forEach((b) => b.classList.toggle('on', b === e.target)); }
-    if (e.target.dataset.fmins) { data.settings.focusMins = Number(e.target.dataset.fmins); save(); document.querySelectorAll('[data-fmins]').forEach((b) => b.classList.toggle('on', b === e.target)); }
-    if (e.target.dataset.bmins) { data.settings.breakMins = Number(e.target.dataset.bmins); save(); document.querySelectorAll('[data-bmins]').forEach((b) => b.classList.toggle('on', b === e.target)); }
-    if (e.target.dataset.openon) { setW({ openOn: e.target.dataset.openon }); document.querySelectorAll('[data-openon]').forEach((b) => b.classList.toggle('on', b === e.target)); }
-    if (id === 'sBug') window.api.openGithub('bug');
-    if (id === 'sIdea') window.api.openGithub('idea');
-    if (id === 'sIssues') window.api.openGithub('list');
-    if (id === 'sExport' && await window.api.exportData()) showToast(t('savedCopyMsg'));
-    if (id === 'sCsv' && await window.api.exportCsv(tasksCsv(data.tasks), 'elfar-tasks')) showToast(t('savedCopyMsg'));
-    if (id === 'sOpenBackups') window.api.openBackups();
-    if (id === 'sRemTry') { if ((data.settings.remindStyle || 'mouse') === 'mouse') window.api.testReminder(); else playSound(data.settings.remindSound || 'chime'); }
-    if (id === 'sCheck') { window.api.checkUpdate(); $('sUpd').textContent = t('upChecking'); }
-    if (id === 'sInstall') window.api.installUpdate();
-    if (id === 'sFolder') {
-      const dir = await window.api.chooseDataFolder();
-      if (dir) { data = await window.api.getData(); renderAll(); openSettings('data'); }
-    }
-    if (id === 'sRestore') {
-      const b = backups.find((x) => x.file === $('sBackup').value);
-      if (b) loadFrom(b.file, backupLabel(b).replace(/ · \d+ .*$/, ''), b.tasks);
-    }
-    if (id === 'sImport') {
-      const f = await window.api.pickCopy();
-      if (f && f.error) return askConfirm({ title: t('badCopy'), text: f.name, ok: t('ok') });
-      if (f) loadFrom(f.file, f.name, f.tasks);
-    }
-  };
-  $('sLogin').onchange = (e) => window.api.loginItem(e.target.checked);
-  $('sPlanAuto').onchange = (e) => { data.settings.planAuto = e.target.checked; save(); };
-  $('sZoom').oninput = (e) => { $('sZoomVal').textContent = e.target.value + '%'; };
-  $('sZoom').onchange = (e) => { data.settings.zoom = Number(e.target.value) / 100; save(); };
-  $('sRev').onchange = (e) => { data.settings.review = { time: '17:00', ...(data.settings.review || {}), enabled: e.target.checked }; save(); };
-  $('sRevTime').onchange = (e) => { if (timeValue(e.target)) { data.settings.review = { enabled: true, ...(data.settings.review || {}), time: timeValue(e.target) }; save(); } };
-  $('sSum').onchange = (e) => { data.settings.summary = { ...data.settings.summary, enabled: e.target.checked }; save(); };
-  $('sSumTime').onchange = (e) => { if (timeValue(e.target)) { data.settings.summary = { ...data.settings.summary, time: timeValue(e.target) }; save(); } };
-  $('sRemStyle').onchange = (e) => { data.settings.remindStyle = e.target.value; save(); };
-  $('sRemSound').onchange = (e) => { data.settings.remindSound = e.target.value; save(); playSound(e.target.value); };
-  $('sNudge').onchange = (e) => { data.settings.nudgeDays = Math.max(1, Math.min(30, Number(e.target.value) || 3)); save(); };
-  $('sWidget').onchange = (e) => setW({ visible: e.target.checked });
-  $('sEdge').onchange = (e) => setW(e.target.value === 'off' ? { edge: 'off' } : { edge: e.target.value, lastEdge: e.target.value, edgeOffset: null, visible: true });
-  if ($('sDisplay')) $('sDisplay').onchange = (e) => setW({ display: Number(e.target.value) });
-  $('sOpacity').oninput = (e) => setW({ opacity: Number(e.target.value) });
-  $('sFilter').onchange = (e) => setW({ filter: e.target.value });
-}
-
-// The keyboard shortcuts, shown as a list in Settings › General.
-function shortcutList(quickKey) {
-  const ar = lang() === 'ar';
-  return [
-    ['Ctrl+N', ar ? 'تاسك جديد' : 'New task'],
-    [quickKey || 'Ctrl+Shift+Space', ar ? 'إضافة من أي برنامج' : 'Add from any app'],
-    ['Ctrl+K', ar ? 'بحث في كل حاجة' : 'Search everything'],
-    ['↑ ↓', ar ? 'تنقل بين التاسكات' : 'Move between tasks'],
-    ['Space', ar ? 'قفل التاسك' : 'Close the task'],
-    ['1 – 4', ar ? 'التصنيف' : 'Priority'],
-    ['S', ar ? 'تمييز' : 'Star'],
-    ['Delete', ar ? 'حذف' : 'Delete'],
-    ['Ctrl + / −', ar ? 'حجم الخط' : 'Text size']
-  ];
 }
 
 // ---------------- events ----------------
@@ -1605,7 +1158,7 @@ function migrateRepeatStarts() {
 (async function init() {
   // Wait for the scripts after this one (focus.js, plan.js…) before the first draw.
   if (document.readyState === 'loading') await new Promise((r) => document.addEventListener('DOMContentLoaded', r));
-  data = await window.api.getData();
+  adoptData(await window.api.getData());
   if (data.settings.sort) ui.sort = data.settings.sort;
   migrateRepeatStarts();
   bind();
@@ -1618,7 +1171,7 @@ function migrateRepeatStarts() {
   // An update that finished downloading before this window opened shows its bar right away.
   window.api.appInfo().then((i) => i.update && showUpdateBanner(i.update));
   window.api.onDataChanged((d) => {
-    data = d;
+    receiveData(d);
     if (ui.scope !== 'all' && ui.scope !== 'inbox' && !areaById(ui.scope)) ui.scope = 'all';
     if (ui.person && !personById(ui.person)) ui.person = null;
     refreshLists();

@@ -3,6 +3,23 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const store = require('./store');
+const logic = require('./renderer/logic.js');
+
+// ---------- error log ----------
+// Errors from any window or from here go to <data folder>/logs/errors.log (kept under ~300 KB).
+const LOG_DIR = path.join(process.env.ELFAR_DATA_DIR || path.join(app.getPath('appData'), 'Elfar Tasks'), 'logs');
+function logError(where, msg) {
+  try {
+    fs.mkdirSync(LOG_DIR, { recursive: true });
+    const f = path.join(LOG_DIR, 'errors.log');
+    if (fs.existsSync(f) && fs.statSync(f).size > 300 * 1024) { const keep = fs.readFileSync(f, 'utf8').slice(-150 * 1024); fs.writeFileSync(f, keep); }
+    fs.appendFileSync(f, `${new Date().toISOString()} [${where}] v${app.getVersion()} ${msg}
+`);
+  } catch { /* never let logging break the app */ }
+}
+process.on('uncaughtException', (err) => logError('main', err && err.stack || err));
+process.on('unhandledRejection', (err) => logError('main', err && err.stack || err));
+logic.configure({ weekStart: () => store.get().settings.weekStart });
 
 const APP_NAME = 'Elfar Tasks';
 const CREDIT = 'Mamdouh Elfar';
@@ -342,7 +359,7 @@ function tick() {
   }
   const today = now.slice(0, 10);
   for (const h of data.habits || []) {
-    if (!h.time || h.archived || h.remindedOn === today || now.slice(11) < h.time || !habitDueToday(h, today, data)) continue;
+    if (!h.time || h.archived || h.remindedOn === today || now.slice(11) < h.time || !habitDueToday(h, today)) continue;
     h.remindedOn = today;
     changed = true;
     if ((data.settings.remindStyle || 'mouse') === 'mouse') {
@@ -357,7 +374,8 @@ function tick() {
     const busy = data.tasks.some((t) => t.closure === today || (!t.closure && t.due && t.due <= today)) || (data.plan && data.plan.date === today);
     if (busy) {
       if ((data.settings.remindStyle || 'mouse') === 'mouse') {
-        remindQueue.push({ id: 'review:' + today, kind: 'review', title: ar() ? 'يومك قرب يخلص 🌙' : 'Your day is almost over 🌙', done: data.tasks.filter((t) => t.closure === today).length });
+        const lastDay = new Date(today + 'T00:00').getDay() === (logic.appWeekStart() + 6) % 7;
+        remindQueue.push({ id: 'review:' + today, kind: 'review', week: lastDay, title: ar() ? 'يومك قرب يخلص 🌙' : 'Your day is almost over 🌙', done: data.tasks.filter((t) => t.closure === today).length });
         openRemindWin();
       } else notify(ar() ? '🌙 راجع يومك' : '🌙 Review your day', ar() ? 'شوف خلصت إيه وانقل الباقي لبكرة' : 'See what got done and move the rest to tomorrow', openReviewInApp);
     }
@@ -400,28 +418,12 @@ function openRemindWin() {
   remindWin.webContents.on('did-finish-load', () => { sendRemindList(); remindWin.showInactive(); });
   remindWin.on('closed', () => { remindWin = null; });
 }
-// Is a habit due today? (scheduled today, or its weekly goal isn't reached) and not done yet.
-function habitDueToday(h, today, data) {
-  const end = h.end || {};
-  if (today < h.start || (end.type === 'date' && end.date && today > end.date)) return false;
-  const log = h.log || {};
-  if (log[today]) return false;
-  const dt = new Date(today + 'T00:00');
-  if (h.kind === 'days') return (h.days || []).includes(dt.getDay());
-  const ws = new Date(dt); ws.setDate(dt.getDate() - ((dt.getDay() - (h.weekStart ?? data.settings.weekStart ?? 6) + 7) % 7));
-  let done = 0, mins = 0;
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(ws); d.setDate(ws.getDate() + i);
-    const k = localNow(d).slice(0, 10);
-    if (log[k] === 'done') done++;
-    mins += (h.minutes || {})[k] || 0;
-  }
-  return h.kind === 'times' ? done < (h.perWeek || 1) : mins < (h.minutesPerWeek || 1);
-}
+// Is a habit due today and not done yet? (shared rule, see logic.js)
+const habitDueToday = (h, today) => logic.habitStillDue(h, today);
 
 // Show the app with the end-of-day review open.
-function openReviewInApp() {
-  const send = () => mainWin.webContents.send('review:open');
+function openReviewInApp(kind) {
+  const send = () => mainWin.webContents.send('review:open', kind || 'day');
   if (!mainWin) { createMain(); mainWin.webContents.once('did-finish-load', () => setTimeout(send, 800)); return; }
   showMain(); send();
 }
@@ -436,6 +438,7 @@ ipcMain.on('remind:action', (e, { id, action, minutes, what }) => {
     const i = remindQueue.findIndex((r) => r.id === id);
     if (i >= 0) remindQueue.splice(i, 1);
     if (action === 'review') openReviewInApp();
+    if (action === 'weekreview') openReviewInApp('week');
     if (remindQueue.length) sendRemindList(); else if (remindWin) remindWin.close();
     return;
   }
@@ -503,10 +506,7 @@ function focusCredit(data) {
   if (ms < 30000 || !sub) return;
   if (sub.habit) {
     // Time on a habit counts toward it; once a day's session reaches its length, the day is done.
-    const h = sub.habit, d = localNow().slice(0, 10);
-    h.minutes = h.minutes || {};
-    h.minutes[d] = Math.round(((h.minutes[d] || 0) + ms / 60000) * 10) / 10;
-    if (h.kind !== 'minutes' && h.duration && h.minutes[d] >= h.duration - 0.5) { h.log = h.log || {}; h.log[d] = 'done'; }
+    logic.habitAddMinutes(sub.habit, localNow().slice(0, 10), ms / 60000);
   } else sub.focusMs = (sub.focusMs || 0) + ms;
   data.focusLog = (data.focusLog || []).concat({ taskId: f.taskId, areaId: sub.habit ? null : sub.areaId || null, at: localNow(new Date(Date.now() - ms)), ms }).slice(-1000);
 }
@@ -627,7 +627,12 @@ function applyTheme() {
 
 // ---------- IPC ----------
 ipcMain.handle('data:get', () => store.get());
-ipcMain.handle('data:save', (e, data) => {
+ipcMain.on('log:error', (e, msg) => logError(BrowserWindow.fromWebContents(e.sender)?.getTitle() || 'window', msg));
+ipcMain.handle('log:open', () => { fs.mkdirSync(LOG_DIR, { recursive: true }); const f = path.join(LOG_DIR, 'errors.log'); if (!fs.existsSync(f)) fs.writeFileSync(f, ''); shell.showItemInFolder(f); return true; });
+// A window sent its changes (see makePatch in logic.js): apply them on the app's own copy.
+ipcMain.handle('data:patch', (e, patch) => commitFromWindow(e, logic.applyPatch(JSON.parse(JSON.stringify(store.get())), patch)));
+ipcMain.handle('data:save', (e, data) => commitFromWindow(e, data));
+function commitFromWindow(e, data) {
   // Window positions are owned by the main process; don't let a stale renderer copy overwrite them.
   const cur = store.get().settings;
   const { x, y, width, height } = cur.widget;
@@ -670,7 +675,7 @@ ipcMain.handle('data:save', (e, data) => {
   if (!w.visible && widgetWin) widgetWin.close();
   if (store.get().settings.zoom !== zoomBefore) [mainWin, widgetWin, quickWin].forEach(applyZoom);
   return true;
-});
+}
 ipcMain.handle('widget:set-visible', (e, v) => setWidgetVisible(v));
 ipcMain.on('widget:ignore-mouse', (e, ignore) => {
   if (!widgetWin || edgeOf() === 'off') return;

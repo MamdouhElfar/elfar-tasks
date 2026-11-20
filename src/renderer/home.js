@@ -22,6 +22,7 @@ function renderHome() {
   const greet = h < 12 ? t('gMorning') : h < 18 ? t('gAfternoon') : t('gEvening');
   const longDate = new Date().toLocaleDateString(loc, { weekday: 'long', day: 'numeric', month: 'long' });
 
+  const chip = (go, n, label, cls) => (n ? `<button class="h-chip ${cls}" data-go="${go}"><b>${n}</b> ${label}</button>` : '');
   const stat = (go, n, label, cls, ico) => `<button class="h-stat ${cls} ${n ? '' : 'zero'}" data-go="${go}">
     <span class="h-ico">${icon(ico)}</span><b>${n}</b><span>${label}</span></button>`;
 
@@ -49,6 +50,9 @@ function renderHome() {
   const plan = todayPlan();
   const planned = plan ? plan.ids.map(taskById).filter((x) => x && inScope(x) && (!x.closure || x.closure === td)) : [];
   planned.forEach((x) => seen.add(x.id));
+  // The Now card's task isn't repeated in the lists under it (unless it's part of the plan).
+  const nowPick = pickNow(plan, overdue, dueToday, open);
+  if (nowPick && !planned.includes(nowPick.x)) seen.add(nowPick.x.id);
   const take = (xs) => xs.filter((x) => !seen.has(x.id) && seen.add(x.id));
   const lateRest = take(overdue), todayRest = take(dueToday);
   const starredRest = take(open.filter((x) => x.starred));
@@ -57,9 +61,9 @@ function renderHome() {
   const sec = (title, cls, xs, extra = '') => (xs.length ? `<div class="group-title ${cls}">${title} · ${xs.length}${extra}</div>${xs.map(rowHtml).join('')}` : '');
   const planDone = planned.filter((x) => x.closure).length;
   const work = (plan
-      ? `<div class="group-title plan-title">☀ ${t('planTitle')} <span class="plan-n">${planDone}/${planned.length}</span><button class="link" data-plan>${t('planEdit')}</button></div>
+      ? `<div class="group-title plan-title">${icon('today')} ${t('planTitle')} <span class="plan-n">${planDone}/${planned.length}</span><button class="link" data-plan>${t('planEdit')}</button></div>${capacityHtml(plannedLoad(planned))}
          ${planned.length ? planned.map(rowHtml).join('') : `<div class="h-empty">${t('planEmpty')}</div>`}`
-      : `<button class="plan-cta" data-plan><span class="pc-ico">☀</span><span><b>${t('planCta')}</b><small>${t('planCtaSub')}</small></span></button>`) +
+      : `<button class="plan-cta" data-plan><span class="pc-ico">${icon('today')}</span><span><b>${t('planCta')}</b><small>${t('planCtaSub')}</small></span></button>`) +
     (() => { const hs = habitsToday(); return hs.length ? `<div class="group-title habit-title">${icon('habits')} ${t('hbToday')} · ${hs.filter((h) => hLog(h, td) === 'done').length}/${hs.length}<button class="link" data-hopen>${t('hSeeAll')}</button></div>${hs.map(habitRowHtml).join('')}` : ''; })() +
     sec(t('overdue'), 'danger', lateRest) + sec(t('stDueToday'), '', todayRest) + sec(t('starred'), '', starredRest) + sec(t('hDoNow'), '', doNow);
 
@@ -116,21 +120,17 @@ function renderHome() {
 
   $('list').innerHTML = `<div class="home">
     <div class="h-hello">
-      <div class="h-hi"><h2>${greet} 👋</h2><span class="muted">${longDate}</span><p class="h-sum">${summary}</p></div>
+      <div class="h-hi"><h2>${greet} 👋</h2><span class="muted">${longDate}</span>
+        <div class="h-chips">${chip('pending', overdue.length, t('overdue'), 'danger')}${chip('pending', dueToday.length, t('stDueToday'), 'warn')}${chip('others', withOthers.length, t('hOthers'), 'violet')}${chip('calendar', week.length, t('hWeek'), '')}${chip('closed', closedWeek.length, t('hClosedWeek'), 'ok')}${!overdue.length && !dueToday.length ? `<span class="h-sum">${t('hAllClear')}</span>` : ''}</div></div>
       ${dayTotal ? `<div class="h-day-prog" title="${doneToday} / ${dayTotal}">
         <div class="h-ring" style="--p:${pct}"><b>${doneToday}<small>/${dayTotal}</small></b></div>
         <span>${t('hDoneToday')}</span></div>` : ''}
-      <button class="h-review" data-review title="${t('reviewTip')}">🌙 ${t('reviewBtn')}</button>
+      <div class="h-btns"><button class="h-review" data-plan>${icon('today')} ${t('planBtn')}</button><button class="h-review" data-review title="${t('reviewTip')}">${icon('moon')} ${t('reviewBtn')}</button></div>
     </div>
-    <div class="h-stats">
-      ${stat('pending', overdue.length, t('overdue'), 'danger', 'overdue')}
-      ${stat('pending', dueToday.length, t('stDueToday'), 'warn', 'today')}
-      ${stat('calendar', week.length, t('hWeek'), 'info', 'calendar')}
-      ${stat('others', withOthers.length, t('hOthers'), 'violet', 'waiting')}
-      ${stat('closed', closedWeek.length, t('hClosedWeek'), 'ok', 'closed')}
-    </div>
+    ${weekBannerHtml()}${weekGoalsHtml()}
     <div class="h-cols today-cols">
       <div class="h-col t-work">
+        ${nowPick ? nowCardHtml(nowPick) : ''}
         ${work || empty(t('hAllClear'))}
       </div>
       <div class="h-col">
@@ -138,12 +138,47 @@ function renderHome() {
           `<div class="h-row" data-task="${x.id}"><span class="h-time ${x.remindAt <= nowLocal() ? 'past' : ''}">${fmtTime(x.remindAt, lang())}</span><span class="h-title" dir="auto">${esc(x.title)}</span></div>`).join('')) : ''}
         ${people.size ? panel(t('hWaiting'), 'waiting', `<div class="h-people">${waiting}</div>`, 'others') : ''}
         ${panel(t('hComing'), 'calendar', coming || empty(t('hNothing')), 'calendar')}
-        ${areaList.length ? panel(t('hAreasTitle'), 'folder', `<div class="h-areas">${areas}</div>`) : ''}
       </div>
     </div>
-    <p class="h-foot small muted">${t('openTasks')}: ${open.length} · ${t('closedThisMonth')}: ${closedMonth}${avg !== null ? ` · ${t('avgClose')}: ${daysWord(avg, lang())}` : ''}</p>
   </div>`;
 }
+
+// The one thing to do now: the first open task of your plan, else what's late, due today
+// (soonest time first), important & urgent, or starred. "Not now" shows the next one.
+function pickNow(plan, overdue, dueToday, open) {
+  if (data.focus && ['work', 'ended'].includes(data.focus.mode)) return null; // the focus bar already says it
+  ui.nowSkip = ui.nowSkip || [];
+  const ok = (x) => x && inScope(x) && isActive(x) && !ui.nowSkip.includes(x.id);
+  const byTime = (a, b) => (a.dueTime || '99').localeCompare(b.dueTime || '99') || byPriorityThenDue(a, b);
+  const lists = [
+    [plan ? plan.ids.map(taskById) : [], 'nowFromPlan'],
+    [overdue.slice().sort(byPriorityThenDue), 'nowLate'],
+    [dueToday.slice().sort(byTime), 'nowToday'],
+    [open.filter((x) => x.priority === 'q1').sort(byPriorityThenDue), 'nowDoNow'],
+    [open.filter((x) => x.starred), 'nowStarred']
+  ];
+  for (const [xs, why] of lists) { const x = xs.find(ok); if (x) return { x, why }; }
+  return null;
+}
+function nowCardHtml({ x, why }) {
+  const w = whenInfo(x);
+  const next = (x.subtasks || []).find((s) => !s.done);
+  const left = minutesLeft(x);
+  return `<section class="now-card ${quadClass(x)}">
+    <div class="now-top"><span class="now-lbl">${icon('target')} ${t('nowLbl')}</span><span class="now-why">${t(why)}${w && why !== 'nowLate' && why !== 'nowToday' ? '' : w ? ` · ${w.text}` : ''}</span>
+      <button class="link now-skip" data-nowskip="${x.id}" title="${t('nowSkipTip')}">${t('nowSkip')} ›</button></div>
+    <h3 dir="auto" data-task="${x.id}">${x.starred ? '<span class="star">★</span> ' : ''}${esc(x.title)}</h3>
+    ${next ? `<div class="now-next"><span class="arrow">↳</span> <span dir="auto">${esc(next.title)}</span></div>` : ''}
+    <div class="now-acts"><button class="primary now-go" data-focus="${x.id}">▶ ${t('nowStart')}${left ? ` · ${fmtMins(left, lang())}` : ''}</button><button class="ok" data-check="${x.id}">✓ ${t('nowDone')}</button>${estChip(x)}</div>
+  </section>`;
+}
+document.addEventListener('click', (e) => {
+  const s = e.target.closest && e.target.closest('[data-nowskip]');
+  if (!s) return;
+  e.stopPropagation();
+  (ui.nowSkip = ui.nowSkip || []).push(s.dataset.nowskip);
+  renderList();
+}, true);
 
 // Where each number / row on Home leads.
 function homeGo(go) {
