@@ -875,3 +875,47 @@ kbd { font: inherit; font-size: 11.5px; font-weight: 600; color: var(--text); ba
 .composer .c-full .c-row { align-items: flex-start; }
 .composer { max-height: calc(100% - 96px); overflow-y: auto; }
 .composer .c-full .c-lbl > input[type=date], .composer .c-full .c-lbl > input { flex: none; }
+
+/* ---------- 1.8: numbered priority picker ---------- */
+.pp { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.pp-btns { display: inline-flex; gap: 6px; }
+.pp-b { width: 36px; height: 32px; padding: 0; border-radius: 9px; font-weight: 700; font-size: 14px; color: var(--text-2); background: var(--panel); }
+.pp-b.q1 { --qc: var(--q1); --qb: var(--q1-bg); } .pp-b.q2 { --qc: var(--q2); --qb: var(--q2-bg); }
+.pp-b.q3 { --qc: var(--q3); --qb: var(--q3-bg); } .pp-b.q4 { --qc: var(--q4); --qb: var(--q4-bg); }
+.pp-b:hover { border-color: var(--qc); color: var(--qc); background: var(--qb); }
+.pp-b.on { border-color: var(--qc); color: var(--qc); background: var(--qb); box-shadow: inset 0 0 0 1px var(--qc); }
+.pp-name { font-size: 12.5px; color: var(--text-3); min-width: 0; }
+.pp-name.q1 { color: var(--q1); } .pp-name.q2 { color: var(--q2); } .pp-name.q3 { color: var(--q3); } .pp-name.q4 { color: var(--q4); }
+.pp-name.hover { opacity: .85; }
+.pill b { font-weight: 800; margin-inline-end: 1px; }
+
+/* ---------- 1.8: add card in labeled sections ---------- */
+.composer .c-sec { margin-top: 12px; }
+.composer .c-sec > select { width: 100%; font-size: 13px; padding: 5px 6px; }
+.composer .c-sec .c-row { margin-top: 6px; }
+.composer .c-sec .c-row:first-of-type { margin-top: 0; }
+.composer .c-sec-lbl { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--text-3); margin-bottom: 5px; }
+.composer .c-sec-lbl .ico { width: 12px; height: 12px; }
+.composer .c-full { margin-top: 14px; }
+
+/* ---------- 1.8: the matrix drawn as a chart ---------- */
+.mx-chart { display: grid; grid-template-columns: 22px 26px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto auto; height: calc(100vh - 230px); min-height: 400px; column-gap: 4px; }
+.mx-ylab { grid-area: 1 / 1; display: flex; align-items: center; justify-content: center; }
+.mx-ylab span, .mx-yticks span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
+.mx-ylab span { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
+.mx-yticks { grid-area: 1 / 2; display: grid; grid-template-rows: 1fr 1fr; align-items: center; justify-items: center; font-size: 12px; font-weight: 600; color: var(--text-2); }
+.mx-plot { grid-area: 1 / 3; position: relative; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; padding: 0 0 8px 8px; border-left: 2px solid var(--text-3); border-bottom: 2px solid var(--text-3); min-height: 0; }
+/* arrowheads at the ends of the two axes */
+.mx-plot::before { content: ''; position: absolute; left: -7px; top: -2px; border: 6px solid transparent; border-bottom: 9px solid var(--text-3); border-top: none; }
+.mx-plot::after { content: ''; position: absolute; right: -2px; bottom: -7px; border: 6px solid transparent; border-left: 9px solid var(--text-3); border-right: none; }
+.mx-origin { grid-area: 2 / 2; justify-self: end; font-size: 11px; font-weight: 700; color: var(--text-3); padding-right: 2px; }
+.mx-xticks { grid-area: 2 / 3; display: grid; grid-template-columns: 1fr 1fr; text-align: center; font-size: 12px; font-weight: 600; color: var(--text-2); padding: 4px 0 0 8px; }
+.mx-xlab { grid-area: 3 / 3; text-align: center; padding-top: 2px; }
+.mx-xlab span { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
+.mx-plot .quad { grid-area: auto; position: relative; }
+.quad .q-num { position: absolute; bottom: 4px; inset-inline-end: 12px; font-size: 72px; font-weight: 800; line-height: 1; color: var(--qc); opacity: .09; pointer-events: none; }
+.quad.q1 { --qc: var(--q1); } .quad.q2 { --qc: var(--q2); } .quad.q3 { --qc: var(--q3); } .quad.q4 { --qc: var(--text-3); }
+.quad .q-body { position: relative; z-index: 1; }
+/* "Unclassified" only takes room when it has tasks, or while you drag one (to clear its priority). */
+.unclassified.is-empty { display: none; }
+body.is-dragging .unclassified.is-empty { display: block; }

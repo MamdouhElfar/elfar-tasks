@@ -41,6 +41,7 @@ function areaLabel(id) {
   return [...ancestorsOf(id).reverse().map((pid) => areaById(pid).name), a.name].join(' / ');
 }
 const isOpen = (x) => !x.closure;
+const prioNames = () => ({ q1: t('q1'), q2: t('q2'), q3: t('q3'), q4: t('q4') });
 
 // ---------------- people ----------------
 const personById = (id) => data.people.find((p) => p.id === id);
@@ -231,7 +232,7 @@ function rowHtml(x) {
     <button class="check ${x.closure ? 'on' : ''}" data-check="${x.id}" title="${x.closure ? t('reopen') : t('closeToday')}">✓</button>
     <div class="t-main">
       <div class="t-title" dir="auto">${x.starred ? '<span class="star">★</span> ' : ''}${esc(x.title) || '<span class="muted">' + t('title') + '</span>'}</div>
-      <div class="t-meta">${statusPill(x)}${x.repeat && isOpen(x) ? `<span class="pill repeat" title="${esc(repeatLabel(x.repeat))}">${icon('repeat')}</span>` : ''}${(x.files || []).length ? `<span class="pill area">${icon('clip')} ${x.files.length}</span>` : ''}${x.remindAt && isOpen(x) ? `<span class="pill remind ${x.remindAt <= nowLocal() ? 'past' : ''}">${icon('bell')} ${fmtDate(x.remindAt.slice(0, 10), lang())} ${fmtTime(x.remindAt, lang())}</span>` : ''}${x.priority && isOpen(x) ? `<span class="pill ${x.priority}" title="${t(x.priority + 'a')}">${t(x.priority)}</span>` : ''}
+      <div class="t-meta">${statusPill(x)}${x.repeat && isOpen(x) ? `<span class="pill repeat" title="${esc(repeatLabel(x.repeat))}">${icon('repeat')}</span>` : ''}${(x.files || []).length ? `<span class="pill area">${icon('clip')} ${x.files.length}</span>` : ''}${x.remindAt && isOpen(x) ? `<span class="pill remind ${x.remindAt <= nowLocal() ? 'past' : ''}">${icon('bell')} ${fmtDate(x.remindAt.slice(0, 10), lang())} ${fmtTime(x.remindAt, lang())}</span>` : ''}${x.priority && isOpen(x) ? `<span class="pill ${x.priority}" title="${t(x.priority + 'a')}"><b>${PRIO_NUM[x.priority]}</b> ${t(x.priority)}</span>` : ''}
         ${subs.length ? `<span class="progress"><span class="bar"><i style="width:${(done / subs.length) * 100}%"></i></span>${done}/${subs.length}</span>` : ''}
         <span>${dates}</span>
         ${isOpen(x) ? pendingOf(x).map((pw) => `<span class="pill person" dir="auto">${icon('user')} ${esc(personById(pw.personId).name)} · ${Math.max(0, daysBetween(pw.since || todayStr(), todayStr()))}${lang() === 'ar' ? 'ي' : 'd'}</span>`).join('') : ''}
@@ -359,7 +360,7 @@ function renderCalendar() {
       <div class="cf-group"><span class="cf-label">${t('show')}</span>
         <span class="seg-joined">${chip('status', 'open', t('openTasks'), f.status === 'open')}${chip('status', 'closed', t('closed'), f.status === 'closed')}${chip('status', 'all', t('all'), f.status === 'all')}</span></div>
       <div class="cf-group"><span class="cf-label">${t('priority')}</span>
-        <span class="seg-f">${QUADS.map((q) => chip('prio', q, t(q), f.prios.includes(q))).join('')}${chip('prio', 'none', t('unclassified'), f.prios.includes('none'))}</span></div>
+        <span class="seg-f">${QUADS.map((q) => chip('prio', q, `${PRIO_NUM[q]} · ${t(q)}`, f.prios.includes(q))).join('')}${chip('prio', 'none', t('unclassified'), f.prios.includes('none'))}</span></div>
       <div class="cf-group cf-end">${chip('repeats', '1', `${icon('repeat')} ${t('upcomingRepeats')}`, f.repeats)}</div>
     </div>
     <div class="cal-grid">${dows.map((d) => `<div class="cal-dow">${d}</div>`).join('')}${cells}</div>
@@ -394,24 +395,28 @@ function renderMatrix() {
   };
   const quad = (q) => {
     const xs = list.filter((x) => x.priority === q);
-    return `<div class="quad ${q}" data-quad="${q}">
-      <div class="q-head"><b>${t(q + 'a')}</b><span>${t(q)}</span><i class="q-n">${xs.length}</i></div>
+    return `<div class="quad ${q}" data-quad="${q}" dir="${lang() === 'ar' ? 'rtl' : 'ltr'}">
+      <span class="q-num">${PRIO_NUM[q]}</span>
+      <div class="q-head"><b>${t(q + 'a')}</b><span>${PRIO_NUM[q]} · ${t(q)}</span><i class="q-n">${xs.length}</i></div>
       <div class="q-body">${xs.map(card).join('') || `<div class="q-empty">${t(q + 'tip')}</div>`}</div></div>`;
   };
   const none = list.filter((x) => !QUADS.includes(x.priority));
-  const arrow = lang() === 'ar' ? '←' : '→';
-  $('list').innerHTML = `<div class="matrix">
-      <span class="mx-corner"></span>
-      <div class="mx-axis-x"><span>${t('urgent')}</span><i>${t('urgency')} ${arrow}</i><span>${t('notUrgent')}</span></div>
-      <div class="mx-axis-y"><span>${t('important')}</span><i>${t('importance')} ↓</i><span>${t('notImportant')}</span></div>
-      ${quad('q1')}${quad('q2')}${quad('q3')}${quad('q4')}
+  // Drawn like a chart (left to right in both languages): the further right, the more urgent;
+  // the higher, the more important. So "not urgent" sits next to the origin.
+  $('list').innerHTML = `<div class="mx-chart" dir="ltr">
+      <div class="mx-ylab"><span>${t('importance')} ↑</span></div>
+      <div class="mx-yticks"><span>${t('important')}</span><span>${t('notImportant')}</span></div>
+      <div class="mx-plot">${quad('q2')}${quad('q1')}${quad('q4')}${quad('q3')}</div>
+      <span class="mx-origin">0</span>
+      <div class="mx-xticks"><span>${t('notUrgent')}</span><span>${t('urgent')}</span></div>
+      <div class="mx-xlab"><span>${t('urgency')} →</span></div>
     </div>
-    <div class="unclassified" data-quad="none">
+    <div class="unclassified ${none.length ? '' : 'is-empty'}" data-quad="none">
       <div class="small muted" style="margin-bottom:6px">${t('unclassified')} · ${none.length}</div>${none.map(card).join('')}
     </div>
     <details class="mx-legend" ${data.settings.mxLegendClosed ? '' : 'open'}>
       <summary>${t('mxHow')}</summary>
-      <div class="mx-legend-grid">${QUADS.map((q) => `<div class="lg ${q}"><b>${t(q + 'a')}</b><span class="lg-what">${t(q)}</span><p>${t(q + 'how')}</p></div>`).join('')}</div>
+      <div class="mx-legend-grid">${QUADS.map((q) => `<div class="lg ${q}"><b>${t(q + 'a')}</b><span class="lg-what">${PRIO_NUM[q]} · ${t(q)}</span><p>${t(q + 'how')}</p></div>`).join('')}</div>
       <p class="small muted">${t('matrixHint')}</p>
     </details>`;
   document.querySelector('.mx-legend').ontoggle = (e) => { data.settings.mxLegendClosed = !e.target.open; save(); };
@@ -474,13 +479,7 @@ function renderDetail() {
     </div>
     <div class="d-field">
       <label>${icon('matrix')} ${t('priority')}${x.priority ? ` · <a href="#" data-prio="">${t('clearPriority')}</a>` : ''}</label>
-      <div class="prio-picker">
-        <span></span><span class="ax">${t('urgent')}</span><span class="ax">${t('notUrgent')}</span>
-        <span class="ax">${t('important')}</span>
-        ${['q1', 'q2'].map((q) => `<button class="${q} ${x.priority === q ? 'on' : ''}" data-prio="${q}" title="${t(q + 'a')}">${t(q)}</button>`).join('')}
-        <span class="ax">${t('notImportant')}</span>
-        ${['q3', 'q4'].map((q) => `<button class="${q} ${x.priority === q ? 'on' : ''}" data-prio="${q}" title="${t(q + 'a')}">${t(q)}</button>`).join('')}
-      </div>
+      ${prioPicker(x.priority, 'data-prio', prioNames(), t('noPrio'))}
     </div>
     <div class="d-field pending-box">
       <label>${icon('user')} ${t('waiting')}</label>
@@ -695,18 +694,14 @@ function renderComposer() {
       <span class="seg-joined c-mode"><button class="${full ? '' : 'on'}" data-cmode="quick">${t('quickMode')}</button><button class="${full ? 'on' : ''}" data-cmode="full">${t('fullMode')}</button></span></div>
     <input type="text" class="c-title" id="cTitle" dir="auto" placeholder="${t('newTask')}…" value="${esc(composer.title)}" autocomplete="off">
     <div class="err" id="cErr">${t('titleRequired')}</div>
-    <div class="c-row">
-      <select id="cArea" title="${t('area')}">${areaOptions(composer.areaId)}</select>
-    </div>
-    <div class="c-row">
-      <input type="date" id="cDue" title="${t('due')}" value="${composer.due || ''}">
-      ${timeBox('cDueTime', composer.dueTime, `title="${t('dueTime')}"`)}
-    </div>
-    <div class="c-row">
-      <select id="cRepeat" title="${t('repeat')}">${repeatOptions(composer.repeat ? parseRepeat(composer.repeat) : null, composer.due)}</select>
-      <select id="cRemind" title="${composer.due ? t('reminder') : t('remindNeedsDue')}" ${composer.due ? '' : 'disabled'}>${composerRemindOptions()}</select>
-    </div>
-    <div class="c-prio">${QUADS.map((q) => `<button class="${q} ${composer.priority === q ? 'on' : ''}" data-cprio="${q}" title="${t(q + 'a')}">${t(q)}</button>`).join('')}</div>
+    <div class="c-sec"><span class="c-sec-lbl">${icon('folder')} ${t('area')}</span>
+      <select id="cArea" title="${t('area')}">${areaOptions(composer.areaId)}</select></div>
+    <div class="c-sec"><span class="c-sec-lbl">${icon('calendar')} ${t('due')}</span>
+      <div class="c-row"><input type="date" id="cDue" title="${t('due')}" value="${composer.due || ''}">${timeBox('cDueTime', composer.dueTime, `title="${t('dueTime')}"`)}</div>
+      <div class="c-row"><select id="cRepeat" title="${t('repeat')}">${repeatOptions(composer.repeat ? parseRepeat(composer.repeat) : null, composer.due)}</select>
+        <select id="cRemind" title="${composer.due ? t('reminder') : t('remindNeedsDue')}" ${composer.due ? '' : 'disabled'}>${composerRemindOptions()}</select></div></div>
+    <div class="c-sec"><span class="c-sec-lbl">${icon('matrix')} ${t('priority')}</span>
+      ${prioPicker(composer.priority, 'data-cprio', prioNames(), t('noPrio'))}</div>
     ${full ? `<div class="c-full">
       <div class="c-row"><label class="c-lbl"><span>${icon('today')} ${t('start')}</span><input type="date" id="cStart" value="${composer.start || todayStr()}"></label>
         <label class="c-lbl"><span>${icon('user')} ${t('waiting')}</span><input type="text" id="cPerson" dir="auto" list="cPeople" value="${esc(composer.person)}" placeholder="${t('noOne')}" autocomplete="off"></label>
@@ -751,7 +746,7 @@ function bindComposer() {
     const p = e.target.closest('[data-cprio]');
     if (p) {
       composer.priority = composer.priority === p.dataset.cprio ? null : p.dataset.cprio;
-      c.querySelectorAll('[data-cprio]').forEach((b) => b.classList.toggle('on', b.dataset.cprio === composer.priority));
+      syncPrioPicker(p.closest('.pp'), composer.priority);
       return $('cTitle').focus();
     }
     if (e.target.id === 'cAdd') submitComposer();
@@ -1475,6 +1470,8 @@ function migrateRepeatStarts() {
   renderAll();
   maybeWhatsNew();
   window.api.onUpdateStatus((u) => showUpdateBanner(u));
+  // An update that finished downloading before this window opened shows its bar right away.
+  window.api.appInfo().then((i) => i.update && showUpdateBanner(i.update));
   window.api.onDataChanged((d) => {
     data = d;
     if (ui.scope !== 'all' && ui.scope !== 'inbox' && !areaById(ui.scope)) ui.scope = 'all';

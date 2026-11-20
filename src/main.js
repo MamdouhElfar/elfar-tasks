@@ -431,9 +431,16 @@ function setupAutoUpdate() {
     notify(ar() ? `تحديث جديد جاهز (${i.version})` : `Update ready (${i.version})`, ar() ? 'هيتسطب لما تقفل البرنامج، أو من الإعدادات دلوقتي.' : 'It installs when you quit, or from Settings now.');
   });
   autoUpdater.on('error', () => send({ status: 'error' }));
-  const check = () => autoUpdater.checkForUpdates().catch(() => send({ status: 'error' }));
+  // The app stays open all day, so look often: every 30 min, and when you come back to a window.
+  let lastCheck = 0;
+  const check = () => {
+    if (['downloading', 'ready'].includes(updateState?.status)) return;
+    lastCheck = Date.now();
+    autoUpdater.checkForUpdates().catch(() => send({ status: 'error' }));
+  };
   setTimeout(check, 10000);
-  setInterval(check, 6 * 3600 * 1000);
+  setInterval(check, 30 * 60 * 1000);
+  app.on('browser-window-focus', () => { if (Date.now() - lastCheck > 10 * 60 * 1000) check(); });
   ipcMain.handle('app:install-update', () => { quitting = true; autoUpdater.quitAndInstall(); });
   ipcMain.handle('app:check-update', () => check());
 }

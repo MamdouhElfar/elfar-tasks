@@ -31,7 +31,7 @@ function render() {
         <option value="week">${t('nextWeek')}</option>
       </select>
     </div>
-    <div class="qa-prio">${QUADS.map((q) => `<button class="${q}" data-p="${q}" title="${t(q + 'a')}">${t(q)}</button>`).join('')}</div>
+    <div class="qa-prio">${prioPicker(null, 'data-p', { q1: t('q1'), q2: t('q2'), q3: t('q3'), q4: t('q4') }, t('noPrio'))}</div>
     <div class="qa-foot">${t('composerHint')}</div>`;
   setTimeout(() => $('qTitle').focus(), 20);
 }
@@ -58,7 +58,7 @@ document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-p]');
   if (!b) return;
   prio = prio === b.dataset.p ? null : b.dataset.p;
-  document.querySelectorAll('[data-p]').forEach((x) => x.classList.toggle('on', x.dataset.p === prio));
+  syncPrioPicker(document.querySelector('.qa-prio .pp'), prio);
   $('qTitle').focus();
 });
 document.addEventListener('input', (e) => { if (e.target.id === 'qTitle') $('qErr').classList.remove('show'); });

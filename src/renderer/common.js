@@ -43,7 +43,7 @@ const I18N = {
     newTask: 'تاسك جديد', addBtn: 'إضافة', titleRequired: 'اكتب عنوان التاسك الأول', added: 'اتضافت', open: 'افتح',
     composerHint: 'Enter للإضافة · Esc للإغلاق', noDue: 'من غير Due', noPrio: 'من غير تصنيف',
     matrix: 'المصفوفة', priority: 'التصنيف', unclassified: 'مش متصنفة', important: 'مهم', notImportant: 'مش مهم', urgent: 'مستعجل', notUrgent: 'مش مستعجل', sortPriority: 'الأهم أولاً', clearPriority: 'شيل التصنيف',
-    q1: 'مهم ومستعجل', q2: 'مهم ومش مستعجل', q3: 'مستعجل ومش مهم', q4: 'لا مهم ولا مستعجل',
+    q1: 'مهم ومستعجل', q2: 'مهم ومش مستعجل', q3: 'مش مهم ومستعجل', q4: 'لا مهم ولا مستعجل',
     q1a: 'اعملها دلوقتي', q2a: 'خطط لها', q3a: 'فوّضها', q4a: 'استغنى عنها', matrixHint: 'اسحب أي تاسك لمربع تاني عشان تغيّر تصنيفها، أو من "مش متصنفة" لأي مربع.',
     allAreas: 'كل التاسكات', dragHint: 'سيب التاسك على فولدر عشان تنقله', movedTo: 'اتنقلت إلى',
     dataTitle: 'البيانات والنسخ الاحتياطية', dataWhere: 'مكان حفظ التاسكات', autoBk: 'نسخ احتياطية تلقائية', autoBkDesc: 'التطبيق بيحفظ نسخة لوحده كل يوم، وبيحتفظ بآخر 30 يوم. لو حصلت مشكلة، اختار يوم وارجع له.', restoreBtn: 'استرجاع', openBackups: 'افتح فولدر النسخ',
@@ -109,7 +109,7 @@ const I18N = {
     newTask: 'New task', addBtn: 'Add', titleRequired: 'Enter a task title first', added: 'Added', open: 'Open',
     composerHint: 'Enter to add · Esc to close', noDue: 'No due date', noPrio: 'No priority',
     matrix: 'Matrix', priority: 'Priority', unclassified: 'Unclassified', important: 'Important', notImportant: 'Not important', urgent: 'Urgent', notUrgent: 'Not urgent', sortPriority: 'Priority first', clearPriority: 'Clear priority',
-    q1: 'Important & urgent', q2: 'Important & not urgent', q3: 'Urgent & not important', q4: 'Not important & not urgent',
+    q1: 'Important & urgent', q2: 'Important & not urgent', q3: 'Not important & urgent', q4: 'Not important & not urgent',
     q1a: 'Do it now', q2a: 'Schedule it', q3a: 'Delegate it', q4a: 'Drop it', matrixHint: 'Drag a task to another box to change its priority, or from Unclassified into any box.',
     allAreas: 'All tasks', dragHint: 'Drop a task on a folder to move it', movedTo: 'Moved to',
     dataTitle: 'Data & backups', dataWhere: 'Where your tasks are saved', autoBk: 'Automatic backups', autoBkDesc: 'The app saves a copy by itself every day and keeps the last 30 days. If something goes wrong, pick a day and go back to it.', restoreBtn: 'Restore', openBackups: 'Open the backups folder',
@@ -278,6 +278,36 @@ function playSound(kind) {
   if (kind === 'bell') for (const t0 of [0, 0.42, 0.84]) [880, 2420, 4750].forEach((f, i) => tone(f, t0, 1.3 - i * 0.35, 'sine', 0.2 / (i + 1)));
   if (kind === 'squeak') [0, 0.2, 0.4].forEach((t0) => { const o = tone(2100, t0, 0.15, 'triangle', 0.16); o.frequency.exponentialRampToValueAtTime(3400, now + t0 + 0.11); });
   setTimeout(() => C.close(), 3500);
+}
+
+// ---------- priority picker: four numbered buttons, the name shows on hover / when picked ----------
+// 1 = important & urgent, 2 = important & not urgent, 3 = not important & urgent, 4 = neither.
+const PRIO_NUM = { q1: 1, q2: 2, q3: 3, q4: 4 };
+// names: { q1: 'Important & urgent', ... }; attr: the data attribute the page listens to.
+function prioPicker(cur, attr, names, none) {
+  const name = (q) => `${PRIO_NUM[q]} · ${names[q]}`;
+  return `<div class="pp"><div class="pp-btns">${['q1', 'q2', 'q3', 'q4'].map((q) =>
+    `<button type="button" class="pp-b ${q} ${cur === q ? 'on' : ''}" ${attr}="${q}" data-pname="${esc(name(q))}" title="${esc(name(q))}">${PRIO_NUM[q]}</button>`).join('')}</div>
+    <span class="pp-name ${cur ? cur : 'none'}" data-none="${esc(none)}">${esc(cur ? name(cur) : none)}</span></div>`;
+}
+document.addEventListener('mouseover', (e) => {
+  const b = e.target.closest && e.target.closest('.pp-b'); if (!b) return;
+  const n = b.closest('.pp').querySelector('.pp-name');
+  n.textContent = b.dataset.pname; n.className = 'pp-name hover ' + [...b.classList].find((c) => /^q\d$/.test(c));
+});
+document.addEventListener('mouseout', (e) => {
+  const b = e.target.closest && e.target.closest('.pp-b'); if (!b) return;
+  const pp = b.closest('.pp'), n = pp.querySelector('.pp-name'), on = pp.querySelector('.pp-b.on');
+  n.textContent = on ? on.dataset.pname : n.dataset.none;
+  n.className = 'pp-name ' + (on ? [...on.classList].find((c) => /^q\d$/.test(c)) : 'none');
+});
+// After a click picks / un-picks a button, keep the name in step.
+function syncPrioPicker(pp, cur) {
+  if (!pp) return;
+  pp.querySelectorAll('.pp-b').forEach((b) => b.classList.toggle('on', [...b.classList].includes(cur)));
+  const on = pp.querySelector('.pp-b.on'), n = pp.querySelector('.pp-name');
+  n.textContent = on ? on.dataset.pname : n.dataset.none;
+  n.className = 'pp-name ' + (cur || 'none');
 }
 
 // Eisenhower matrix: q1 important+urgent, q2 important, q3 urgent, q4 neither.
