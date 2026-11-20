@@ -80,7 +80,8 @@ const VIEWS = [
   { id: 'closed', test: (x) => !!x.closure, noCount: true, hidden: true },
   { id: 'matrix', test: isActive, noCount: true, board: true },
   { id: 'calendar', test: () => true, noCount: true, board: true },
-  { id: 'report', label: 'review', test: () => true, noCount: true, board: true, also: 'closed' }
+  { id: 'report', label: 'review', test: () => true, noCount: true, board: true, also: 'closed' },
+  { id: 'habits', test: () => false, noCount: true, board: true }
 ];
 
 function inScope(x, scope = ui.scope) {
@@ -153,7 +154,8 @@ function renderTabs() {
     <div class="tab-group boards">${VIEWS.filter((v) => v.board).map(tab).join('')}</div>`;
   fitTabs();
   // Tools that don't apply to a view are hidden instead of sitting there doing nothing.
-  const tools = { search: !['today', 'calendar', 'report'].includes(ui.view), sort: !['today', 'matrix', 'calendar', 'report'].includes(ui.view) };
+  const tools = { search: !['today', 'calendar', 'report', 'habits'].includes(ui.view), sort: !['today', 'matrix', 'calendar', 'report', 'habits'].includes(ui.view) };
+  $('personFilter').hidden = ui.view === 'habits';
   $('search').hidden = !tools.search;
   $('sort').hidden = !tools.sort;
 }
@@ -275,6 +277,7 @@ function renderList() {
   $('personFilter').classList.toggle('active', !!ui.person);
 
   if (ui.view === 'today') return renderHome();
+  if (ui.view === 'habits') return renderHabits();
   if (ui.view === 'calendar') return renderCalendar();
   if (ui.view === 'matrix') return renderMatrix();
   if (ui.view === 'report') return renderReport();
@@ -1607,6 +1610,7 @@ function migrateRepeatStarts() {
   bindSplitters();
   renderAll();
   maybeWhatsNew();
+  setTimeout(maybeAskHabits, 1200);
   setTimeout(maybeAskPlan, 1500);
   window.api.onUpdateStatus((u) => showUpdateBanner(u));
   // An update that finished downloading before this window opened shows its bar right away.

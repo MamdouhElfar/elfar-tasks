@@ -60,6 +60,7 @@ function renderHome() {
       ? `<div class="group-title plan-title">☀ ${t('planTitle')} <span class="plan-n">${planDone}/${planned.length}</span><button class="link" data-plan>${t('planEdit')}</button></div>
          ${planned.length ? planned.map(rowHtml).join('') : `<div class="h-empty">${t('planEmpty')}</div>`}`
       : `<button class="plan-cta" data-plan><span class="pc-ico">☀</span><span><b>${t('planCta')}</b><small>${t('planCtaSub')}</small></span></button>`) +
+    (() => { const hs = habitsToday(); return hs.length ? `<div class="group-title habit-title">${icon('habits')} ${t('hbToday')} · ${hs.filter((h) => hLog(h, td) === 'done').length}/${hs.length}<button class="link" data-hopen>${t('hSeeAll')}</button></div>${hs.map(habitRowHtml).join('')}` : ''; })() +
     sec(t('overdue'), 'danger', lateRest) + sec(t('stDueToday'), '', todayRest) + sec(t('starred'), '', starredRest) + sec(t('hDoNow'), '', doNow);
 
   // Coming up, by day.

@@ -221,7 +221,7 @@ function bindKeyboard() {
     // The rest only when you're not typing and no dialog is open.
     const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName) || document.activeElement?.isContentEditable;
     if (typing || $('modalRoot').innerHTML || e.ctrlKey || e.altKey || e.metaKey) return;
-    if (['calendar', 'matrix', 'report'].includes(ui.view)) return;
+    if (['calendar', 'matrix', 'report', 'habits'].includes(ui.view)) return;
     const list = currentTasks();
     if (!list.length) return;
     const i = list.findIndex((x) => x.id === ui.selected);
@@ -388,6 +388,18 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.16.0': {
+    ar: ['تاب جديد "عاداتي": للحاجات اللي بتعملها على طول زي المذاكرة والجيم. تختار نوعها: أيام محددة (الأحد والتلات والخميس)، أو عدد مرات في الأسبوع (جيم 3 مرات)، أو وقت في الأسبوع (قراية 5 ساعات)',
+      'اليوم اللي يعدّي من غير ما تعملها بيتسجل "فات" ومش بيتنقل ليوم تاني، والأسبوع اللي يخلص أقل من الهدف بيتسجل "أقل من الهدف". ولو عندك عذر علّم اليوم "إجازة"',
+      'لكل عادة متابعة: خريطة آخر 12 أسبوع، وكام مرة ورا بعض 🔥، ونسبة التزامك. ودوسة على أي يوم فات تصلّحه',
+      'الصبح بيسألك عن العادات اللي ما علّمتش عليها: عملتها ولا لأ؟',
+      'عادات النهارده بتظهر في "النهارده" وفي مراجعة آخر اليوم، و▶ يبدأ تركيز بمدتها ووقته بيتحسب فيها، والفار يفكّرك في ميعادها'],
+    en: ['A new "Habits" tab for things you keep doing, like studying or the gym. Pick how it is measured: set days (Sun, Tue, Thu), times a week (gym 3×), or time a week (reading 5 h)',
+      'A day that passes without it counts as "missed" and never moves to another day; a week that ends below target counts as "below target". Have a reason? Mark the day as a day off',
+      'Each habit has a tracker: the last 12 weeks, how many in a row 🔥, and how often you kept it up. Click a past day to fix it',
+      'In the morning it asks about habits you did not mark: did you do it or not?',
+      "Today's habits show on Today and in the evening review; ▶ starts a focus session of its length that counts toward it, and the mouse reminds you at its time"]
+  },
   '1.15.0': {
     ar: ['شاشة التركيز اتعملت من جديد: دايرة أوضح، والفار بالساعة في النص، وأزرار دواير (وقفة في النص، و+5 ووقف على الجنب)، و"التاسك خلصت" تحت',
       'زرار "▶ ركّز" على الكارت بقى يظهر في آخر الكارت لما الماوس يعدّي عليه',

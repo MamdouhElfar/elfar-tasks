@@ -120,6 +120,7 @@ function openReview() {
       <div class="rv-week" title="${t('rvWeek')}">${perDay.map((n, i) => `<span class="${days[i] === td ? 'today' : ''}" title="${fmtDate(days[i], lang())}: ${n}"><i style="height:${Math.max(4, (n / max) * 100)}%"></i><small>${new Date(days[i] + 'T00:00').toLocaleDateString(loc, { weekday: 'narrow' })}</small></span>`).join('')}</div>
     </div>
     ${doneToday.length ? `<details class="rv-done"><summary>${t('rvDoneList')}</summary>${doneToday.map((x) => `<div dir="auto">✓ ${esc(x.title)}</div>`).join('')}</details>` : ''}
+    ${(() => { const hs = habitsToday().filter((h) => h.kind !== 'minutes'); return hs.length ? `<h4 class="rv-h">${t('rvHabits')}</h4><div class="rv-habits">${hs.map(habitRowHtml).join('')}</div>` : ''; })()}
     <h4 class="rv-h">${left.length ? `${t('rvLeft')} · ${left.length}` : t('rvAllDone')}</h4>
     <div class="rv-left" id="rvLeft">${left.map(leftRow).join('')}</div>
     <div class="actions">${left.length ? `<button id="rvAll">${t('rvMoveAll')}</button>` : ''}<span style="flex:1"></span><button class="primary" id="rvOk">${t('rvBye')} 👋</button></div></div>`;

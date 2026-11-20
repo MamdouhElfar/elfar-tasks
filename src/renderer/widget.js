@@ -111,7 +111,9 @@ function render() {
 const wClock = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 function focusNowW() {
   const f = data.focus; if (!f) return null;
-  const x = data.tasks.find((y) => y.id === f.taskId); if (!x) return null;
+  let x = data.tasks.find((y) => y.id === f.taskId);
+  if (!x && String(f.taskId).startsWith('habit:')) { const h = (data.habits || []).find((y) => y.id === f.taskId.slice(6)); if (h) x = { id: f.taskId, title: `${h.emoji ? h.emoji + ' ' : ''}${h.name}`, subtasks: [] }; }
+  if (!x) return null;
   const total = (f.mins || 25) * 60000;
   return { f, x, total, left: total - (f.workedMs || 0) - (f.runFrom ? Date.now() - f.runFrom : 0) };
 }

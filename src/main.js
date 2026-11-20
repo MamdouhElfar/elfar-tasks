@@ -341,6 +341,15 @@ function tick() {
     else notify((ar() ? '🔔 تذكير: ' : '🔔 Reminder: ') + t.title, bits.join(' · ') || (ar() ? 'اضغط لفتح التاسك' : 'Click to open the task'), () => showMain(t.id));
   }
   const today = now.slice(0, 10);
+  for (const h of data.habits || []) {
+    if (!h.time || h.archived || h.remindedOn === today || now.slice(11) < h.time || !habitDueToday(h, today)) continue;
+    h.remindedOn = today;
+    changed = true;
+    if ((data.settings.remindStyle || 'mouse') === 'mouse') {
+      remindQueue.push({ id: 'habitr:' + h.id, kind: 'habit', title: `${h.emoji ? h.emoji + ' ' : ''}${h.name}`, duration: h.duration || null, mins: h.kind === 'minutes' });
+      openRemindWin();
+    } else notify((ar() ? '🔁 وقت ' : '🔁 Time for ') + h.name, ar() ? 'افتح عاداتي' : 'Open Habits', () => showMain());
+  }
   const rv = { enabled: true, time: '17:00', ...(data.settings.review || {}) };
   if (rv.enabled && now.slice(11) >= rv.time && data.settings.lastReview !== today) {
     data.settings.lastReview = today;
@@ -391,6 +400,25 @@ function openRemindWin() {
   remindWin.webContents.on('did-finish-load', () => { sendRemindList(); remindWin.showInactive(); });
   remindWin.on('closed', () => { remindWin = null; });
 }
+// Is a habit due today? (scheduled today, or its weekly goal isn't reached) and not done yet.
+function habitDueToday(h, today) {
+  const end = h.end || {};
+  if (today < h.start || (end.type === 'date' && end.date && today > end.date)) return false;
+  const log = h.log || {};
+  if (log[today]) return false;
+  const dt = new Date(today + 'T00:00');
+  if (h.kind === 'days') return (h.days || []).includes(dt.getDay());
+  const ws = new Date(dt); ws.setDate(dt.getDate() - ((dt.getDay() - (h.weekStart ?? 6) + 7) % 7));
+  let done = 0, mins = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(ws); d.setDate(ws.getDate() + i);
+    const k = localNow(d).slice(0, 10);
+    if (log[k] === 'done') done++;
+    mins += (h.minutes || {})[k] || 0;
+  }
+  return h.kind === 'times' ? done < (h.perWeek || 1) : mins < (h.minutesPerWeek || 1);
+}
+
 // Show the app with the end-of-day review open.
 function openReviewInApp() {
   const send = () => mainWin.webContents.send('review:open');
@@ -409,6 +437,17 @@ ipcMain.on('remind:action', (e, { id, action, minutes, what }) => {
     if (i >= 0) remindQueue.splice(i, 1);
     if (action === 'review') openReviewInApp();
     if (remindQueue.length) sendRemindList(); else if (remindWin) remindWin.close();
+    return;
+  }
+  if (String(id).startsWith('habitr:')) {
+    const hid = id.slice(7);
+    const i = remindQueue.findIndex((r) => r.id === id);
+    if (i >= 0) remindQueue.splice(i, 1);
+    if (remindQueue.length) sendRemindList(); else if (remindWin) remindWin.close();
+    const data = store.get();
+    const h = (data.habits || []).find((x) => x.id === hid);
+    if (h && action === 'hdone') { h.log = h.log || {}; h.log[localNow().slice(0, 10)] = 'done'; store.replace(data); broadcast(); }
+    if (h && action === 'hfocus') focusAction('start', 'habit:' + hid, { mins: h.duration || focusLen(data) });
     return;
   }
   if (String(id).startsWith('focus:')) {
@@ -448,15 +487,28 @@ ipcMain.on('remind:test', () => showReminder({ id: 'test-' + Date.now(), title: 
 const focusLen = (data) => Number(data.settings.focusMins) || 25;
 const breakLen = (data) => Number(data.settings.breakMins) || 5;
 const focusWorked = (f) => (f.workedMs || 0) + (f.runFrom ? Date.now() - f.runFrom : 0);
+// What a session is on: a task, or a habit ('habit:<id>'), shaped the same way for the pop-ups.
+function focusSubject(data, id) {
+  if (String(id).startsWith('habit:')) {
+    const h = (data.habits || []).find((x) => x.id === id.slice(6));
+    return h ? { id, habit: h, title: `${h.emoji ? h.emoji + ' ' : ''}${h.name}`, subtasks: [] } : null;
+  }
+  return data.tasks.find((x) => x.id === id) || null;
+}
 function focusCredit(data) {
   const f = data.focus;
   if (!f || f.mode !== 'work') return;
   const ms = Math.min(focusWorked(f), f.mins * 60000);
-  const t = data.tasks.find((x) => x.id === f.taskId);
-  if (ms >= 30000) {
-    if (t) t.focusMs = (t.focusMs || 0) + ms;
-    data.focusLog = (data.focusLog || []).concat({ taskId: f.taskId, areaId: t ? t.areaId || null : null, at: localNow(new Date(Date.now() - ms)), ms }).slice(-1000);
-  }
+  const sub = focusSubject(data, f.taskId);
+  if (ms < 30000 || !sub) return;
+  if (sub.habit) {
+    // Time on a habit counts toward it; once a day's session reaches its length, the day is done.
+    const h = sub.habit, d = localNow().slice(0, 10);
+    h.minutes = h.minutes || {};
+    h.minutes[d] = Math.round(((h.minutes[d] || 0) + ms / 60000) * 10) / 10;
+    if (h.kind !== 'minutes' && h.duration && h.minutes[d] >= h.duration - 0.5) { h.log = h.log || {}; h.log[d] = 'done'; }
+  } else sub.focusMs = (sub.focusMs || 0) + ms;
+  data.focusLog = (data.focusLog || []).concat({ taskId: f.taskId, areaId: sub.habit ? null : sub.areaId || null, at: localNow(new Date(Date.now() - ms)), ms }).slice(-1000);
 }
 const workSession = (data, taskId, mins) => ({ taskId, mode: 'work', mins: mins || focusLen(data), workedMs: 0, runFrom: Date.now() });
 function focusAction(what, taskId, extra) {
@@ -476,7 +528,12 @@ function focusAction(what, taskId, extra) {
   else if (what === 'more') { focusCredit(data); data.focus = workSession(data, id); }
   else if (what === 'break') { focusCredit(data); data.focus = { taskId: id, mode: 'break', mins: breakLen(data), workedMs: 0, runFrom: Date.now() }; }
   else if (what === 'stop') { focusCredit(data); data.focus = null; }
-  else if (what === 'done') { focusCredit(data); data.focus = null; store.replace(data); broadcast(); closeTaskInApp(id); return store.get(); }
+  else if (what === 'done') {
+    focusCredit(data); data.focus = null;
+    const sub = focusSubject(data, id);
+    if (sub && sub.habit) { sub.habit.log = sub.habit.log || {}; sub.habit.log[localNow().slice(0, 10)] = 'done'; store.replace(data); broadcast(); return store.get(); }
+    store.replace(data); broadcast(); closeTaskInApp(id); return store.get();
+  }
   store.replace(data); broadcast();
   return store.get();
 }
@@ -488,7 +545,7 @@ function focusTick() {
   const f = data.focus;
   if (!f || !f.runFrom || !['work', 'break'].includes(f.mode)) return;
   if (focusWorked(f) < f.mins * 60000) return;
-  const t = data.tasks.find((x) => x.id === f.taskId);
+  const t = focusSubject(data, f.taskId);
   if (f.mode === 'work') { focusCredit(data); data.focus = { taskId: f.taskId, mode: 'ended', mins: f.mins }; }
   else data.focus = { taskId: f.taskId, mode: 'breakEnded', mins: f.mins };
   store.replace(data); broadcast();
@@ -499,7 +556,7 @@ function focusTick() {
 function showFocusPopup(t, f) {
   dropFocusPopup();
   const next = (t.subtasks || []).find((s) => !s.done);
-  remindQueue.unshift({ id: 'focus:' + t.id, kind: f.mode, taskId: t.id, title: t.title, mins: f.mins, next: next ? next.title : '',
+  remindQueue.unshift({ id: 'focus:' + t.id, kind: f.mode, taskId: t.id, title: t.title, habit: !!t.habit, mins: f.mins, next: next ? next.title : '',
     subs: (t.subtasks || []).length ? `${t.subtasks.filter((s) => s.done).length}/${t.subtasks.length}` : '' });
   openRemindWin();
 }
@@ -588,8 +645,15 @@ ipcMain.handle('data:save', (e, data) => {
     const o = prev.get(t.id);
     if (o && (o.focusMs || 0) > (t.focusMs || 0)) t.focusMs = o.focusMs;
   }
+  const prevHabits = new Map((prevData.habits || []).map((h) => [h.id, h]));
+  for (const h of data.habits || []) {
+    const o = prevHabits.get(h.id);
+    if (!o || !o.minutes) continue;
+    h.minutes = h.minutes || {};
+    for (const [d, m] of Object.entries(o.minutes)) if ((h.minutes[d] || 0) < m) h.minutes[d] = m;
+  }
   // The task in focus was closed or deleted: the session ends with it.
-  const ft = data.focus && data.tasks.find((t) => t.id === data.focus.taskId);
+  const ft = data.focus && focusSubject(data, data.focus.taskId);
   let focusEnded = false;
   if (data.focus && (!ft || ft.closure)) { focusCredit(data); data.focus = null; dropFocusPopup(); focusEnded = true; }
   const before = `${edgeOf()}|${cur.widget.display}`;

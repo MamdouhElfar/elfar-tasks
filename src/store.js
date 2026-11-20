@@ -69,6 +69,7 @@ function normalize(d, lang = 'ar') {
   d.areas = Array.isArray(d.areas) ? d.areas : [];
   d.tasks = Array.isArray(d.tasks) ? d.tasks : [];
   d.people = Array.isArray(d.people) ? d.people : [];
+  d.habits = Array.isArray(d.habits) ? d.habits : [];
   migrateWaitingOn(d);
   return d;
 }

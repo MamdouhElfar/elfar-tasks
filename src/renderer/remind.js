@@ -13,6 +13,7 @@ function render() {
   shownId = x.id;
   if (x.kind === 'ended' || x.kind === 'breakEnded') return renderFocusEnd(x, fresh);
   if (x.kind === 'review') return renderReviewAsk(x, fresh);
+  if (x.kind === 'habit') return renderHabitAsk(x, fresh);
   const when = [x.due && fmtDate(x.due, state.lang), x.dueTime && fmtTime(`${x.due || '2000-01-01'}T${x.dueTime}`, state.lang)].filter(Boolean).join(' · ');
   const later = [[5, `5 ${t('minShort')}`], [10, `10 ${t('minShort')}`], [30, `30 ${t('minShort')}`], [60, `1 ${t('hourShort')}`]];
   $('root').innerHTML = `<div class="rm" id="rm">
@@ -45,10 +46,25 @@ function renderFocusEnd(x, fresh) {
       <div class="rm-title" dir="auto">${esc(x.title)}</div>
       ${work && x.next ? `<div class="rm-meta">↳ ${t('nextStep')}: <span dir="auto">${esc(x.next)}</span>${x.subs ? ` · ${x.subs}` : ''}</div>` : ''}
       <div class="rm-acts">${work ? b('more', `▶ ${t('fMore')}`, 'primary') + b('break', `☕ ${t('fBreak')}`) : b('more', `▶ ${t('fBack')}`, 'primary') + b('stop', `■ ${t('fEnough')}`)}</div>
-      ${work ? `<div class="rm-snooze">${b('done', `✓ ${t('fTaskDone')}`)}${b('stop', `■ ${t('fEnough')}`)}</div>` : ''}
+      ${work ? `<div class="rm-snooze">${b('done', `✓ ${x.habit ? t('hbFocusDone') : t('fTaskDone')}`)}${b('stop', `■ ${t('fEnough')}`)}</div>` : ''}
     </div></div>`;
   if (!fresh) $('rm').style.animation = 'none';
   else setTimeout(() => playSound(state.sound === 'none' ? 'none' : 'chime'), 850);
+}
+
+// A habit's time has come.
+function renderHabitAsk(x, fresh) {
+  $('root').innerHTML = `<div class="rm" id="rm">
+    <div class="rm-mouse">${remindMouseSvg()}</div>
+    <div class="rm-card">
+      <button class="rm-x" data-act="dismiss" title="${t('rvLater')}">✕</button>
+      <div class="rm-top">🔁 ${t('hbRemind')}</div>
+      <div class="rm-title" dir="auto">${esc(x.title)}</div>
+      <div class="rm-acts">${x.duration || x.mins ? `<button class="primary" data-act="hfocus">▶ ${t('hbRemindStart')}${x.duration ? ` ${x.duration} ${t('minShort')}` : ''}</button>` : ''}
+        ${x.mins ? '' : `<button ${x.duration ? '' : 'class="primary"'} data-act="hdone">✓ ${t('hbDidIt')}</button>`}<button data-act="dismiss">${t('rvLater')}</button></div>
+    </div></div>`;
+  if (!fresh) $('rm').style.animation = 'none';
+  else setTimeout(() => playSound(state.sound), 850);
 }
 
 // Evening: time to review the day.

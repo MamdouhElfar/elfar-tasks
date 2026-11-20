@@ -12,7 +12,11 @@ const fmtClock = (ms) => {
 function focusNow() {
   const f = data.focus;
   if (!f) return null;
-  const x = taskById(f.taskId);
+  let x = taskById(f.taskId);
+  if (!x && String(f.taskId).startsWith('habit:')) {
+    const h = habitById(f.taskId.slice(6));
+    if (h) x = { id: f.taskId, title: `${h.emoji ? h.emoji + ' ' : ''}${h.name}`, subtasks: [], habit: h };
+  }
   if (!x) return null;
   const total = (f.mins || 25) * 60000;
   const worked = (f.workedMs || 0) + (f.runFrom ? Date.now() - f.runFrom : 0);
@@ -112,12 +116,12 @@ function renderFocus(force) {
           <b id="fvClock">${timing ? fmtClock(s.left) : '✓'}</b><small>${timing ? `${t('fOf')} ${s.f.mins} ${t('minShort')}` : t('fNice')}</small></div>
       </div>
       <div class="fv-ctrls">${focusControls(s)}</div>
-      ${s.f.mode !== 'break' && s.f.mode !== 'breakEnded' ? `<div class="fv-work">
+      ${s.f.mode !== 'break' && s.f.mode !== 'breakEnded' && !s.x.habit ? `<div class="fv-work">
         ${nextStepHtml(s, true)}
         ${later.length ? `<div class="fv-steps">${later.slice(0, 4).map((y) => `<div dir="auto"><i></i>${esc(y.title)}</div>`).join('')}${later.length > 4 ? `<div class="muted">+${later.length - 4}</div>` : ''}</div>` : ''}
         <input type="text" class="fv-add" id="fvAdd" dir="auto" placeholder="＋ ${t('fAddStep')}">
       </div>` : ''}
-      <div class="fv-foot"><button class="fv-done" data-fdo="done">✓ ${t('fTaskDone')}</button>
+      <div class="fv-foot"><button class="fv-done" data-fdo="done">✓ ${s.x.habit ? t('hbFocusDone') : t('fTaskDone')}</button>
         ${focusMinsOf(s.x) ? `<span>⏱ ${t('fSoFar')} ${focusTimeLabel(focusMinsOf(s.x))}</span>` : ''}</div>
     </div>`;
     return;
@@ -141,7 +145,7 @@ document.addEventListener('click', (e) => {
     return focusDo(d.dataset.fdo, s.x.id);
   }
   if (e.target.closest('[data-fview]')) { ui.focusView = !ui.focusView; return renderFocus(true); }
-  if (e.target.closest('[data-fopen]')) { ui.focusView = false; ui.selected = s.x.id; refresh(); renderFocus(true); }
+  if (e.target.closest('[data-fopen]')) { ui.focusView = false; if (s.x.habit) { ui.view = 'habits'; ui.selected = null; } else ui.selected = s.x.id; refresh(); renderFocus(true); }
 }, true);
 document.addEventListener('change', (e) => {
   const c = e.target.closest && e.target.closest('[data-fnext]');
