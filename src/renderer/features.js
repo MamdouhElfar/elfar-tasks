@@ -24,7 +24,7 @@ function spawnNext(x) {
     // Each round stands on its own: the next one starts on its own day, not today.
     id: uid(), start: due > todayStr() ? due : todayStr(), due, closure: null, spawned: null, reminded: undefined,
     subtasks: (x.subtasks || []).map((s) => ({ ...s, id: uid(), done: false })),
-    log: [], pendingWith: [], created: Date.now(), updated: Date.now(),
+    log: [], pendingWith: [], created: Date.now(), updated: Date.now(), postponed: 0, focusMs: 0,
     title: x.title
   };
   // Reminder: "X before due" is recalculated; a fixed reminder moves by the same number of days.
@@ -237,6 +237,7 @@ function bindKeyboard() {
     if (e.key === ' ') { e.preventDefault(); setClosed(x, !x.closure); return refresh(); }
     if (['1', '2', '3', '4'].includes(e.key)) { x.priority = x.priority === 'q' + e.key ? null : 'q' + e.key; touch(x); return refresh(); }
     if (k === 's') { x.starred = !x.starred; touch(x); return refresh(); }
+    if (k === 'f' && !x.closure) return startFocus(x.id);
     if (e.key === 'Enter') { e.preventDefault(); $('dTitle')?.focus(); return; }
     if (e.key === 'Delete') { deleteTask(x); }
   });
@@ -336,6 +337,11 @@ function renderReport() {
     if (d >= days) stuck.push({ x, p: personById(pw.personId), d });
   }
   stuck.sort((a, b) => b.d - a.d);
+  // Focus sessions since the start date, in this folder.
+  const focusIn = (data.focusLog || []).filter((l) => l.at.slice(0, 10) >= from && (ui.scope === 'all' || inScope(taskById(l.taskId) || { areaId: l.areaId })));
+  const focusTotal = focusIn.reduce((n, l) => n + l.ms, 0);
+  const focusByArea = {};
+  for (const l of focusIn) { const k = areaLabel((taskById(l.taskId) || l).areaId); focusByArea[k] = (focusByArea[k] || 0) + l.ms; }
   const byArea = {};
   for (const x of closed) byArea[areaLabel(x.areaId)] = (byArea[areaLabel(x.areaId)] || 0) + 1;
   const row = (x, extra = '') => `<div class="r-item ${quadClass(x)}" data-task="${x.id}"><span dir="auto">${esc(x.title)}</span><span class="muted small">${extra}</span></div>`;
@@ -351,7 +357,9 @@ function renderReport() {
       <div><b>${added.length}</b><span>${t('rAdded')} <small>${t('sinceDate')} ${fmtDate(from, lang())}</small></span></div>
       <div><b>${open.length}</b><span>${t('openNow')}</span></div>
       <div class="${overdue.length ? 'bad' : ''}"><b>${overdue.length}</b><span>${t('overdue')}</span></div>
+      ${focusTotal ? `<div><b class="r-focus">${focusTimeLabel(Math.round(focusTotal / 60000))}</b><span>${t('rFocus')} <small>${t('sinceDate')} ${fmtDate(from, lang())}</small></span></div>` : ''}
     </div>
+    ${Object.keys(focusByArea).length > 1 ? `<div class="r-sec"><h4>${t('rFocusByArea')}</h4>${Object.entries(focusByArea).sort((a, b) => b[1] - a[1]).map(([a, ms]) => `<div class="r-bar"><span dir="auto">${esc(a)}</span><span class="r-track"><i class="focus" style="width:${(ms / Math.max(...Object.values(focusByArea))) * 100}%"></i><b>${focusTimeLabel(Math.round(ms / 60000))}</b></span></div>`).join('')}</div>` : ''}
     ${Object.keys(byArea).length ? `<div class="r-sec"><h4>${t('rByArea')}</h4>${Object.entries(byArea).sort((a, b) => b[1] - a[1]).map(([a, n]) => `<div class="r-bar"><span dir="auto">${esc(a)}</span><span class="r-track"><i style="width:${(n / Math.max(...Object.values(byArea))) * 100}%"></i><b>${n}</b></span></div>`).join('')}</div>` : ''}
     <div class="r-sec"><h4>${t('rStuck')} (${days}+ ${t('days')})</h4>${stuck.length ? stuck.map((s) => row(s.x, `${icon('user')} <bdi>${esc(s.p.name)}</bdi> · ${daysWord(s.d, lang())}`)).join('') : `<div class="muted small">—</div>`}</div>
     <div class="r-sec"><h4>${t('overdue')}</h4>${overdue.length ? overdue.map((x) => row(x, fmtDate(x.due, lang()))).join('') : `<div class="muted small">—</div>`}</div>
@@ -380,6 +388,16 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.12.0': {
+    ar: ['وضع التركيز: دوس "▶ ركّز فيها" على أي تاسك (أو حرف F). تايمر 25 دقيقة، وقدامك الخطوة الجاية بس. ولما الوقت يخلص، الفار يسألك تكمّل ولا تاخد استراحة',
+      'الخطوة الجاية (أول مهمة فرعية لسه ما خلصتش) بتظهر تحت اسم التاسك',
+      'لو أجّلت موعد تاسك 3 مرات، الفار يسألك: تبدأ فيها 25 دقيقة؟ تقسّمها؟ تديها لحد؟ ولا تشيلها؟',
+      'التطبيق بيحسب وقت التركيز على كل تاسك، وبيظهر في صفحة التاسك وفي التقرير'],
+    en: ['Focus mode: press "▶ Focus" on any task (or F). A 25-minute timer with only the next step in front of you. When time is up, the mouse asks if you want another round or a break',
+      'The next step (the first subtask not done yet) shows under the task name',
+      'Push a due date back 3 times and the mouse asks: start on it for 25 minutes? break it down? hand it to someone? or remove it?',
+      'Focus time is tracked per task and shows on the task page and in the Report']
+  },
   '1.11.0': {
     ar: ['شكل أهدى: كارت التاسك بقى أبيض وعليه خط بلون التصنيف بس، والتصنيف رقم صغير (وقّف الماوس عليه يقولك معناه)',
       'التاريخ بقى بالكلام: "متأخرة يومين"، "النهارده · 2:00 م"، "بكرة"، "الأحد"، وتاريخ البداية بقى في صفحة التاسك بس',

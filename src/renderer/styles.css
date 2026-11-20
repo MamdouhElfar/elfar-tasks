@@ -1005,3 +1005,119 @@ body.is-dragging .unclassified.is-empty { display: block; }
 .dp-foot { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
 .dp-foot button { font-size: 12px; padding: 3px 9px; border-radius: 99px; }
 .dp-foot .dp-clear { margin-inline-start: auto; color: var(--text-3); border-color: transparent; }
+
+/* ================= 1.12: focus mode, next step, put-off counter ================= */
+/* Next step under the task name */
+.t-next { display: flex; align-items: baseline; gap: 4px; margin-top: 3px; font-size: 12.5px; color: var(--text-2); min-width: 0; }
+.t-next > span[dir] { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-next .arrow { color: var(--accent); font-weight: 700; flex: none; }
+[dir=rtl] .t-next .arrow { display: inline-block; transform: scaleX(-1); }
+.postponed { font-size: 11.5px; font-weight: 600; color: var(--warn); background: var(--warn-bg); border-radius: 99px; padding: 0 7px; white-space: nowrap; cursor: help; }
+.in-focus { color: var(--accent); font-size: 11px; vertical-align: 1px; animation: fPulse 1.6s ease-in-out infinite; }
+@keyframes fPulse { 50% { opacity: .35; } }
+
+/* Play button on a row, shown on hover */
+.task-row { position: relative; }
+.row-focus { position: absolute; inset-inline-start: 9px; bottom: 7px; width: 22px; height: 22px; padding: 0; border-radius: 50%; font-size: 11px; color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: var(--panel); opacity: 0; transition: opacity var(--dur-fast); }
+.task-row:hover .row-focus, .h-row:hover .row-focus, .row-focus:focus-visible { opacity: 1; }
+.row-focus:hover { background: var(--accent); color: #fff; }
+.h-row { position: relative; }
+.h-row .row-focus { position: static; flex: none; width: 22px; height: 22px; font-size: 9px; }
+.row-focus { font-size: 9px; }
+.fb-acts button[data-fdo=pause], .fv-acts button[data-fdo=pause], .wf-acts button[data-fdo=pause] { letter-spacing: -2px; }
+.focus-btn { color: var(--accent-text); border-color: color-mix(in srgb, var(--accent) 45%, transparent); background: var(--accent-bg); font-weight: 600; }
+.focus-btn:hover { background: color-mix(in srgb, var(--accent) 22%, var(--panel)); }
+
+/* Focus bar under the tabs */
+.focus-bar { display: none; align-items: center; gap: 12px; padding: 8px 14px; border-bottom: 1px solid var(--border);
+  background: linear-gradient(90deg, var(--accent-bg), color-mix(in srgb, var(--accent-bg) 40%, var(--panel))); }
+.focus-bar.on { display: flex; animation: popIn var(--dur) var(--ease); }
+.focus-bar.mode-break, .focus-bar.mode-breakEnded { background: linear-gradient(90deg, var(--ok-bg), var(--panel)); }
+.focus-bar.mode-ended { background: linear-gradient(90deg, var(--warn-bg), var(--panel)); }
+.fb-mouse .fb-logo, .fb-mouse svg { width: 30px; height: 30px; display: block; }
+.focus-bar.running .fb-mouse { animation: fBob 2.4s ease-in-out infinite; }
+@keyframes fBob { 50% { transform: translateY(-2px) rotate(-4deg); } }
+.fb-main { display: flex; flex-direction: column; min-width: 0; flex: 0 1 auto; }
+.fb-main small { font-size: 11px; color: var(--text-3); }
+.fb-main b { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; max-width: 38vw; }
+.fb-main b:hover { color: var(--accent); }
+.focus-bar .f-next { flex: 1 1 auto; min-width: 0; }
+.fb-time { display: flex; flex-direction: column; align-items: center; gap: 3px; margin-inline-start: auto; }
+.fb-time b { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.fb-time i { width: 70px; height: 4px; border-radius: 4px; background: color-mix(in srgb, var(--accent) 18%, transparent); overflow: hidden; display: block; }
+.fb-time em { display: block; height: 100%; background: var(--accent); border-radius: 4px; transition: width 1s linear; }
+.focus-bar.mode-break .fb-time em { background: var(--ok); }
+.focus-bar:not(.running) .fb-time b { opacity: .55; }
+.fb-acts { display: flex; gap: 5px; align-items: center; flex: none; }
+.fb-acts button { font-size: 12.5px; padding: 4px 10px; }
+.focus-bar.mode-ended .fb-acts, .focus-bar.mode-breakEnded .fb-acts { margin-inline-start: auto; }
+button.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
+button.ok:hover { background: var(--ok-bg); }
+
+/* Next step with a checkbox (bar + focus screen) */
+.f-next { display: flex; align-items: center; gap: 8px; cursor: pointer; min-width: 0; padding: 4px 10px; border-radius: 8px; background: var(--panel); border: 1px solid var(--border); }
+.f-next input { width: 16px; height: 16px; flex: none; accent-color: var(--ok); cursor: pointer; }
+.f-next > span { display: flex; flex-direction: column; min-width: 0; }
+.f-next small { font-size: 10.5px; color: var(--text-3); }
+.f-next span[dir] { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+.f-next.ticked span[dir] { text-decoration: line-through; color: var(--text-3); transition: color .3s; }
+.f-next.big { padding: 12px 16px; border-radius: 12px; width: 100%; max-width: 440px; }
+.f-next.big input { width: 20px; height: 20px; }
+.f-next.big span[dir] { font-size: 16px; font-weight: 600; white-space: normal; }
+.f-next.none { justify-content: center; background: transparent; border-style: dashed; }
+
+/* Focus screen over the task area */
+.work { position: relative; }
+.focus-view { display: none; position: absolute; inset: 0; z-index: 30; background: color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter: blur(6px); overflow-y: auto; }
+.focus-view.on { display: flex; align-items: flex-start; justify-content: center; padding: 28px 16px; animation: popIn var(--dur) var(--ease); }
+.fv-card { position: relative; width: 100%; max-width: 520px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.fv-min { position: absolute; top: -8px; inset-inline-end: 0; font-size: 12px; color: var(--text-3); }
+.fv-head { font-size: 12.5px; color: var(--text-3); letter-spacing: .02em; }
+.fv-card h2 { margin: 0; font-size: 22px; line-height: 1.35; max-width: 100%; overflow-wrap: anywhere; }
+.fv-ring { position: relative; width: 220px; height: 220px; }
+.fv-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.fv-ring circle { fill: none; stroke-width: 10; }
+.fv-ring .bg { stroke: color-mix(in srgb, var(--accent) 14%, transparent); }
+.fv-ring .fg { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.fv-ring.break .fg, .fv-ring.breakEnded .fg { stroke: var(--ok); }
+.fv-ring.ended .fg { stroke: var(--c-amber); }
+.fv-clock { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.fv-clock b { font-size: 46px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+.fv-clock small { font-size: 12px; color: var(--text-3); }
+.fv-mouse { position: absolute; bottom: 4px; inset-inline-end: 6px; }
+.fv-mouse svg { width: 44px; height: 44px; display: block; }
+.fv-steps { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-3); max-width: 440px; width: 100%; text-align: start; padding-inline: 18px; }
+.fv-add { width: 100%; max-width: 440px; text-align: start; }
+.fv-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.fv-acts button { font-size: 14px; padding: 7px 16px; border-radius: 10px; }
+
+/* The put-off dialog */
+.modal.nudge { max-width: 440px; }
+.nudge-mouse svg { width: 54px; height: 54px; display: block; margin: 0 auto 4px; }
+.modal.nudge h3 { text-align: center; }
+.modal.nudge .cf-text { text-align: center; }
+.pn-opts { display: flex; flex-direction: column; gap: 6px; margin: 12px 0 4px; }
+.pn-opts button { display: flex; align-items: center; gap: 10px; text-align: start; padding: 9px 12px; border-radius: 10px; }
+.pn-opts button:first-child { border-color: var(--accent); background: var(--accent-bg); }
+.pn-opts button b { display: block; font-size: 13.5px; }
+.pn-opts button small { display: block; font-size: 11.5px; color: var(--text-3); font-weight: 400; }
+.pn-ico { width: 26px; flex: none; text-align: center; font-size: 15px; }
+
+/* Widget: focus strip, play button on items, minutes on the edge mouse */
+.w-focus:empty { display: none; }
+.wf { position: relative; display: flex; align-items: center; gap: 8px; margin: 0 8px 6px; padding: 7px 9px 9px; border-radius: 10px; background: var(--accent-bg); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); overflow: hidden; }
+.wf.mode-break, .wf.mode-breakEnded { background: var(--ok-bg); }
+.wf.mode-ended { background: var(--warn-bg); }
+.wf-main { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.wf-main small { font-size: 10.5px; color: var(--text-3); }
+.wf-main b { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.wf-clock { font-size: 16px; font-variant-numeric: tabular-nums; }
+.wf-acts { display: flex; gap: 3px; flex: none; }
+.wf-acts button { font-size: 11px; padding: 2px 7px; }
+.wf-prog { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; display: block; }
+.wf-prog em { display: block; height: 100%; background: var(--accent); transition: width 1s linear; }
+.w-play { flex: none; width: 20px; height: 20px; padding: 0; border-radius: 50%; font-size: 8px; color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); background: transparent; opacity: 0; order: 9; align-self: center; }
+.w-item:hover .w-play { opacity: 1; }
+.w-play:hover { background: var(--accent); color: #fff; }
+.pk-count.timer { color: var(--accent-text); font-variant-numeric: tabular-nums; }

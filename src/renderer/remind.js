@@ -11,6 +11,7 @@ function render() {
   if (!x) { $('root').innerHTML = ''; return; }
   const fresh = x.id !== shownId;
   shownId = x.id;
+  if (x.kind === 'ended' || x.kind === 'breakEnded') return renderFocusEnd(x, fresh);
   const when = [x.due && fmtDate(x.due, state.lang), x.dueTime && fmtTime(`${x.due || '2000-01-01'}T${x.dueTime}`, state.lang)].filter(Boolean).join(' · ');
   const later = [[5, `5 ${t('minShort')}`], [10, `10 ${t('minShort')}`], [30, `30 ${t('minShort')}`], [60, `1 ${t('hourShort')}`]];
   $('root').innerHTML = `<div class="rm" id="rm">
@@ -29,6 +30,24 @@ function render() {
     </div></div>`;
   if (!fresh) $('rm').style.animation = 'none';
   else setTimeout(() => playSound(state.sound), 850);
+}
+
+// End of a focus session: another round, a break, stop, or the task is done.
+function renderFocusEnd(x, fresh) {
+  const work = x.kind === 'ended';
+  const b = (what, label, cls = '') => `<button class="${cls}" data-act="focus" data-what="${what}">${label}</button>`;
+  $('root').innerHTML = `<div class="rm" id="rm">
+    <div class="rm-mouse">${remindMouseSvg()}</div>
+    <div class="rm-card">
+      <button class="rm-x" data-act="dismiss" title="${t('hide') || '✕'}">✕</button>
+      <div class="rm-top">${work ? '⏱ ' + t('fEnded').replace('{n}', x.mins) : '☕ ' + t('fBreakOver')}</div>
+      <div class="rm-title" dir="auto">${esc(x.title)}</div>
+      ${work && x.next ? `<div class="rm-meta">↳ ${t('nextStep')}: <span dir="auto">${esc(x.next)}</span>${x.subs ? ` · ${x.subs}` : ''}</div>` : ''}
+      <div class="rm-acts">${work ? b('more', `▶ ${t('fMore')}`, 'primary') + b('break', `☕ ${t('fBreak')}`) : b('more', `▶ ${t('fBack')}`, 'primary') + b('stop', `■ ${t('fEnough')}`)}</div>
+      ${work ? `<div class="rm-snooze">${b('done', `✓ ${t('fTaskDone')}`)}${b('stop', `■ ${t('fEnough')}`)}</div>` : ''}
+    </div></div>`;
+  if (!fresh) $('rm').style.animation = 'none';
+  else setTimeout(() => playSound(state.sound === 'none' ? 'none' : 'chime'), 850);
 }
 
 // "Close the task" asks first (it's easy to click it just to make the reminder go away),
@@ -55,12 +74,12 @@ document.addEventListener('click', (e) => {
   if (e.target.closest('[data-back]')) return render(); // same reminder: no walk-in, no sound again
   const b = e.target.closest('[data-act]'); if (!b) return;
   const x = state.items[0]; if (!x) return;
-  const act = b.dataset.act;
+  const act = b.dataset.act, what = b.dataset.what;
   const go = () => {
     $('rm').classList.add('leaving');
-    setTimeout(() => window.api.remindAction({ id: x.id, action: act, minutes: Number(b.dataset.min) || 0 }), 380);
+    setTimeout(() => window.api.remindAction({ id: x.id, action: act, what, minutes: Number(b.dataset.min) || 0 }), 380);
   };
-  if (act === 'done') thanks(go); else go();
+  if (act === 'done' || what === 'done') thanks(go); else go();
 });
 
 window.api.onRemindList((s) => { state = s; render(); });

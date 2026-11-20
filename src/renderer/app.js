@@ -241,16 +241,20 @@ function rowHtml(x) {
   const done = subs.filter((s) => s.done).length;
   const showArea = ui.scope !== x.areaId;
   const remindDay = x.remindAt && x.remindAt.slice(0, 10);
+  const next = isOpen(x) && subs.find((s) => !s.done);
+  const focusOn = data.focus && data.focus.taskId === x.id;
   return `<div class="task-row ${quadClass(x)} ${x.closure ? 'closed' : ''} ${ui.selected === x.id ? 'sel' : ''}" data-task="${x.id}" draggable="true">
     <button class="check ${x.closure ? 'on' : ''}" data-check="${x.id}" title="${x.closure ? t('reopen') : t('closeToday')}">✓</button>
     <div class="t-main">
-      <div class="t-title" dir="auto">${x.starred ? '<span class="star">★</span> ' : ''}${esc(x.title) || '<span class="muted">' + t('title') + '</span>'}</div>
+      <div class="t-title" dir="auto">${focusOn ? '<span class="in-focus" title="' + t('fWorkingOn') + '">◉</span> ' : ''}${x.starred ? '<span class="star">★</span> ' : ''}${esc(x.title) || '<span class="muted">' + t('title') + '</span>'}</div>
+      ${next ? `<div class="t-next" title="${t('nextStep')}"><span class="arrow">↳</span> <span dir="auto">${esc(next.title)}</span></div>` : ''}
       <div class="t-meta">${prioNum(x)}${whenChip(x, ui.view === 'today')}${x.remindAt && isOpen(x) ? `<span class="pill remind ${x.remindAt <= nowLocal() ? 'past' : ''}">${icon('bell')} ${remindDay === todayStr() ? '' : fmtDate(remindDay, lang()) + ' '}${fmtTime(x.remindAt, lang())}</span>` : ''}${x.repeat && isOpen(x) ? `<span class="pill repeat" title="${esc(repeatLabel(x.repeat))}">${icon('repeat')}</span>` : ''}${(x.files || []).length ? `<span class="pill area">${icon('clip')} ${x.files.length}</span>` : ''}
         ${subs.length ? `<span class="progress"><span class="bar"><i style="width:${(done / subs.length) * 100}%"></i></span>${done}/${subs.length}</span>` : ''}
+        ${isOpen(x) && (x.postponed || 0) >= 2 ? `<span class="postponed" title="${t('postponedTip')}">↻ ${lang() === 'ar' ? 'اتأجلت ' + timesWord(x.postponed, 'ar') : 'put off ' + timesWord(x.postponed, 'en')}</span>` : ''}
         ${isOpen(x) ? pendingOf(x).map((pw) => `<span class="pill person" title="${t('since')} ${fmtDate(pw.since, lang())}">${icon('user')} <bdi>${esc(personById(pw.personId).name)}</bdi> · ${sinceWord(pw.since)}</span>`).join('') : ''}
         ${showArea ? `<span class="pill area">${esc(areaLabel(x.areaId))}</span>` : ''}
       </div>
-    </div></div>`;
+    </div>${isOpen(x) && !focusOn ? `<button class="row-focus" data-focus="${x.id}" title="${t('fStartTip')}">▶</button>` : ''}</div>`;
 }
 
 function renderList() {
@@ -466,9 +470,10 @@ function renderDetail() {
   const span = statusOf(x) === 'scheduled' ? '' : x.start ? (x.closure ? `${t('tookDays')} ${daysWord(daysBetween(x.start, x.closure), lang())}` : `${t('openedFor')} ${daysWord(Math.max(0, daysBetween(x.start, todayStr())), lang())}`) : '';
   el.innerHTML = `<div class="inner">
     <div class="d-top">
-      ${statusPill(x)} <span class="small muted">${span}</span>
+      ${statusPill(x)} <span class="small muted">${span}${x.focusMs >= 60000 ? ` · ⏱ ${focusTimeLabel(focusMinsOf(x))}` : ''}</span>
       <span class="spacer"></span>
       <div class="d-acts">
+        ${x.closure ? '' : data.focus && data.focus.taskId === x.id && data.focus.mode === 'work' ? `<button class="focus-btn on" data-focus="${x.id}">◉ ${t('fWorkingOn')}…</button>` : `<button class="focus-btn" data-focus="${x.id}" title="${t('fStartTip')}">▶ ${t('fStart')}</button>`}
         ${x.closure ? `<button id="dReopen">${t('reopen')}</button>` : `<button class="primary" id="dClose">✓ ${t('closeToday')}</button>`}
         <button class="d-act ${x.starred ? 'on' : ''}" id="dStar" title="${t('star')}">${x.starred ? '★' : '☆'}</button>
         <button class="d-act del" id="dDelete" title="${t('del')}">${icon('trash')}</button>
@@ -880,6 +885,41 @@ function setReminder(x, at) {
   touch(x);
 }
 
+// Putting a task off again and again is the clearest sign of procrastination.
+// Every third time, the mouse asks what would help.
+function notePostpone(x, before) {
+  if (!before || !x.due || x.due <= before || x.closure) return;
+  x.postponed = (x.postponed || 0) + 1;
+  if (x.postponed % 3 === 0) setTimeout(() => postponeNudge(x), 400);
+}
+function postponeNudge(x) {
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg confirm-bg';
+  const opt = (k, ico, title, sub) => `<button data-pn="${k}"><span class="pn-ico">${ico}</span><span><b>${title}</b><small>${sub}</small></span></button>`;
+  bg.innerHTML = `<div class="modal confirm nudge" role="alertdialog">
+    <div class="nudge-mouse">${mouseLogo('nudge-logo')}</div>
+    <h3>${t('pnTitle').replace('{n}', timesWord(x.postponed, lang()))}</h3>
+    <p class="cf-text"><b dir="auto">${esc(x.title)}</b><br>${t('pnText')}</p>
+    <div class="pn-opts">${opt('focus', '▶', t('pnFocus').replace('25', data.settings.focusMins || 25), t('pnFocusSub'))}${opt('split', '✂', t('pnSplit'), t('pnSplitSub'))}${opt('hand', '👤', t('pnHand'), t('pnHandSub'))}${opt('drop', '🗑', t('pnDrop'), t('pnDropSub'))}</div>
+    <div class="actions"><span style="flex:1"></span><button data-pn="keep">${t('pnKeep')}</button></div></div>`;
+  document.body.appendChild(bg);
+  const close = () => { document.removeEventListener('keydown', onKey, true); bg.classList.add('leaving'); setTimeout(() => bg.remove(), 150); };
+  const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); close(); } };
+  document.addEventListener('keydown', onKey, true);
+  bg.onclick = (e) => {
+    const b = e.target.closest('[data-pn]');
+    if (!b && e.target !== bg) return;
+    close();
+    const k = b && b.dataset.pn;
+    if (k === 'focus') startFocus(x.id);
+    if (k === 'split' || k === 'hand') {
+      ui.selected = x.id; refresh();
+      setTimeout(() => { const el = $(k === 'split' ? 'dAddSub' : 'dAddPerson'); if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.focus(); } }, 120);
+    }
+    if (k === 'drop') deleteTask(x);
+  };
+}
+
 function maybeAutoClose(x) {
   const subs = x.subtasks || [];
   if (x.closure || !subs.length || !subs.every((s) => s.done)) return;
@@ -950,7 +990,7 @@ function bindDragAndDrop() {
     if (el.dataset.quad) {
       x.priority = el.dataset.quad === 'none' ? null : el.dataset.quad;
     } else if (el.dataset.date) {
-      if (!x.closure) { x.due = el.dataset.date; syncReminder(x); }
+      if (!x.closure) { const before = x.due; x.due = el.dataset.date; notePostpone(x, before); syncReminder(x); }
     } else {
       x.areaId = el.dataset.scope === 'inbox' ? null : el.dataset.scope;
     }
@@ -1091,6 +1131,8 @@ async function openSettings(section) {
       ${sec('general', t('general'), card(
         row(t('language'), '', `<div class="seg"><button data-lang="ar" class="${s.lang === 'ar' ? 'on' : ''}">عربي</button><button data-lang="en" class="${s.lang === 'en' ? 'on' : ''}">English</button></div>`) +
         row(t('launch'), t('launchDesc'), toggle('sLogin', login)) +
+        row(t('focusLen'), t('focusLenDesc'), `<div class="seg">${[15, 25, 45, 60].map((m) => `<button data-fmins="${m}" class="${(s.focusMins || 25) === m ? 'on' : ''}">${m}</button>`).join('')}</div>
+          <span class="small muted" style="margin-inline:8px 4px">${t('breakLen')}</span><div class="seg">${[5, 10].map((m) => `<button data-bmins="${m}" class="${(s.breakMins || 5) === m ? 'on' : ''}">${m}</button>`).join('')}</div>`) +
         row(`${t('textSize')} <span class="muted" id="sZoomVal">${zoom}%</span>`, t('textSizeDesc'), `<input type="range" id="sZoom" min="80" max="160" step="10" value="${zoom}">`)
       ) + card(`<div class="set-txt"><b>${t('shortcuts')}</b></div>
         <div class="keys">${shortcutList(info.quickKey).map(([k, d]) => `<div><kbd>${k}</kbd><span>${d}</span></div>`).join('')}</div>`))}
@@ -1180,6 +1222,8 @@ async function openSettings(section) {
       return;
     }
     if (e.target.dataset.lang) { data.settings.lang = e.target.dataset.lang; save(); renderAll(); openSettings(); }
+    if (e.target.dataset.fmins) { data.settings.focusMins = Number(e.target.dataset.fmins); save(); document.querySelectorAll('[data-fmins]').forEach((b) => b.classList.toggle('on', b === e.target)); }
+    if (e.target.dataset.bmins) { data.settings.breakMins = Number(e.target.dataset.bmins); save(); document.querySelectorAll('[data-bmins]').forEach((b) => b.classList.toggle('on', b === e.target)); }
     if (e.target.dataset.openon) { setW({ openOn: e.target.dataset.openon }); document.querySelectorAll('[data-openon]').forEach((b) => b.classList.toggle('on', b === e.target)); }
     if (id === 'sBug') window.api.openGithub('bug');
     if (id === 'sIdea') window.api.openGithub('idea');
@@ -1399,7 +1443,9 @@ function bind() {
     const el = e.target;
     if (el.id === 'dStart') x.start = el.value || null;
     else if (el.id === 'dDue') {
+      const before = x.due;
       x.due = el.value || null;
+      notePostpone(x, before);
       // No due date left to count back from: keep the reminder as a fixed time.
       if (!x.due) x.remindBefore = null;
       syncReminder(x);
@@ -1450,6 +1496,7 @@ function bind() {
     if (e.key === 'Escape') {
       // Esc closes a dialog first; otherwise it closes the open task page.
       if ($('modalRoot').innerHTML) closeModal();
+      else if (ui.focusView) { ui.focusView = false; renderFocus(true); }
       else if ($('composer').classList.contains('open')) closeComposer();
       else if (ui.selected) { document.activeElement?.blur(); ui.selected = null; refresh(); }
     }

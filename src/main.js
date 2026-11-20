@@ -371,7 +371,14 @@ function closeTaskInApp(id) {
   const send = () => mainWin.webContents.send('task:close', id);
   if (!mainWin) { createMain(); mainWin.webContents.once('did-finish-load', send); } else send();
 }
-ipcMain.on('remind:action', (e, { id, action, minutes }) => {
+ipcMain.on('remind:action', (e, { id, action, minutes, what }) => {
+  // The end-of-focus pop-up: keep going, take a break, stop, or the task is done.
+  if (String(id).startsWith('focus:')) {
+    if (action === 'focus') focusAction(what, id.slice(6));
+    else if (action === 'open') { dropFocusPopup(); showMain(id.slice(6)); }
+    else dropFocusPopup();
+    return;
+  }
   const i = remindQueue.findIndex((r) => r.id === id);
   if (i >= 0) remindQueue.splice(i, 1);
   if (!String(id).startsWith('test-')) {
@@ -392,6 +399,74 @@ ipcMain.on('remind:action', (e, { id, action, minutes }) => {
   else if (remindWin) remindWin.close();
 });
 ipcMain.on('remind:test', () => showReminder({ id: 'test-' + Date.now(), title: ar() ? 'كده هيبان التذكير 🐭' : 'This is how a reminder looks 🐭', due: localNow().slice(0, 10), dueTime: localNow().slice(11) }, true));
+
+// ---------- focus mode ----------
+// One focus session at a time, owned here so the app window, the widget and the pop-up agree.
+// data.focus = { taskId, mode, mins, workedMs, runFrom }
+//   mode 'work'  : a work session; runFrom = when it last started running (null = paused)
+//   mode 'break' : a short break
+//   mode 'ended' / 'breakEnded' : time is up, waiting for what's next
+// The time worked is added to the task (task.focusMs) and to data.focusLog when a work session ends.
+const focusLen = (data) => Number(data.settings.focusMins) || 25;
+const breakLen = (data) => Number(data.settings.breakMins) || 5;
+const focusWorked = (f) => (f.workedMs || 0) + (f.runFrom ? Date.now() - f.runFrom : 0);
+function focusCredit(data) {
+  const f = data.focus;
+  if (!f || f.mode !== 'work') return;
+  const ms = Math.min(focusWorked(f), f.mins * 60000);
+  const t = data.tasks.find((x) => x.id === f.taskId);
+  if (ms >= 30000) {
+    if (t) t.focusMs = (t.focusMs || 0) + ms;
+    data.focusLog = (data.focusLog || []).concat({ taskId: f.taskId, areaId: t ? t.areaId || null : null, at: localNow(new Date(Date.now() - ms)), ms }).slice(-1000);
+  }
+}
+const workSession = (data, taskId, mins) => ({ taskId, mode: 'work', mins: mins || focusLen(data), workedMs: 0, runFrom: Date.now() });
+function focusAction(what, taskId, extra) {
+  const data = store.get();
+  const f = data.focus;
+  const id = taskId || (f && f.taskId);
+  dropFocusPopup();
+  if (what === 'start') { focusCredit(data); data.focus = workSession(data, id, extra && extra.mins); }
+  else if (what === 'pause' && f && f.runFrom) { f.workedMs = focusWorked(f); f.runFrom = null; }
+  else if (what === 'resume' && f && !f.runFrom && (f.mode === 'work' || f.mode === 'break')) f.runFrom = Date.now();
+  else if (what === 'add5' && f && (f.mode === 'work' || f.mode === 'break')) f.mins += 5;
+  else if (what === 'more') { focusCredit(data); data.focus = workSession(data, id); }
+  else if (what === 'break') { focusCredit(data); data.focus = { taskId: id, mode: 'break', mins: breakLen(data), workedMs: 0, runFrom: Date.now() }; }
+  else if (what === 'stop') { focusCredit(data); data.focus = null; }
+  else if (what === 'done') { focusCredit(data); data.focus = null; store.replace(data); broadcast(); closeTaskInApp(id); return store.get(); }
+  store.replace(data); broadcast();
+  return store.get();
+}
+ipcMain.handle('focus:action', (e, what, taskId, extra) => focusAction(what, taskId, extra));
+
+// Every 2 s: has the running session reached its end?
+function focusTick() {
+  const data = store.get();
+  const f = data.focus;
+  if (!f || !f.runFrom || !['work', 'break'].includes(f.mode)) return;
+  if (focusWorked(f) < f.mins * 60000) return;
+  const t = data.tasks.find((x) => x.id === f.taskId);
+  if (f.mode === 'work') { focusCredit(data); data.focus = { taskId: f.taskId, mode: 'ended', mins: f.mins }; }
+  else data.focus = { taskId: f.taskId, mode: 'breakEnded', mins: f.mins };
+  store.replace(data); broadcast();
+  if (!t) return;
+  if ((data.settings.remindStyle || 'mouse') === 'mouse') showFocusPopup(t, data.focus);
+  else notify(f.mode === 'work' ? (ar() ? `⏱ خلصت ${f.mins} دقيقة تركيز` : `⏱ ${f.mins} minutes of focus done`) : (ar() ? '☕ الاستراحة خلصت' : '☕ Break is over'), t.title, () => showMain(t.id));
+}
+function showFocusPopup(t, f) {
+  dropFocusPopup();
+  const next = (t.subtasks || []).find((s) => !s.done);
+  remindQueue.unshift({ id: 'focus:' + t.id, kind: f.mode, taskId: t.id, title: t.title, mins: f.mins, next: next ? next.title : '',
+    subs: (t.subtasks || []).length ? `${t.subtasks.filter((s) => s.done).length}/${t.subtasks.length}` : '' });
+  openRemindWin();
+}
+function dropFocusPopup() {
+  const i = remindQueue.findIndex((r) => String(r.id).startsWith('focus:'));
+  if (i < 0) return;
+  remindQueue.splice(i, 1);
+  if (remindQueue.length) sendRemindList();
+  else if (remindWin) remindWin.close();
+}
 
 function morningSummary(data, today) {
   const open = data.tasks.filter((t) => !t.closure);
@@ -458,10 +533,22 @@ ipcMain.handle('data:save', (e, data) => {
     const o = prev.get(t.id);
     if (o && o.reminded && o.reminded === t.remindAt && !t.reminded) t.reminded = o.reminded;
   }
+  const prevData = store.get();
+  data.focus = prevData.focus || null;
+  data.focusLog = prevData.focusLog || [];
+  for (const t of data.tasks || []) {
+    const o = prev.get(t.id);
+    if (o && (o.focusMs || 0) > (t.focusMs || 0)) t.focusMs = o.focusMs;
+  }
+  // The task in focus was closed or deleted: the session ends with it.
+  const ft = data.focus && data.tasks.find((t) => t.id === data.focus.taskId);
+  let focusEnded = false;
+  if (data.focus && (!ft || ft.closure)) { focusCredit(data); data.focus = null; dropFocusPopup(); focusEnded = true; }
   const before = `${edgeOf()}|${cur.widget.display}`;
   const zoomBefore = cur.zoom;
   store.replace(data);
   broadcast(e.sender);
+  if (focusEnded) e.sender.send('data-changed', store.get());
   refreshTray();
   const w = store.get().settings.widget;
   if (widgetWin && `${edgeOf()}|${w.display}` !== before) applyWidgetMode();
@@ -598,6 +685,7 @@ app.whenReady().then(() => {
   console.log('[quick-add hotkey]', quickKeyInUse || 'none available');
   setTimeout(tick, 5000);
   setInterval(tick, 30000);
+  setInterval(focusTick, 2000);
   setupAutoUpdate();
 });
 

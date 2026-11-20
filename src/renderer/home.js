@@ -35,7 +35,7 @@ function renderHome() {
   };
   const row = (x, noDate) => `<div class="h-row ${quadClass(x)} ${ui.selected === x.id ? 'sel' : ''}" data-task="${x.id}">
     <span class="h-bar"></span><span class="h-title" dir="auto">${x.starred ? '<span class="star">★</span> ' : ''}${esc(x.title)}</span>
-    <span class="h-meta">${meta(x, noDate === true)}</span></div>`;
+    <span class="h-meta">${meta(x, noDate === true)}</span>${isOpen(x) ? `<button class="row-focus" data-focus="${x.id}" title="${t('fStartTip')}">▶</button>` : ''}</div>`;
   const panel = (title, ico, body, go) => `<section class="h-panel">
     <header>${icon(ico)}<b>${title}</b>${go ? `<button class="link" data-go="${go}">${t('hSeeAll')}</button>` : ''}</header>${body}</section>`;
   const empty = (text) => `<div class="h-empty">${text}</div>`;

@@ -63,6 +63,7 @@ function render() {
   $('wAdd').placeholder = '＋ ' + t('addTask');
 
   renderStats();
+  renderFocusStrip();
   const edge = w.edge || 'off';
   // Two modes, exactly one active: always on top / hide at the edge.
   const side = edge !== 'off' ? edge : (w.lastEdge || 'right');
@@ -79,7 +80,7 @@ function render() {
   const list = data.tasks.filter(f.test).sort(byPriorityThenDue);
   // The edge tab shows how many tasks are waiting, red if any are "do it now".
   // The edge tab is a little mouse peeking in, with its tail hanging below 🐭
-  $('peek').innerHTML = `<span class="pk-face">${mouseLogo()}</span><span class="pk-count">${list.length}</span>
+  $('peek').innerHTML = `<span class="pk-face">${mouseLogo()}</span><span class="pk-count" data-n="${list.length}">${list.length}</span>
     <svg class="pk-tail" viewBox="0 0 30 100" aria-hidden="true"><path d="M15 0 C 3 16, 27 28, 15 46 S 3 74, 18 88 Q 24 94, 20 99"/></svg>
     <span class="pk-grab" id="pkGrab" title="${esc(t('dragTail'))}"></span>`;
   $('peek').classList.toggle('q1', list.some((x) => x.priority === 'q1' || statusOf(x) === 'overdue'));
@@ -93,13 +94,62 @@ function render() {
     const pill = w ? `<span class="when ${w.cls}" title="${esc(w.title || '')}">${w.text}</span>` : '';
     return `<div class="w-item ${quadClass(x)}">
       <button class="check" data-check="${x.id}" title="${t('closeToday')}">✓</button>
+      <button class="w-play" data-wfocus="${x.id}" title="${esc(t('fStartTip'))}">▶</button>
       <div class="t-main"><div class="t-title" dir="auto" data-open="${x.id}">${x.starred ? '<span class="star">★</span> ' : ''}${esc(x.title)}</div>
+        ${(() => { const n = (x.subtasks || []).find((y) => !y.done); return n ? `<div class="t-next"><span class="arrow">↳</span> <span dir="auto">${esc(n.title)}</span></div>` : ''; })()}
         <div class="t-meta">${QUADS.includes(x.priority) ? `<span class="pnum ${x.priority}" title="${PRIO_NUM[x.priority]} · ${esc(t(x.priority))}">${PRIO_NUM[x.priority]}</span>` : ''}${pill}${remindPill(x)}${(x.pendingWith || []).map((pw) => data.people.find((p) => p.id === pw.personId)).filter(Boolean).map((p) => `<span class="pill person" dir="auto">${esc(p.name)}</span>`).join('')}${subs.length ? `<span>${subs.filter((y) => y.done).length}/${subs.length}</span>` : ''}</div>
       </div></div>`;
   }).join('');
 }
 
+// ---------- focus session (started in the app or here) ----------
+const wClock = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+function focusNowW() {
+  const f = data.focus; if (!f) return null;
+  const x = data.tasks.find((y) => y.id === f.taskId); if (!x) return null;
+  const total = (f.mins || 25) * 60000;
+  return { f, x, total, left: total - (f.workedMs || 0) - (f.runFrom ? Date.now() - f.runFrom : 0) };
+}
+function renderFocusStrip() {
+  const s = focusNowW();
+  const el = $('wFocus');
+  document.body.classList.toggle('focusing', !!s);
+  if (!s) { el.innerHTML = ''; return; }
+  const b = (what, label, cls = '') => `<button class="${cls}" data-fdo="${what}">${label}</button>`;
+  const m = s.f.mode;
+  const head = m === 'work' ? (s.f.runFrom ? t('fWorkingOn') : t('fPaused')) : m === 'break' ? '☕ ' + t('fOnBreak') : m === 'ended' ? '🎉 ' + t('fEnded').replace('{n}', s.f.mins) : '☕ ' + t('fBreakOver');
+  const acts = m === 'work' ? (s.f.runFrom ? b('pause', '❚❚') : b('resume', '▶', 'primary')) + b('stop', '■')
+    : m === 'break' ? b('more', '▶ ' + t('fSkipBreak')) + b('stop', '■')
+    : m === 'ended' ? b('more', '▶ ' + t('fMore'), 'primary') + b('break', '☕') + b('stop', '■')
+    : b('more', '▶ ' + t('fBack'), 'primary') + b('stop', '■');
+  const timing = m === 'work' || m === 'break';
+  el.innerHTML = `<div class="wf mode-${m}"><div class="wf-main"><small>${head}</small><b dir="auto" data-open="${s.x.id}">${esc(s.x.title)}</b></div>
+    ${timing ? `<b class="wf-clock" id="wfClock">${wClock(s.left)}</b>` : ''}<span class="wf-acts">${acts}</span>
+    ${timing ? `<i class="wf-prog"><em id="wfProg" style="width:${Math.min(100, (1 - s.left / s.total) * 100)}%"></em></i>` : ''}</div>`;
+}
+setInterval(() => {
+  if (!data) return;
+  const s = focusNowW();
+  if (s && $('wfClock')) { $('wfClock').textContent = wClock(s.left); $('wfProg').style.width = Math.min(100, (1 - s.left / s.total) * 100) + '%'; }
+  // Collapsed at the edge: the little mouse shows the minutes left instead of the task count.
+  const pc = document.querySelector('#peek .pk-count');
+  if (pc) {
+    const run = s && (s.f.mode === 'work' || s.f.mode === 'break');
+    pc.classList.toggle('timer', !!run);
+    pc.textContent = run ? `${Math.max(0, Math.ceil(s.left / 60000))}′` : (pc.dataset.n || pc.textContent);
+  }
+}, 1000);
+$('wFocus').onclick = (e) => {
+  const d = e.target.closest('[data-fdo]');
+  const s = focusNowW();
+  if (d && s) return window.api.focus(d.dataset.fdo, s.x.id).then((nd) => { data = nd; render(); });
+  const o = e.target.closest('[data-open]');
+  if (o) window.api.openTask(o.dataset.open);
+};
+
 $('wList').onclick = (e) => {
+  const p = e.target.closest('[data-wfocus]');
+  if (p) return window.api.focus('start', p.dataset.wfocus).then((nd) => { data = nd; render(); });
   const c = e.target.closest('[data-check]');
   if (c) {
     const x = data.tasks.find((y) => y.id === c.dataset.check);

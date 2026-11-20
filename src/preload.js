@@ -40,6 +40,7 @@ contextBridge.exposeInMainWorld('api', {
 
   onRemindList: (cb) => ipcRenderer.on('remind:list', (e, s) => cb(s)),
   remindAction: (a) => ipcRenderer.send('remind:action', a),
+  focus: (what, taskId, extra) => ipcRenderer.invoke('focus:action', what, taskId, extra),
   testReminder: () => ipcRenderer.send('remind:test'),
   onCloseTask: (cb) => ipcRenderer.on('task:close', (e, id) => cb(id)),
 
