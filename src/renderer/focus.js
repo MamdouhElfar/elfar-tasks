@@ -37,6 +37,9 @@ function startFocus(id) {
 }
 const focusMinsOf = (x) => Math.round((x.focusMs || 0) / 60000);
 function focusTimeLabel(mins) {
+  return fmtMins(mins, lang());
+}
+function focusTimeLabelOld(mins) {
   if (lang() !== 'ar') return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60 ? (mins % 60) + 'm' : ''}`.trim() : `${mins}m`;
   const h = Math.floor(mins / 60), m = mins % 60;
   const hw = (n) => arCount(n, 'ساعة', 'ساعتين', 'ساعات', 'ساعة'), mw = (n) => arCount(n, 'دقيقة', 'دقيقتين', 'دقايق', 'دقيقة');

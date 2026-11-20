@@ -73,7 +73,7 @@ function dpRender() {
   const ar = dpAr();
   const [y, m] = month.split('-').map(Number);
   const first = new Date(y, m - 1, 1);
-  const weekStart = ar ? 6 : 1; // Saturday in Arabic, Monday in English (like the Calendar tab)
+  const weekStart = appWeekStart(); // the day picked in Settings (like the Calendar tab)
   const offset = (first.getDay() - weekStart + 7) % 7;
   const today = todayStr(), sel = el.value;
   const dows = [...Array(7)].map((_, i) => new Date(2024, 0, 7 + ((weekStart + i) % 7)).toLocaleDateString(dpLoc(), { weekday: 'narrow' }));

@@ -333,7 +333,7 @@ function renderCalendar() {
   const first = new Date(y, m - 1, 1);
   const loc = lang() === 'ar' ? 'ar-EG-u-nu-latn' : 'en-GB';
   // Week starts Saturday in Arabic, Monday in English.
-  const weekStart = lang() === 'ar' ? 6 : 1;
+  const weekStart = appWeekStart();
   const offset = (first.getDay() - weekStart + 7) % 7;
   const startDate = new Date(y, m - 1, 1 - offset);
   const gridFrom = todayStr(startDate);
@@ -1204,6 +1204,7 @@ async function openSettings(section) {
         row(t('language'), '', `<div class="seg"><button data-lang="ar" class="${s.lang === 'ar' ? 'on' : ''}">عربي</button><button data-lang="en" class="${s.lang === 'en' ? 'on' : ''}">English</button></div>`) +
         row(t('launch'), t('launchDesc'), toggle('sLogin', login)) +
         row(t('planTitle'), t('planAuto'), toggle('sPlanAuto', s.planAuto !== false)) +
+        row(t('weekStartLbl'), t('weekStartDesc'), `<div class="seg">${[6, 0, 1].map((d) => `<button data-wstart="${d}" class="${appWeekStart() === d ? 'on' : ''}">${new Date(2024, 0, 7 + d).toLocaleDateString(lang() === 'ar' ? 'ar-EG-u-nu-latn' : 'en-GB', { weekday: 'long' })}</button>`).join('')}</div>`) +
         row(t('theme'), t('themeDesc'), `<div class="seg">${['system', 'light', 'dark'].map((m) => `<button data-theme="${m}" class="${(s.theme || 'system') === m ? 'on' : ''}">${t('theme_' + m)}</button>`).join('')}</div>`) +
         row(t('breakLen'), t('focusLenDesc'), `<div class="seg">${[5, 10].map((m) => `<button data-bmins="${m}" class="${(s.breakMins || 5) === m ? 'on' : ''}">${m}</button>`).join('')}</div>`) +
         row(`${t('textSize')} <span class="muted" id="sZoomVal">${zoom}%</span>`, t('textSizeDesc'), `<input type="range" id="sZoom" min="80" max="160" step="10" value="${zoom}">`)
@@ -1296,6 +1297,7 @@ async function openSettings(section) {
       return;
     }
     if (e.target.dataset.lang) { data.settings.lang = e.target.dataset.lang; save(); renderAll(); openSettings(); }
+    if (e.target.dataset.wstart) { data.settings.weekStart = Number(e.target.dataset.wstart); save(); document.querySelectorAll('[data-wstart]').forEach((b) => b.classList.toggle('on', b === e.target)); renderList(); }
     if (e.target.dataset.theme) { data.settings.theme = e.target.dataset.theme; save(); document.querySelectorAll('[data-theme]').forEach((b) => b.classList.toggle('on', b === e.target)); }
     if (e.target.dataset.fmins) { data.settings.focusMins = Number(e.target.dataset.fmins); save(); document.querySelectorAll('[data-fmins]').forEach((b) => b.classList.toggle('on', b === e.target)); }
     if (e.target.dataset.bmins) { data.settings.breakMins = Number(e.target.dataset.bmins); save(); document.querySelectorAll('[data-bmins]').forEach((b) => b.classList.toggle('on', b === e.target)); }

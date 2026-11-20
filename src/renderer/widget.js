@@ -64,6 +64,7 @@ function render() {
 
   renderStats();
   renderFocusStrip();
+  renderWidgetHabits();
   const edge = w.edge || 'off';
   // Two modes, exactly one active: always on top / hide at the edge.
   const side = edge !== 'off' ? edge : (w.lastEdge || 'right');
@@ -106,6 +107,42 @@ function render() {
       </div></div>`;
   }).join('');
 }
+
+// ---------- today's habits (the ones set to show in the widget) ----------
+function renderWidgetHabits() {
+  const L = data.settings.lang, td = todayStr();
+  const hs = habitsToday().filter((h) => h.widget !== false);
+  const el = $('wHabits');
+  if (!hs.length) { el.innerHTML = ''; return; }
+  const done = hs.filter((h) => hLog(h, td) === 'done').length;
+  el.innerHTML = `<div class="wh-title">🔁 ${t('wHabits')} <span>${done}/${hs.length}</span></div>` + hs.map((h) => {
+    const isDone = hLog(h, td) === 'done', part = hPartial(h, td);
+    let meta = '';
+    if (part) meta = `⏳ ${fmtMins(hMins(h, td), L)} / ${fmtMins(h.duration, L)}`;
+    else if (h.kind === 'times') { const w = hWeek(h, td); meta = `${w.done}/${h.perWeek}`; }
+    else if (h.kind === 'minutes') { const w = hWeek(h, td); meta = `${fmtMins(w.mins, L)} / ${fmtMins(h.minutesPerWeek, L)}`; }
+    else if (h.time) meta = fmtTime(`2000-01-01T${h.time}`, L);
+    const canFocus = !isDone && (h.kind === 'minutes' || h.duration);
+    return `<div class="wh-row ${isDone ? 'done' : ''}" style="--hc:var(--c-${h.color || 'blue'})">
+      ${h.kind === 'minutes' ? `<span class="wh-ring" style="--p:${Math.min(100, Math.round((hWeek(h, td).mins / h.minutesPerWeek) * 100))}"></span>` : `<button class="check ${isDone ? 'on' : ''}" data-whcheck="${h.id}">✓</button>`}
+      <span class="wh-e">${esc(h.emoji || '🔁')}</span><span class="wh-n" dir="auto">${esc(h.name)}</span><span class="wh-m">${meta}</span>
+      ${canFocus ? `<button class="w-play" data-whfocus="${h.id}" title="${esc(t('fStartTip'))}">▶</button>` : ''}</div>`;
+  }).join('');
+}
+$('wHabits').onclick = (e) => {
+  const c = e.target.closest('[data-whcheck]');
+  if (c) {
+    const h = (data.habits || []).find((x) => x.id === c.dataset.whcheck); const td = todayStr();
+    h.log = h.log || {}; if (h.log[td] === 'done') delete h.log[td]; else h.log[td] = 'done';
+    save(); render(); return;
+  }
+  const f = e.target.closest('[data-whfocus]');
+  if (f) {
+    const h = (data.habits || []).find((x) => x.id === f.dataset.whfocus);
+    const left = hPartial(h, todayStr()) ? Math.max(1, Math.round(h.duration - hMins(h, todayStr()))) : null;
+    askFocusMins(t, left || Number(h.duration) || Number(data.settings.focusMins) || 25, (mins) => window.api.focus('start', 'habit:' + h.id, { mins }).then((nd) => { data = nd; render(); }));
+  }
+};
 
 // ---------- focus session (started in the app or here) ----------
 const wClock = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };

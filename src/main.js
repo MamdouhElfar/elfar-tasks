@@ -342,7 +342,7 @@ function tick() {
   }
   const today = now.slice(0, 10);
   for (const h of data.habits || []) {
-    if (!h.time || h.archived || h.remindedOn === today || now.slice(11) < h.time || !habitDueToday(h, today)) continue;
+    if (!h.time || h.archived || h.remindedOn === today || now.slice(11) < h.time || !habitDueToday(h, today, data)) continue;
     h.remindedOn = today;
     changed = true;
     if ((data.settings.remindStyle || 'mouse') === 'mouse') {
@@ -401,14 +401,14 @@ function openRemindWin() {
   remindWin.on('closed', () => { remindWin = null; });
 }
 // Is a habit due today? (scheduled today, or its weekly goal isn't reached) and not done yet.
-function habitDueToday(h, today) {
+function habitDueToday(h, today, data) {
   const end = h.end || {};
   if (today < h.start || (end.type === 'date' && end.date && today > end.date)) return false;
   const log = h.log || {};
   if (log[today]) return false;
   const dt = new Date(today + 'T00:00');
   if (h.kind === 'days') return (h.days || []).includes(dt.getDay());
-  const ws = new Date(dt); ws.setDate(dt.getDate() - ((dt.getDay() - (h.weekStart ?? 6) + 7) % 7));
+  const ws = new Date(dt); ws.setDate(dt.getDate() - ((dt.getDay() - (h.weekStart ?? data.settings.weekStart ?? 6) + 7) % 7));
   let done = 0, mins = 0;
   for (let i = 0; i < 7; i++) {
     const d = new Date(ws); d.setDate(ws.getDate() + i);

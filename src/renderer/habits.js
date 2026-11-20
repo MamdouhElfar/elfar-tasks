@@ -9,32 +9,14 @@
 //       start, end: { type: 'never'|'date'|'count', date, count }, weekStart, archived,
 //       log: { 'YYYY-MM-DD': 'done'|'skip' }, minutes: { 'YYYY-MM-DD': n } }
 
-const habitsList = () => (data.habits = data.habits || []);
+function habitsList() {
+  data.habits = data.habits || [];
+  if (!data.settings.hbWeekFollow) { data.habits.forEach((h) => { h.weekStart = null; }); data.settings.hbWeekFollow = true; save(); }
+  return data.habits;
+}
 const habitById = (id) => habitsList().find((h) => h.id === id);
-const hAdd = (s, n) => { const d = new Date(s + 'T00:00'); d.setDate(d.getDate() + n); return todayStr(d); };
-const hDow = (s) => new Date(s + 'T00:00').getDay();
 const hLoc = () => (lang() === 'ar' ? 'ar-EG-u-nu-latn' : 'en-GB');
 const hDayName = (n, style = 'short') => new Date(2024, 0, 7 + n).toLocaleDateString(hLoc(), { weekday: style }); // 2024-01-07 is a Sunday
-function hWeekStart(h, s) { const ws = h.weekStart ?? 6; const d = new Date(s + 'T00:00'); d.setDate(d.getDate() - ((d.getDay() - ws + 7) % 7)); return todayStr(d); }
-const hLog = (h, s) => (h.log || {})[s] || null;
-const hMins = (h, s) => (h.minutes || {})[s] || 0;
-const hDoneCount = (h) => Object.values(h.log || {}).filter((v) => v === 'done').length;
-function hEnded(h) {
-  const e = h.end || {};
-  if (e.type === 'date' && e.date && todayStr() > e.date) return true;
-  if (e.type === 'count' && e.count && hDoneCount(h) >= e.count) return true;
-  return false;
-}
-const hLive = (h) => !h.archived && !hEnded(h) && h.start <= todayStr();
-function hActiveOn(h, s) { const e = h.end || {}; return s >= h.start && !(e.type === 'date' && e.date && s > e.date); }
-const hScheduled = (h, s) => h.kind === 'days' && hActiveOn(h, s) && (h.days || []).includes(hDow(s));
-function hWeek(h, s) {
-  const ws = hWeekStart(h, s);
-  const days = [...Array(7)].map((_, i) => hAdd(ws, i));
-  return { ws, days, done: days.filter((d) => hLog(h, d) === 'done').length, mins: days.reduce((n, d) => n + hMins(h, d), 0), left: days.filter((d) => d > todayStr()).length };
-}
-const hTarget = (h) => (h.kind === 'times' ? h.perWeek : h.minutesPerWeek);
-const hWeekVal = (h, w) => (h.kind === 'times' ? w.done : w.mins);
 
 // What a day looks like on the tracker.
 function hDayState(h, s) {
@@ -44,8 +26,10 @@ function hDayState(h, s) {
   if (h.kind === 'days') {
     if (!hScheduled(h, s)) return l === 'done' ? 'done' : 'off';
     if (l) return l;
+    if (hPartial(h, s)) return 'partial';
     return s < td ? 'missed' : s === td ? 'today' : 'future';
   }
+  if (h.kind === 'times' && !l && hPartial(h, s)) return 'partial';
   if (h.kind === 'minutes') { const m = hMins(h, s); return m ? 'done' : s > td ? 'future' : 'none'; }
   return l || (s > td ? 'future' : 'none');
 }
@@ -58,10 +42,13 @@ function hStats(h) {
     for (let s = td, i = 0; s >= h.start && i < 2000; s = hAdd(s, -1), i++) {
       if (!hScheduled(h, s)) continue;
       const l = hLog(h, s);
-      if (s === td && !l) continue; // today isn't over yet
+      const part = hPartial(h, s);
+      if (s === td && !l && !part) continue; // today isn't over yet
       if (l === 'skip') continue;   // a day off doesn't count either way
       total++;
-      if (l === 'done') { done++; if (!broke) streak++; } else broke = true;
+      if (l === 'done') { done++; if (!broke) streak++; }
+      else if (part) { done += part; if (!broke) streak++; } // did some of it: counts for its share
+      else broke = true;
     }
     return { streak, streakUnit: 'd', rate: total ? Math.round((done / total) * 100) : null, total: hDoneCount(h) };
   }
@@ -82,7 +69,7 @@ const hMinsLabel = (m) => focusTimeLabel(Math.round(m));
 function hSummary(h) {
   const bits = [];
   if (h.kind === 'days') {
-    const order = [...Array(7)].map((_, i) => ((h.weekStart ?? 6) + i) % 7);
+    const order = [...Array(7)].map((_, i) => ((h.weekStart ?? appWeekStart()) + i) % 7);
     const days = order.filter((d) => (h.days || []).includes(d));
     bits.push(days.length === 7 ? t('hbEveryDay') : days.map((d) => hDayName(d, 'long')).join('، '));
   }
@@ -94,14 +81,6 @@ function hSummary(h) {
 }
 
 // Habits to show on Today: scheduled today, or weekly goals not reached yet.
-function habitsToday() {
-  const td = todayStr();
-  return habitsList().filter(hLive).filter((h) => {
-    if (h.kind === 'days') return hScheduled(h, td);
-    const w = hWeek(h, td);
-    return hWeekVal(h, w) < hTarget(h) || hLog(h, td) === 'done' || hMins(h, td) > 0;
-  });
-}
 function hToggleToday(h) {
   const td = todayStr();
   h.log = h.log || {};
@@ -109,8 +88,9 @@ function hToggleToday(h) {
   save();
   if (h.log[td] === 'done') showToast(`${h.emoji || '✓'} ${h.name}: ${t('hbDoneToast')}`);
 }
-function hStartFocus(h) {
-  askFocusMins(t, Number(h.duration) || Number(data.settings.focusMins) || 25, (mins) => {
+function hStartFocus(h, rest) {
+  const left = rest && h.duration ? Math.max(1, Math.round(h.duration - hMins(h, todayStr()))) : null;
+  askFocusMins(t, left || Number(h.duration) || Number(data.settings.focusMins) || 25, (mins) => {
     ui.focusView = true;
     window.api.focus('start', 'habit:' + h.id, { mins }).then((d) => { data = d; refreshLists(); renderFocus(true); });
   });
@@ -121,7 +101,9 @@ function habitRowHtml(h) {
   const td = todayStr();
   const done = hLog(h, td) === 'done';
   let meta = '';
-  if (h.kind === 'days') meta = [h.time && fmtTime(`2000-01-01T${h.time}`, lang()), h.duration && hMinsLabel(h.duration)].filter(Boolean).join(' · ');
+  const part = hPartial(h, td);
+  if (part) meta = `⏳ ${hMinsLabel(hMins(h, td))} / ${hMinsLabel(h.duration)}`;
+  else if (h.kind === 'days') meta = [h.time && fmtTime(`2000-01-01T${h.time}`, lang()), h.duration && hMinsLabel(h.duration)].filter(Boolean).join(' · ');
   else if (h.kind === 'times') { const w = hWeek(h, td); meta = `${w.done} / ${h.perWeek} ${t('hbThisWeek')}`; }
   else { const w = hWeek(h, td); meta = `${hMinsLabel(w.mins)} / ${hMinsLabel(h.minutesPerWeek)} ${t('hbThisWeek')}`; }
   const canFocus = h.kind === 'minutes' || h.duration;
@@ -159,9 +141,13 @@ function habitCardHtml(h) {
   else if (h.kind === 'days') {
     const l = hLog(h, td);
     if (hScheduled(h, td)) {
+      const part = hPartial(h, td);
       now = l === 'done' ? `<div class="hbc-now ok">✓ ${t('hbDoneToday')} <button class="link" data-hcheck="${h.id}">${t('hbUndo')}</button></div>`
+        : part ? `<div class="hbc-now col"><div class="hb-bar part"><i style="width:${Math.round(part * 100)}%"></i></div>
+            <div class="hbc-row"><span class="small">⏳ ${t('hbPartialOf').replace('{a}', hMinsLabel(hMins(h, td))).replace('{b}', hMinsLabel(h.duration))}</span>
+            <span class="hbc-btns"><button class="primary" data-hfocus="${h.id}" data-hrest="1">▶ ${t('hbContinue')}</button><button data-hcheck="${h.id}" title="${t('hbCountDoneTip')}">✓ ${t('hbCountDone')}</button><button data-hadd="${h.id}" title="${t('hbAddTimeTip')}">＋</button></span></div></div>`
         : l === 'skip' ? `<div class="hbc-now muted">🌴 ${t('hbSkipToday')} <button class="link" data-hskip="${h.id}">${t('hbUndo')}</button></div>`
-        : `<div class="hbc-now"><button class="primary" data-hcheck="${h.id}">✓ ${t('hbDidIt')}</button>${h.duration ? `<button data-hfocus="${h.id}">▶ ${t('fShort')} ${hMinsLabel(h.duration)}</button>` : ''}<button class="ghost" data-hskip="${h.id}" title="${t('hbSkipTip')}">🌴 ${t('hbSkip')}</button></div>`;
+        : `<div class="hbc-now"><button class="primary" data-hcheck="${h.id}">✓ ${t('hbDidIt')}</button>${h.duration ? `<button data-hfocus="${h.id}">▶ ${t('fShort')} ${hMinsLabel(h.duration)}</button><button data-hadd="${h.id}" title="${t('hbAddTimeTip')}">＋ ${t('hbAddTime')}</button>` : ''}<button class="ghost" data-hskip="${h.id}" title="${t('hbSkipTip')}">🌴 ${t('hbSkip')}</button></div>`;
     } else {
       let n = td; for (let i = 0; i < 8; i++) { n = hAdd(n, 1); if (hScheduled(h, n)) break; }
       now = `<div class="hbc-now muted small">${t('hbNotToday')} · ${t('hbNext')}: ${hScheduled(h, n) ? (n === hAdd(td, 1) ? t('tomorrowLbl') : hDayName(hDow(n), 'long')) : '—'}</div>`;
@@ -195,10 +181,10 @@ function hHeatmap(h) {
   const td = todayStr();
   const cur = hWeekStart(h, td);
   const weeks = [...Array(12)].map((_, i) => hAdd(cur, -7 * (11 - i)));
-  const rowsLbl = [...Array(7)].map((_, i) => hDayName(((h.weekStart ?? 6) + i) % 7, 'narrow'));
+  const rowsLbl = [...Array(7)].map((_, i) => hDayName(((h.weekStart ?? appWeekStart()) + i) % 7, 'narrow'));
   const cols = weeks.map((ws) => {
     const days = [...Array(7)].map((_, i) => hAdd(ws, i));
-    const cells = days.map((d) => { const s = hDayState(h, d); return `<i class="hm ${s}" ${s !== 'off' && s !== 'future' ? `data-hday="${d}"` : ''} title="${fmtDate(d, lang())} · ${t('hbSt_' + s)}"></i>`; }).join('');
+    const cells = days.map((d) => { const s = hDayState(h, d); return `<i class="hm ${s}" ${s === 'partial' ? `style="--part:${Math.round(hPartial(h, d) * 100)}%"` : ''} ${s !== 'off' && s !== 'future' ? `data-hday="${d}"` : ''} title="${fmtDate(d, lang())} · ${t('hbSt_' + s)}${s === 'partial' ? ` (${hMinsLabel(hMins(h, d))} / ${hMinsLabel(h.duration)})` : ''}"></i>`; }).join('');
     let mark = '';
     if (h.kind === 'times' && ws >= hWeekStart(h, h.start)) {
       const w = hWeek(h, ws);
@@ -207,7 +193,7 @@ function hHeatmap(h) {
     return `<div class="hm-col">${cells}${mark}</div>`;
   }).join('');
   return `<div class="hm-wrap"><div class="hm-days">${rowsLbl.map((d) => `<span>${d}</span>`).join('')}</div><div class="hm-grid">${cols}</div></div>
-    <div class="hm-legend"><span><i class="hm done"></i>${t('hbSt_done')}</span>${h.kind === 'days' ? `<span><i class="hm missed"></i>${t('hbSt_missed')}</span>` : `<span><i class="wk bad">✗</i>${t('hbBelow')}</span>`}<span><i class="hm skip"></i>${t('hbSt_skip')}</span></div>`;
+    <div class="hm-legend"><span><i class="hm done"></i>${t('hbSt_done')}</span>${h.kind === 'days' ? `<span><i class="hm missed"></i>${t('hbSt_missed')}</span>` : `<span><i class="wk bad">✗</i>${t('hbBelow')}</span>`}${h.duration && h.kind !== 'minutes' ? `<span><i class="hm partial"></i>${t('hbSt_partial')}</span>` : ''}<span><i class="hm skip"></i>${t('hbSt_skip')}</span></div>`;
 }
 
 // Minutes per week: the last 8 weeks against the target.
@@ -224,8 +210,8 @@ function openHabitEditor(h, preset = {}) {
   const isNew = !h;
   const ar = lang() === 'ar';
   h = h ? JSON.parse(JSON.stringify(h)) : { id: uid(), name: preset.name || '', emoji: preset.emoji || '', color: 'blue', kind: preset.kind || 'days', days: [0, 2, 4], perWeek: 3, minutesPerWeek: 300,
-    time: '', duration: preset.kind === 'days' ? 60 : null, start: todayStr(), end: { type: 'never' }, weekStart: ar ? 6 : 1, log: {}, minutes: {} };
-  const order = [...Array(7)].map((_, i) => ((h.weekStart ?? 6) + i) % 7);
+    time: '', duration: preset.kind === 'days' ? 60 : null, start: todayStr(), end: { type: 'never' }, weekStart: null, widget: true, log: {}, minutes: {} };
+  const order = [...Array(7)].map((_, i) => ((h.weekStart ?? appWeekStart()) + i) % 7);
   const emojis = ['📚', '🏋️', '📖', '🏃', '🧘', '💧', '✍️', '🕌', '🎸', '💻', '🥗', '😴'];
   const bg = document.createElement('div');
   bg.className = 'modal-bg hb-edit-bg';
@@ -253,6 +239,8 @@ function openHabitEditor(h, preset = {}) {
           ${h.end.type === 'count' ? `<div class="hbe-line"><input type="number" id="heEndCount" min="1" max="999" value="${h.end.count || 20}"> ${t('hbTimes')}</div>` : ''}
         </div>
       </div>
+      <div class="hbe-opts"><label class="hbe-check"><input type="checkbox" id="heWidget" ${h.widget !== false ? 'checked' : ''}> ${t('hbInWidget')}</label>
+        ${h.kind !== 'days' ? `<label class="hbe-check">${t('hbWeekStarts')} <select id="heWs"><option value="">${t('hbWsDefault')} (${hDayName(appWeekStart(), 'long')})</option>${[6, 0, 1, 2, 3, 4, 5].map((d) => `<option value="${d}" ${h.weekStart === d ? 'selected' : ''}>${hDayName(d, 'long')}</option>`).join('')}</select></label>` : ''}</div>
       <div class="hbe-colors">${COLORS.map((c) => `<button type="button" class="swatch ${h.color === c ? 'on' : ''}" data-hcolor="${c}" style="background:var(--c-${c})"></button>`).join('')}</div>
       <div class="actions">${isNew ? '' : `<button class="danger" data-hdel>${icon('trash')}</button><button data-harch>${h.archived ? t('hbResume') : t('hbPause')}</button>`}
         <span style="flex:1"></span><button data-hcancel>${t('cancel')}</button><button class="primary" data-hsave>${t('save')}</button></div></div>`;
@@ -270,6 +258,8 @@ function openHabitEditor(h, preset = {}) {
     if (v('heEndType')) h.end = { type: v('heEndType').value };
     if (v('heEndDate')) h.end.date = v('heEndDate').value;
     if (v('heEndCount')) h.end.count = Number(v('heEndCount').value) || 1;
+    if (v('heWidget')) h.widget = v('heWidget').checked;
+    if (v('heWs')) h.weekStart = v('heWs').value === '' ? null : Number(v('heWs').value);
   };
   draw();
   document.body.appendChild(bg);
@@ -312,6 +302,7 @@ function hAddTime(h) {
     const td = todayStr();
     h.minutes = h.minutes || {};
     h.minutes[td] = (h.minutes[td] || 0) + m;
+    if (h.kind !== 'minutes' && h.duration && h.minutes[td] >= h.duration) { h.log = h.log || {}; h.log[td] = 'done'; }
     save(); refresh();
   });
 }
@@ -364,9 +355,9 @@ function maybeAskHabits() {
   const bg = document.createElement('div');
   bg.className = 'modal-bg hb-check-bg';
   bg.innerHTML = `<div class="modal hb-check"><div class="pl-head"><span class="pl-sun">🌤</span><div><h3>${t('hbCheckTitle').replace('{g}', (() => { const hr = new Date().getHours(); return hr < 12 ? t('gMorning') : hr < 18 ? t('gAfternoon') : t('gEvening'); })())}</h3><p class="small muted">${t('hbCheckSub')}</p></div></div>
-    <div class="hbk-list">${rows.map(({ h, d }, i) => `<div class="hbk-row" data-i="${i}"><span class="hb-emoji">${esc(h.emoji || '🔁')}</span><span class="hbk-t"><b dir="auto">${esc(h.name)}</b><small>${dayLbl(d)}</small></span>
+    <div class="hbk-list">${rows.map(({ h, d }, i) => `<div class="hbk-row" data-i="${i}"><span class="hb-emoji">${esc(h.emoji || '🔁')}</span><span class="hbk-t"><b dir="auto">${esc(h.name)}</b><small>${dayLbl(d)}${hPartial(h, d) ? ` · ⏳ ${hMinsLabel(hMins(h, d))} / ${hMinsLabel(h.duration)}` : ''}</small></span>
       <span class="hbk-btns"><button class="ok" data-ans="done">✓ ${t('hbYes')}</button><button data-ans="no">✗ ${t('hbNo')}</button><button data-ans="skip" title="${t('hbSkipTip')}">🌴</button></span></div>`).join('')}</div>
-    <p class="small muted">${t('hbCheckNote')}</p>
+    <p class="small muted">${t('hbCheckNote')} ${t('hbCheckPartial')}</p>
     <div class="actions"><span style="flex:1"></span><button class="primary" data-hk-ok>${t('ok')}</button></div></div>`;
   document.body.appendChild(bg);
   const close = () => { bg.classList.add('leaving'); setTimeout(() => bg.remove(), 150); refresh(); };
@@ -394,7 +385,7 @@ document.addEventListener('click', (e) => {
   if ((b = q('[data-hedit]'))) return openHabitEditor(habitById(b.dataset.hedit));
   if ((b = q('[data-hcheck]'))) { e.stopPropagation(); const h = habitById(b.dataset.hcheck); if (h) { hToggleToday(h); refresh(); } return; }
   if ((b = q('[data-hskip]'))) { const h = habitById(b.dataset.hskip); const td = todayStr(); h.log = h.log || {}; if (h.log[td] === 'skip') delete h.log[td]; else h.log[td] = 'skip'; save(); return refresh(); }
-  if ((b = q('[data-hfocus]'))) { e.stopPropagation(); const h = habitById(b.dataset.hfocus); if (h) hStartFocus(h); return; }
+  if ((b = q('[data-hfocus]'))) { e.stopPropagation(); const h = habitById(b.dataset.hfocus); if (h) hStartFocus(h, b.dataset.hrest || hPartial(h, todayStr())); return; }
   if ((b = q('[data-hadd]'))) return hAddTime(habitById(b.dataset.hadd));
   if ((b = q('[data-hopen]'))) { ui.view = 'habits'; ui.selected = null; refresh(); return; }
   // Fix a past day on the tracker: nothing → done → day off → nothing.

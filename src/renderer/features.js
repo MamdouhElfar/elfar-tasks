@@ -319,7 +319,7 @@ async function deleteTask(x) {
 
 // ---------------- weekly report + CSV ----------------
 function weekStart() {
-  const d = new Date(); const back = (d.getDay() - (lang() === 'ar' ? 6 : 1) + 7) % 7;
+  const d = new Date(); const back = (d.getDay() - appWeekStart() + 7) % 7;
   d.setDate(d.getDate() - back); return todayStr(d);
 }
 
@@ -388,6 +388,14 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.16.1': {
+    ar: ['العادات: لو عملت جزء بس (ذاكرت 35 دقيقة من ساعتين) اليوم بيتسجل "جزئي" وبيتحسب بقد اللي عملته، وتقدر تكمّل الباقي أو تعتبرها خلصت',
+      'عادات النهارده بقت تظهر في الويدجت، ولكل عادة اختيار "تظهر في الويدجت"',
+      'الأسبوع بيبدأ يوم تختاره من الإعدادات ← عام (السبت أو الأحد أو الاتنين)، ونفس اليوم في العربي والإنجليزي. وتقدر تختار يوم مختلف لعادة معينة'],
+    en: ['Habits: if you do only part of it (35 of 120 minutes) the day counts as "partly" for the share you did, and you can continue or count it as done',
+      "Today's habits now show in the widget, and each habit has a \"Show in the widget\" option",
+      'The week starts on the day you pick in Settings › General (Saturday, Sunday or Monday), the same in Arabic and English. A habit can have its own']
+  },
   '1.16.0': {
     ar: ['تاب جديد "عاداتي": للحاجات اللي بتعملها على طول زي المذاكرة والجيم. تختار نوعها: أيام محددة (الأحد والتلات والخميس)، أو عدد مرات في الأسبوع (جيم 3 مرات)، أو وقت في الأسبوع (قراية 5 ساعات)',
       'اليوم اللي يعدّي من غير ما تعملها بيتسجل "فات" ومش بيتنقل ليوم تاني، والأسبوع اللي يخلص أقل من الهدف بيتسجل "أقل من الهدف". ولو عندك عذر علّم اليوم "إجازة"',
