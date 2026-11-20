@@ -93,7 +93,7 @@ function render() {
     return `<div class="w-item ${quadClass(x)}">
       <button class="check" data-check="${x.id}" title="${t('closeToday')}">✓</button>
       <div class="t-main"><div class="t-title" dir="auto" data-open="${x.id}">${x.starred ? '<span class="star">★</span> ' : ''}${esc(x.title)}</div>
-        <div class="t-meta">${pill}${remindPill(x)}${QUADS.includes(x.priority) ? `<span class="pill ${x.priority}">${t(x.priority + 'a')}</span>` : ''}${(x.pendingWith || []).map((pw) => data.people.find((p) => p.id === pw.personId)).filter(Boolean).map((p) => `<span class="pill person" dir="auto">${esc(p.name)}</span>`).join('')}${subs.length ? `<span>${subs.filter((y) => y.done).length}/${subs.length}</span>` : ''}${x.due && s !== 'today' ? `<span>${fmtDate(x.due, data.settings.lang)}</span>` : ''}</div>
+        <div class="t-meta">${pill}${remindPill(x)}${QUADS.includes(x.priority) ? `<span class="pill ${x.priority}" title="${t(x.priority + 'a')}">${t(x.priority)}</span>` : ''}${(x.pendingWith || []).map((pw) => data.people.find((p) => p.id === pw.personId)).filter(Boolean).map((p) => `<span class="pill person" dir="auto">${esc(p.name)}</span>`).join('')}${subs.length ? `<span>${subs.filter((y) => y.done).length}/${subs.length}</span>` : ''}${x.due && s !== 'today' ? `<span>${fmtDate(x.due, data.settings.lang)}</span>` : ''}</div>
       </div></div>`;
   }).join('');
 }

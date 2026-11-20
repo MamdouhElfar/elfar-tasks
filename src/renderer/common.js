@@ -51,7 +51,16 @@ const I18N = {
     loadCopy: 'فتح نسخة محفوظة', loadCopyDesc: 'بيستبدل كل اللي هنا بملف حفظته قبل كده. قبلها بيحفظ "نسخة أمان" من بياناتك الحالية، تقدر ترجعلها من النسخ التلقائية.', loadCopyBtn: 'فتح نسخة…',
     excelTitle: 'تصدير لـ Excel', excelDesc: 'جدول بكل التاسكات تقراه أو تفلتره أو تبعته لحد. ده للقراءة بس، ومينفعش يرجع للتطبيق.', excelBtn: 'تصدير…',
     safetyCopy: 'نسخة أمان', confirmLoadTitle: 'تستبدل بياناتك الحالية بالنسخة دي؟', confirmLoadText: 'هيتحفظ "نسخة أمان" من بياناتك الحالية الأول، فتقدر ترجع لها.', restoredMsg: 'اترجعت البيانات. نسخة الأمان موجودة في النسخ التلقائية', savedCopyMsg: 'اتحفظ ✓', badCopy: 'الملف ده مش نسخة من Elfar Tasks',
-    launchDesc: 'بيفتح في الخلفية جنب الساعة أول ما تفتح الجهاز', textSizeDesc: 'أو Ctrl + و Ctrl − من أي مكان', shortcuts: 'الاختصارات', summaryDesc: 'إشعار كل صبح فيه تاسكات اليوم والمتأخر', nudgeTitle: 'تنبيه المتابعة', widgetDesc: 'قايمة صغيرة على سطح المكتب بتاسكاتك', widgetModeDesc: 'ثابت فوق كل الشبابيك، أو مستخبي على جنب ويظهر لما تقرّب الماوس', widgetShowsDesc: 'الكروت اللي فوق في الويدجت بتغيّر ده مؤقتًا', updatesDesc: 'التحديثات بتنزل لوحدها من GitHub', confirmDelLog: 'تمسح السطر ده من سجل المتابعة؟', dayClear: 'مفيش حاجة فاضلة النهارده، الفار مبسوط 🧀', cheerTitle: 'عاش! خلصت كل تاسكات النهارده 🎉', cheerSub: 'الفار فخور بيك', stScheduled: 'يبدأ', later: 'مجدولة', scheduledHint: 'دي تاسكات لسه ميعادها مجاش (زي المرة الجاية من تاسك متكررة). هتظهر في Pending يوم ما تبدأ.', wWeek: '7 أيام', wOthers: 'عند غيري',
+    launchDesc: 'بيفتح في الخلفية جنب الساعة أول ما تفتح الجهاز', textSizeDesc: 'أو Ctrl + و Ctrl − من أي مكان', shortcuts: 'الاختصارات', summaryDesc: 'إشعار كل صبح فيه تاسكات اليوم والمتأخر', nudgeTitle: 'تنبيه المتابعة', widgetDesc: 'قايمة صغيرة على سطح المكتب بتاسكاتك', widgetModeDesc: 'ثابت فوق كل الشبابيك، أو مستخبي على جنب ويظهر لما تقرّب الماوس', widgetShowsDesc: 'الكروت اللي فوق في الويدجت بتغيّر ده مؤقتًا', updatesDesc: 'التحديثات بتنزل لوحدها من GitHub', urgency: 'الاستعجال', importance: 'الأهمية', mxHow: 'كل مربع معناه إيه؟',
+    q1tip: 'اللي لازم يتعمل النهارده', q2tip: 'شغل مهم ليه وقت', q3tip: 'حاجات حد تاني يقدر يعملها', q4tip: 'حاجات ممكن تستغنى عنها',
+    q1how: 'مواعيد تسليم، مشاكل، حاجات عليها الدور النهارده. ابدأ بيها.', q2how: 'تخطيط، تطوير، متابعة قبل ما تبقى مشكلة. حطلها ميعاد في التقويم.', q3how: 'مقاطعات وطلبات بسيطة. سلّمها لحد تاني من "معلّق عند".', q4how: 'حاجات بتضيّع الوقت. استغنى عنها أو سيبها لبعدين.',
+    page: 'صفحة', pageN: 'صفحة {n}', addPage: 'صفحة جديدة', pageRenameHint: 'دوسة مرتين لتغيير الاسم', renamePage: 'اسم الصفحة', confirmDelPage: 'تمسح الصفحة دي؟',
+    notesHint: 'اكتب # للعنوان، - للنقط، [] لقايمة تشيك، وCtrl+B للتقيل. Ctrl + دوسة على اللينك يفتحه.',
+    toolH1: 'عنوان كبير', toolH2: 'عنوان صغير', toolBold: 'تقيل (Ctrl+B)', toolItalic: 'مايل (Ctrl+I)', toolUnderline: 'تحته خط (Ctrl+U)', toolStrike: 'متشطب', toolBullets: 'نقط', toolNumbers: 'ترقيم', toolChecks: 'قايمة تشيك', toolQuote: 'اقتباس', toolLink: 'لينك', toolLine: 'خط فاصل', toolClear: 'شيل التنسيق',
+    quickMode: 'سريع', fullMode: 'كامل', subsPh: 'مهمة فرعية في كل سطر', composerHintFull: 'Ctrl+Enter للإضافة · Esc للإغلاق',
+    remindStyle: 'شكل التذكير', remindStyleDesc: 'فار بيطلع على جنب الشاشة ومعاه جرس، أو إشعار ويندوز العادي', styleMouse: 'فار بيرن الجرس 🐭🔔', styleNotif: 'إشعار ويندوز', remindSound: 'صوت التذكير',
+    soundChime: 'نغمة', soundBell: 'جرس', soundSqueak: 'صوت فار 🐭', soundNone: 'من غير صوت', tryIt: 'جرّب', testReminder: 'كده هيبان التذكير 🐭', snoozeLbl: 'فكّرني تاني بعد', minShort: 'د', hourShort: 'س',
+    confirmDelLog: 'تمسح السطر ده من سجل المتابعة؟', dayClear: 'مفيش حاجة فاضلة النهارده، الفار مبسوط 🧀', cheerTitle: 'عاش! خلصت كل تاسكات النهارده 🎉', cheerSub: 'الفار فخور بيك', stScheduled: 'يبدأ', later: 'مجدولة', scheduledHint: 'دي تاسكات لسه ميعادها مجاش (زي المرة الجاية من تاسك متكررة). هتظهر في Pending يوم ما تبدأ.', wWeek: '7 أيام', wOthers: 'عند غيري',
     calHint: 'اضغط ＋ في أي يوم تضيف تاسك عليه · اسحب تاسك ليوم تاني يغيّر الـ Due · الباهت = المرات الجاية من تاسك متكررة.',
     ok: 'تمام', home: 'الرئيسية', mine: 'عندي أنا', withOthers: 'عند حد تاني', show: 'عرض', remindCustom: 'وقت محدد…', remindNeedsDue: 'حط Due عشان تقدر تتفكّر قبله بوقت', remindAt9: 'الـ Due من غير وقت، فالتذكير محسوب على 9 الصبح', dueTimeShort: 'الوقت',
     gMorning: 'صباح الخير', gAfternoon: 'مساء الخير', gEvening: 'مساء الخير', hWeek: 'الـ 7 أيام الجايين', hOthers: 'عند ناس تانية', hClosedWeek: 'اتقفلت الأسبوع ده',
@@ -100,7 +109,7 @@ const I18N = {
     newTask: 'New task', addBtn: 'Add', titleRequired: 'Enter a task title first', added: 'Added', open: 'Open',
     composerHint: 'Enter to add · Esc to close', noDue: 'No due date', noPrio: 'No priority',
     matrix: 'Matrix', priority: 'Priority', unclassified: 'Unclassified', important: 'Important', notImportant: 'Not important', urgent: 'Urgent', notUrgent: 'Not urgent', sortPriority: 'Priority first', clearPriority: 'Clear priority',
-    q1: 'Important and urgent', q2: 'Important, not urgent', q3: 'Urgent, not important', q4: 'Not important, not urgent',
+    q1: 'Important & urgent', q2: 'Important & not urgent', q3: 'Urgent & not important', q4: 'Not important & not urgent',
     q1a: 'Do it now', q2a: 'Schedule it', q3a: 'Delegate it', q4a: 'Drop it', matrixHint: 'Drag a task to another box to change its priority, or from Unclassified into any box.',
     allAreas: 'All tasks', dragHint: 'Drop a task on a folder to move it', movedTo: 'Moved to',
     dataTitle: 'Data & backups', dataWhere: 'Where your tasks are saved', autoBk: 'Automatic backups', autoBkDesc: 'The app saves a copy by itself every day and keeps the last 30 days. If something goes wrong, pick a day and go back to it.', restoreBtn: 'Restore', openBackups: 'Open the backups folder',
@@ -108,7 +117,16 @@ const I18N = {
     loadCopy: 'Load a saved copy', loadCopyDesc: 'Replaces everything here with a file you saved before. A "safety copy" of what is here now is kept first, and you can go back to it from the automatic backups.', loadCopyBtn: 'Load copy…',
     excelTitle: 'Export to Excel', excelDesc: 'A spreadsheet of all your tasks to read, filter or send to someone. It is for reading only and cannot be loaded back.', excelBtn: 'Export…',
     safetyCopy: 'Safety copy', confirmLoadTitle: 'Replace your current data with this copy?', confirmLoadText: 'A "safety copy" of your current data is saved first, so you can go back to it.', restoredMsg: 'Data restored. The safety copy is in the automatic backups', savedCopyMsg: 'Saved ✓', badCopy: 'This file is not an Elfar Tasks copy',
-    launchDesc: 'Opens quietly next to the clock when you sign in', textSizeDesc: 'Or Ctrl + and Ctrl − anywhere', shortcuts: 'Shortcuts', summaryDesc: 'A notification each morning with the day\'s tasks and anything overdue', nudgeTitle: 'Follow-up nudge', widgetDesc: 'A small list of your tasks on the desktop', widgetModeDesc: 'Always on top, or tucked at the screen edge until the mouse comes near', widgetShowsDesc: 'The number cards on the widget change this for a while', updatesDesc: 'Updates download by themselves from GitHub', confirmDelLog: 'Delete this entry from the follow-up log?', dayClear: 'Nothing left for today. Happy mouse 🧀', cheerTitle: 'Nice! Every task for today is done 🎉', cheerSub: 'The mouse is proud of you', stScheduled: 'Starts', later: 'Scheduled', scheduledHint: "Tasks that haven't started yet (like the next round of a repeating task). They move to Pending on their start day.", wWeek: '7 days', wOthers: 'Others',
+    launchDesc: 'Opens quietly next to the clock when you sign in', textSizeDesc: 'Or Ctrl + and Ctrl − anywhere', shortcuts: 'Shortcuts', summaryDesc: 'A notification each morning with the day\'s tasks and anything overdue', nudgeTitle: 'Follow-up nudge', widgetDesc: 'A small list of your tasks on the desktop', widgetModeDesc: 'Always on top, or tucked at the screen edge until the mouse comes near', widgetShowsDesc: 'The number cards on the widget change this for a while', updatesDesc: 'Updates download by themselves from GitHub', urgency: 'Urgency', importance: 'Importance', mxHow: 'What does each box mean?',
+    q1tip: 'What has to be done today', q2tip: 'Important work that has time', q3tip: 'Things someone else can do', q4tip: 'Things you can let go',
+    q1how: 'Deadlines, problems, things due today. Start with these.', q2how: 'Planning, growth, following up before it becomes a problem. Give them a date in the calendar.', q3how: 'Interruptions and small requests. Hand them to someone with "Pending with".', q4how: 'Time-wasters. Drop them or leave them for later.',
+    page: 'Page', pageN: 'Page {n}', addPage: 'New page', pageRenameHint: 'Double-click to rename', renamePage: 'Page name', confirmDelPage: 'Delete this page?',
+    notesHint: 'Type # for a heading, - for bullets, [] for a checklist, Ctrl+B for bold. Ctrl+click a link to open it.',
+    toolH1: 'Heading', toolH2: 'Subheading', toolBold: 'Bold (Ctrl+B)', toolItalic: 'Italic (Ctrl+I)', toolUnderline: 'Underline (Ctrl+U)', toolStrike: 'Strikethrough', toolBullets: 'Bullets', toolNumbers: 'Numbers', toolChecks: 'Checklist', toolQuote: 'Quote', toolLink: 'Link', toolLine: 'Divider', toolClear: 'Clear formatting',
+    quickMode: 'Quick', fullMode: 'Full', subsPh: 'One subtask per line', composerHintFull: 'Ctrl+Enter to add · Esc to close',
+    remindStyle: 'Reminder style', remindStyleDesc: 'A mouse with a bell at the side of the screen, or the usual Windows notification', styleMouse: 'A mouse ringing a bell 🐭🔔', styleNotif: 'Windows notification', remindSound: 'Reminder sound',
+    soundChime: 'Chime', soundBell: 'Bell', soundSqueak: 'Mouse squeak 🐭', soundNone: 'No sound', tryIt: 'Try it', testReminder: 'This is how a reminder looks 🐭', snoozeLbl: 'Remind me again in', minShort: 'min', hourShort: 'h',
+    confirmDelLog: 'Delete this entry from the follow-up log?', dayClear: 'Nothing left for today. Happy mouse 🧀', cheerTitle: 'Nice! Every task for today is done 🎉', cheerSub: 'The mouse is proud of you', stScheduled: 'Starts', later: 'Scheduled', scheduledHint: "Tasks that haven't started yet (like the next round of a repeating task). They move to Pending on their start day.", wWeek: '7 days', wOthers: 'Others',
     calHint: 'Click ＋ on a day to add a task there · drag a task to another day to change its due · faded = upcoming repeats.',
     ok: 'OK', home: 'Home', mine: 'On me', withOthers: 'With others', show: 'Show', remindCustom: 'Specific time…', remindNeedsDue: 'Set a due date to be reminded before it', remindAt9: 'No due time set, so this counts from 9:00 AM', dueTimeShort: 'Time',
     gMorning: 'Good morning', gAfternoon: 'Good afternoon', gEvening: 'Good evening', hWeek: 'Next 7 days', hOthers: 'With others', hClosedWeek: 'Closed this week',
@@ -212,6 +230,54 @@ function cheerMouseSvg() {
       <path d="M106 90h16M106 95h16" stroke="#9aa4af" stroke-width="1.1" stroke-linecap="round"/>
     </g>
   </svg>`;
+}
+
+// The mouse that rings a bell on a reminder 🔔
+function remindMouseSvg() {
+  return `<svg viewBox="0 0 140 150" aria-hidden="true">
+    <path d="M38 132 C 12 134, 8 110, 24 104 S 36 90, 22 82" fill="none" stroke="#f3a6b8" stroke-width="4" stroke-linecap="round"/>
+    <ellipse cx="66" cy="124" rx="32" ry="26" fill="#b9c2cc"/>
+    <ellipse cx="66" cy="130" rx="19" ry="16" fill="#d6dce3"/>
+    <circle cx="38" cy="40" r="17" fill="#8f99a5"/><circle cx="92" cy="40" r="17" fill="#8f99a5"/>
+    <circle cx="38" cy="40" r="10" fill="#f3a6b8"/><circle cx="92" cy="40" r="10" fill="#f3a6b8"/>
+    <ellipse cx="65" cy="66" rx="31" ry="28" fill="#b9c2cc"/>
+    <ellipse cx="65" cy="76" rx="16" ry="11" fill="#d6dce3"/>
+    <circle cx="54" cy="62" r="4" fill="#1f1e1c"/><circle cx="76" cy="62" r="4" fill="#1f1e1c"/>
+    <circle cx="55.4" cy="60.6" r="1.4" fill="#fff"/><circle cx="77.4" cy="60.6" r="1.4" fill="#fff"/>
+    <ellipse cx="65" cy="72" rx="4.4" ry="3.4" fill="#e8798f"/>
+    <ellipse cx="65" cy="82" rx="5" ry="4" fill="#6b4a52"/>
+    <path d="M58 75l-17-4M58 78.5l-17 2M72 75l17-4M72 78.5l17 2" stroke="#6b7380" stroke-width="1.4" stroke-linecap="round"/>
+    <path d="M92 112 L104 66" stroke="#b9c2cc" stroke-width="11" stroke-linecap="round"/>
+    <g class="rm-waves"><path d="M120 22 q8 10 0 22"/><path d="M128 14 q13 17 0 38"/></g>
+    <g class="rm-bell">
+      <path d="M104 38 v-6" stroke="#b07d12" stroke-width="3" stroke-linecap="round"/>
+      <path d="M90 62 q0-24 14-24 q14 0 14 24 l4 6 h-36 z" fill="#f6c343" stroke="#d9a21b" stroke-width="1.6" stroke-linejoin="round"/>
+      <circle cx="104" cy="71" r="4" fill="#d9a21b"/>
+      <circle cx="104" cy="64" r="5.5" fill="#b9c2cc"/>
+    </g>
+  </svg>`;
+}
+
+// Reminder sounds, made on the spot (no sound files needed).
+const REMIND_SOUNDS = ['chime', 'bell', 'squeak', 'none'];
+function playSound(kind) {
+  if (!kind || kind === 'none' || !window.AudioContext) return;
+  const C = new AudioContext();
+  const now = C.currentTime;
+  const tone = (f, t0, dur, type = 'sine', gain = 0.22) => {
+    const o = C.createOscillator(), g = C.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, now + t0);
+    g.gain.setValueAtTime(0.0001, now + t0);
+    g.gain.exponentialRampToValueAtTime(gain, now + t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + t0 + dur);
+    o.connect(g).connect(C.destination);
+    o.start(now + t0); o.stop(now + t0 + dur + 0.05);
+    return o;
+  };
+  if (kind === 'chime') { tone(1318.5, 0, 0.9); tone(1046.5, 0.18, 1.1); tone(1568, 0.36, 1.5, 'sine', 0.16); }
+  if (kind === 'bell') for (const t0 of [0, 0.42, 0.84]) [880, 2420, 4750].forEach((f, i) => tone(f, t0, 1.3 - i * 0.35, 'sine', 0.2 / (i + 1)));
+  if (kind === 'squeak') [0, 0.2, 0.4].forEach((t0) => { const o = tone(2100, t0, 0.15, 'triangle', 0.16); o.frequency.exponentialRampToValueAtTime(3400, now + t0 + 0.11); });
+  setTimeout(() => C.close(), 3500);
 }
 
 // Eisenhower matrix: q1 important+urgent, q2 important, q3 urgent, q4 neither.

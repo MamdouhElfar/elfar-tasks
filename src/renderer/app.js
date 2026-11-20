@@ -231,7 +231,7 @@ function rowHtml(x) {
     <button class="check ${x.closure ? 'on' : ''}" data-check="${x.id}" title="${x.closure ? t('reopen') : t('closeToday')}">✓</button>
     <div class="t-main">
       <div class="t-title" dir="auto">${x.starred ? '<span class="star">★</span> ' : ''}${esc(x.title) || '<span class="muted">' + t('title') + '</span>'}</div>
-      <div class="t-meta">${statusPill(x)}${x.repeat && isOpen(x) ? `<span class="pill repeat" title="${esc(repeatLabel(x.repeat))}">${icon('repeat')}</span>` : ''}${(x.files || []).length ? `<span class="pill area">${icon('clip')} ${x.files.length}</span>` : ''}${x.remindAt && isOpen(x) ? `<span class="pill remind ${x.remindAt <= nowLocal() ? 'past' : ''}">${icon('bell')} ${fmtDate(x.remindAt.slice(0, 10), lang())} ${fmtTime(x.remindAt, lang())}</span>` : ''}${x.priority && isOpen(x) ? `<span class="pill ${x.priority}">${t(x.priority + 'a')}</span>` : ''}
+      <div class="t-meta">${statusPill(x)}${x.repeat && isOpen(x) ? `<span class="pill repeat" title="${esc(repeatLabel(x.repeat))}">${icon('repeat')}</span>` : ''}${(x.files || []).length ? `<span class="pill area">${icon('clip')} ${x.files.length}</span>` : ''}${x.remindAt && isOpen(x) ? `<span class="pill remind ${x.remindAt <= nowLocal() ? 'past' : ''}">${icon('bell')} ${fmtDate(x.remindAt.slice(0, 10), lang())} ${fmtTime(x.remindAt, lang())}</span>` : ''}${x.priority && isOpen(x) ? `<span class="pill ${x.priority}" title="${t(x.priority + 'a')}">${t(x.priority)}</span>` : ''}
         ${subs.length ? `<span class="progress"><span class="bar"><i style="width:${(done / subs.length) * 100}%"></i></span>${done}/${subs.length}</span>` : ''}
         <span>${dates}</span>
         ${isOpen(x) ? pendingOf(x).map((pw) => `<span class="pill person" dir="auto">${icon('user')} ${esc(personById(pw.personId).name)} · ${Math.max(0, daysBetween(pw.since || todayStr(), todayStr()))}${lang() === 'ar' ? 'ي' : 'd'}</span>`).join('') : ''}
@@ -359,7 +359,7 @@ function renderCalendar() {
       <div class="cf-group"><span class="cf-label">${t('show')}</span>
         <span class="seg-joined">${chip('status', 'open', t('openTasks'), f.status === 'open')}${chip('status', 'closed', t('closed'), f.status === 'closed')}${chip('status', 'all', t('all'), f.status === 'all')}</span></div>
       <div class="cf-group"><span class="cf-label">${t('priority')}</span>
-        <span class="seg-f">${QUADS.map((q) => chip('prio', q, t(q + 'a'), f.prios.includes(q))).join('')}${chip('prio', 'none', t('unclassified'), f.prios.includes('none'))}</span></div>
+        <span class="seg-f">${QUADS.map((q) => chip('prio', q, t(q), f.prios.includes(q))).join('')}${chip('prio', 'none', t('unclassified'), f.prios.includes('none'))}</span></div>
       <div class="cf-group cf-end">${chip('repeats', '1', `${icon('repeat')} ${t('upcomingRepeats')}`, f.repeats)}</div>
     </div>
     <div class="cal-grid">${dows.map((d) => `<div class="cal-dow">${d}</div>`).join('')}${cells}</div>
@@ -395,19 +395,26 @@ function renderMatrix() {
   const quad = (q) => {
     const xs = list.filter((x) => x.priority === q);
     return `<div class="quad ${q}" data-quad="${q}">
-      <div class="wm"><b>${t(q + 'a')}</b><span>${t(q)}</span></div>
-      <span class="q-count">${xs.length || ''}</span>${xs.map(card).join('')}</div>`;
+      <div class="q-head"><b>${t(q + 'a')}</b><span>${t(q)}</span><i class="q-n">${xs.length}</i></div>
+      <div class="q-body">${xs.map(card).join('') || `<div class="q-empty">${t(q + 'tip')}</div>`}</div></div>`;
   };
   const none = list.filter((x) => !QUADS.includes(x.priority));
+  const arrow = lang() === 'ar' ? '←' : '→';
   $('list').innerHTML = `<div class="matrix">
-      <span></span><div class="mx-head">${t('urgent')}</div><div class="mx-head">${t('notUrgent')}</div>
-      <div class="mx-side">${t('important')}</div>${quad('q1')}${quad('q2')}
-      <div class="mx-side">${t('notImportant')}</div>${quad('q3')}${quad('q4')}
+      <span class="mx-corner"></span>
+      <div class="mx-axis-x"><span>${t('urgent')}</span><i>${t('urgency')} ${arrow}</i><span>${t('notUrgent')}</span></div>
+      <div class="mx-axis-y"><span>${t('important')}</span><i>${t('importance')} ↓</i><span>${t('notImportant')}</span></div>
+      ${quad('q1')}${quad('q2')}${quad('q3')}${quad('q4')}
     </div>
     <div class="unclassified" data-quad="none">
       <div class="small muted" style="margin-bottom:6px">${t('unclassified')} · ${none.length}</div>${none.map(card).join('')}
     </div>
-    <p class="small muted">${t('matrixHint')}</p>`;
+    <details class="mx-legend" ${data.settings.mxLegendClosed ? '' : 'open'}>
+      <summary>${t('mxHow')}</summary>
+      <div class="mx-legend-grid">${QUADS.map((q) => `<div class="lg ${q}"><b>${t(q + 'a')}</b><span class="lg-what">${t(q)}</span><p>${t(q + 'how')}</p></div>`).join('')}</div>
+      <p class="small muted">${t('matrixHint')}</p>
+    </details>`;
+  document.querySelector('.mx-legend').ontoggle = (e) => { data.settings.mxLegendClosed = !e.target.open; save(); };
 }
 
 function areaOptions(selected) {
@@ -441,7 +448,6 @@ function renderDetail() {
   work.classList.add('has-detail');
   const subs = x.subtasks || [];
   const span = statusOf(x) === 'scheduled' ? '' : x.start ? (x.closure ? `${t('tookDays')} ${daysBetween(x.start, x.closure)} ${t('days')}` : `${t('openedFor')} ${Math.max(0, daysBetween(x.start, todayStr()))} ${t('days')}`) : '';
-  const urls = (x.notes || '').match(/https?:\/\/[^\s]+/g) || [];
   el.innerHTML = `<div class="inner">
     <div class="d-top">
       ${statusPill(x)} <span class="small muted">${span}</span>
@@ -471,9 +477,9 @@ function renderDetail() {
       <div class="prio-picker">
         <span></span><span class="ax">${t('urgent')}</span><span class="ax">${t('notUrgent')}</span>
         <span class="ax">${t('important')}</span>
-        ${['q1', 'q2'].map((q) => `<button class="${q} ${x.priority === q ? 'on' : ''}" data-prio="${q}">${t(q + 'a')}</button>`).join('')}
+        ${['q1', 'q2'].map((q) => `<button class="${q} ${x.priority === q ? 'on' : ''}" data-prio="${q}" title="${t(q + 'a')}">${t(q)}</button>`).join('')}
         <span class="ax">${t('notImportant')}</span>
-        ${['q3', 'q4'].map((q) => `<button class="${q} ${x.priority === q ? 'on' : ''}" data-prio="${q}">${t(q + 'a')}</button>`).join('')}
+        ${['q3', 'q4'].map((q) => `<button class="${q} ${x.priority === q ? 'on' : ''}" data-prio="${q}" title="${t(q + 'a')}">${t(q)}</button>`).join('')}
       </div>
     </div>
     <div class="d-field pending-box">
@@ -505,17 +511,17 @@ function renderDetail() {
       <textarea id="dNextNote" dir="auto" rows="2" placeholder="${t('nextNotePh')}">${esc(x.nextNote || '')}</textarea></div>` : ''}
     ${attachmentsHtml(x)}
 
-    <div class="d-sec"><h3>${icon('note')} ${t('notes')}</h3>
-      <textarea class="notes" id="dNotes" dir="auto" placeholder="${t('notesPh')}">${esc(x.notes || '')}</textarea>
-      <div class="links" id="dLinks">${urls.map((u) => linkify(u)).join('<br>')}</div>
-    </div>
+    ${notesHtml(x)}
 
     <div class="d-sec"><h3>${icon('log')} ${t('log')}</h3>
       ${timelineHtml(x)}
       <div class="log-add">
         <input type="text" id="dAddLog" dir="auto" placeholder="＋ ${t('addLog')}">
-        <input type="text" id="dLogPerson" dir="auto" list="allPeopleList" placeholder="${t('logOwner')}" autocomplete="off">
-        <div class="dt-pair log-when" title="${t('logAt')}"><input type="date" id="dLogDate">${timeBox('dLogTime', '')}</div>
+        <div class="log-meta">
+          <input type="text" id="dLogPerson" dir="auto" list="allPeopleList" placeholder="${t('logOwner')}" autocomplete="off">
+          <input type="date" id="dLogDate" title="${t('logAt')}">${timeBox('dLogTime', '', `title="${t('logAt')}"`)}
+          <button class="primary" id="dLogAdd">${t('addBtn')}</button>
+        </div>
         <datalist id="allPeopleList">${data.people.map((p) => `<option value="${esc(p.name)}"></option>`).join('')}</datalist>
       </div>
       ${(x.log || []).slice().sort((a, b) => logAt(b).localeCompare(logAt(a))).map((l) => {
@@ -636,6 +642,14 @@ function addTask(title, opts = {}) {
     // Adding while filtered by a person = the new task is pending with them.
     pendingWith: ui.person ? [{ personId: ui.person, since: todayStr() }] : []
   };
+  // Full mode of the add card: start date, notes, subtasks and who it's with.
+  if (opts.start) x.start = opts.start;
+  if (opts.notes) { x.notes = opts.notes; x.pages = [{ id: uid(), title: '', html: textToNoteHtml(opts.notes) }]; }
+  if (opts.subtasks) x.subtasks = opts.subtasks.map((s) => ({ id: uid(), title: s, done: false }));
+  if (opts.person) {
+    const p = findOrCreatePerson(opts.person, x.areaId);
+    if (p && !isPendingWith(x, p.id)) { x.pendingWith.push({ personId: p.id, since: todayStr() }); recordHandoff(x, `${t('nowWith')} ${p.name}`); }
+  }
   syncReminder(x);
   data.tasks.push(x);
   save();
@@ -659,6 +673,7 @@ function openComposer(preset = {}) {
   composer.repeat = '';
   composer.remindBefore = '';
   composer.dueTime = null;
+  composer.start = null; composer.notes = ''; composer.subs = ''; composer.person = '';
   renderComposer();
   $('composer').classList.add('open');
   $('fab').classList.add('open');
@@ -670,8 +685,14 @@ function closeComposer() {
   $('fab').classList.remove('open');
 }
 
+// Quick: title, folder, dates, repeat, reminder, priority. Full: also start, notes, subtasks
+// and who it's with, for when you want to write the details as you add it. Remembered.
 function renderComposer() {
+  const full = !!data.settings.composerFull;
+  $('composer').classList.toggle('full', full);
   $('composer').innerHTML = `
+    <div class="c-top"><span class="c-name">${icon('note')} ${t('newTask')}</span>
+      <span class="seg-joined c-mode"><button class="${full ? '' : 'on'}" data-cmode="quick">${t('quickMode')}</button><button class="${full ? 'on' : ''}" data-cmode="full">${t('fullMode')}</button></span></div>
     <input type="text" class="c-title" id="cTitle" dir="auto" placeholder="${t('newTask')}…" value="${esc(composer.title)}" autocomplete="off">
     <div class="err" id="cErr">${t('titleRequired')}</div>
     <div class="c-row">
@@ -685,8 +706,15 @@ function renderComposer() {
       <select id="cRepeat" title="${t('repeat')}">${repeatOptions(composer.repeat ? parseRepeat(composer.repeat) : null, composer.due)}</select>
       <select id="cRemind" title="${composer.due ? t('reminder') : t('remindNeedsDue')}" ${composer.due ? '' : 'disabled'}>${composerRemindOptions()}</select>
     </div>
-    <div class="c-prio">${QUADS.map((q) => `<button class="${q} ${composer.priority === q ? 'on' : ''}" data-cprio="${q}" title="${t(q)}">${t(q + 'a')}</button>`).join('')}</div>
-    <div class="c-foot"><span class="hint">${t('composerHint')}</span><button class="primary" id="cAdd">${t('addBtn')}</button></div>`;
+    <div class="c-prio">${QUADS.map((q) => `<button class="${q} ${composer.priority === q ? 'on' : ''}" data-cprio="${q}" title="${t(q + 'a')}">${t(q)}</button>`).join('')}</div>
+    ${full ? `<div class="c-full">
+      <div class="c-row"><label class="c-lbl"><span>${icon('today')} ${t('start')}</span><input type="date" id="cStart" value="${composer.start || todayStr()}"></label>
+        <label class="c-lbl"><span>${icon('user')} ${t('waiting')}</span><input type="text" id="cPerson" dir="auto" list="cPeople" value="${esc(composer.person)}" placeholder="${t('noOne')}" autocomplete="off"></label>
+        <datalist id="cPeople">${data.people.map((p) => `<option value="${esc(p.name)}"></option>`).join('')}</datalist></div>
+      <label class="c-lbl"><span>${icon('list')} ${t('subtasks')}</span><textarea id="cSubs" dir="auto" rows="3" placeholder="${t('subsPh')}">${esc(composer.subs)}</textarea></label>
+      <label class="c-lbl"><span>${icon('note')} ${t('notes')}</span><textarea id="cNotes" dir="auto" rows="4" placeholder="${t('notesPh')}">${esc(composer.notes)}</textarea></label>
+    </div>` : ''}
+    <div class="c-foot"><span class="hint">${full ? t('composerHintFull') : t('composerHint')}</span><button class="primary" id="cAdd">${t('addBtn')}</button></div>`;
 }
 
 const composerRemindOptions = () =>
@@ -704,11 +732,15 @@ function refreshComposerRemind() {
 function submitComposer() {
   const title = $('cTitle').value.trim();
   if (!title) { $('cErr').classList.add('show'); $('cTitle').focus(); return; }
+  const full = !!data.settings.composerFull;
   addTask(title, { areaId: $('cArea').value || null, due: $('cDue').value || null, dueTime: ($('cDue').value && timeValue($('cDueTime'))) || null, priority: composer.priority,
-    repeat: parseRepeat($('cRepeat').value), remindBefore: $('cRemind').value === '' ? null : Number($('cRemind').value) });
-  // Stay open for the next one, keeping area/date/priority — handy for adding a batch.
+    repeat: parseRepeat($('cRepeat').value), remindBefore: $('cRemind').value === '' ? null : Number($('cRemind').value),
+    ...(full ? { start: $('cStart').value || null, person: $('cPerson').value.trim(), notes: $('cNotes').value.trim(),
+      subtasks: $('cSubs').value.split('\n').map((s) => s.trim()).filter(Boolean) } : {}) });
+  // Stay open for the next one, keeping folder/date/priority — handy for adding a batch.
   composer.title = '';
   $('cTitle').value = '';
+  if (full) { composer.notes = composer.subs = composer.person = ''; $('cNotes').value = $('cSubs').value = $('cPerson').value = ''; }
   $('cTitle').focus();
 }
 
@@ -723,9 +755,18 @@ function bindComposer() {
       return $('cTitle').focus();
     }
     if (e.target.id === 'cAdd') submitComposer();
+    const m = e.target.closest('[data-cmode]');
+    if (m) {
+      data.settings.composerFull = m.dataset.cmode === 'full'; save();
+      renderComposer();
+      setTimeout(() => $('cTitle').focus(), 20);
+    }
   };
   c.oninput = (e) => {
     if (e.target.id === 'cTitle') { composer.title = e.target.value; $('cErr').classList.remove('show'); }
+    if (e.target.id === 'cNotes') composer.notes = e.target.value;
+    if (e.target.id === 'cSubs') composer.subs = e.target.value;
+    if (e.target.id === 'cPerson') composer.person = e.target.value;
   };
   c.onchange = (e) => {
     if (e.target.id === 'cArea') composer.areaId = e.target.value || null;
@@ -733,8 +774,14 @@ function bindComposer() {
     if (e.target.id === 'cDueTime') { composer.dueTime = timeValue(e.target) || null; refreshComposerRemind(); }
     if (e.target.id === 'cRepeat') composer.repeat = e.target.value;
     if (e.target.id === 'cRemind') composer.remindBefore = e.target.value;
+    if (e.target.id === 'cStart') composer.start = e.target.value || null;
   };
-  c.onkeydown = (e) => { if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') { e.preventDefault(); submitComposer(); } };
+  // Enter adds; in the notes / subtasks boxes Enter is a new line and Ctrl+Enter adds.
+  c.onkeydown = (e) => {
+    if (e.key !== 'Enter' || e.target.tagName === 'BUTTON') return;
+    if (e.target.tagName === 'TEXTAREA' && !e.ctrlKey) return;
+    e.preventDefault(); submitComposer();
+  };
   // Clicking anywhere outside closes it (unless you've typed something).
   document.addEventListener('mousedown', (e) => {
     if (!c.classList.contains('open') || c.contains(e.target) || $('fab').contains(e.target) || e.target.closest?.('.tp-pop')) return;
@@ -1045,6 +1092,10 @@ async function openSettings(section) {
       ${sec('notifications', t('notifications'), card(
         row(t('morningSummary'), t('summaryDesc'), `${timeBox('sSumTime', s.summary.time)} ${toggle('sSum', s.summary.enabled)}`) +
         row(t('nudgeTitle'), t('nudgeAfter'), `<span class="num-days"><input type="number" id="sNudge" min="1" max="30" value="${s.nudgeDays || 3}"> ${t('days')}</span>`)
+      ) + card(
+        row(t('remindStyle'), t('remindStyleDesc'), `<select id="sRemStyle"><option value="mouse" ${(s.remindStyle || 'mouse') === 'mouse' ? 'selected' : ''}>${t('styleMouse')}</option><option value="notification" ${s.remindStyle === 'notification' ? 'selected' : ''}>${t('styleNotif')}</option></select>`) +
+        row(t('remindSound'), '', `<select id="sRemSound">${REMIND_SOUNDS.map((k) => `<option value="${k}" ${(s.remindSound || 'chime') === k ? 'selected' : ''}>${t('sound' + k[0].toUpperCase() + k.slice(1))}</option>`).join('')}</select>
+          <button id="sRemTry">▶ ${t('tryIt')}</button>`)
       ))}
 
       ${sec('widget', t('widget'), card(
@@ -1128,6 +1179,7 @@ async function openSettings(section) {
     if (id === 'sExport' && await window.api.exportData()) showToast(t('savedCopyMsg'));
     if (id === 'sCsv' && await window.api.exportCsv(tasksCsv(data.tasks), 'elfar-tasks')) showToast(t('savedCopyMsg'));
     if (id === 'sOpenBackups') window.api.openBackups();
+    if (id === 'sRemTry') { if ((data.settings.remindStyle || 'mouse') === 'mouse') window.api.testReminder(); else playSound(data.settings.remindSound || 'chime'); }
     if (id === 'sCheck') { window.api.checkUpdate(); $('sUpd').textContent = t('upChecking'); }
     if (id === 'sInstall') window.api.installUpdate();
     if (id === 'sFolder') {
@@ -1149,6 +1201,8 @@ async function openSettings(section) {
   $('sZoom').onchange = (e) => { data.settings.zoom = Number(e.target.value) / 100; save(); };
   $('sSum').onchange = (e) => { data.settings.summary = { ...data.settings.summary, enabled: e.target.checked }; save(); };
   $('sSumTime').onchange = (e) => { if (timeValue(e.target)) { data.settings.summary = { ...data.settings.summary, time: timeValue(e.target) }; save(); } };
+  $('sRemStyle').onchange = (e) => { data.settings.remindStyle = e.target.value; save(); };
+  $('sRemSound').onchange = (e) => { data.settings.remindSound = e.target.value; save(); playSound(e.target.value); };
   $('sNudge').onchange = (e) => { data.settings.nudgeDays = Math.max(1, Math.min(30, Number(e.target.value) || 3)); save(); };
   $('sWidget').onchange = (e) => setW({ visible: e.target.checked });
   $('sEdge').onchange = (e) => setW(e.target.value === 'off' ? { edge: 'off' } : { edge: e.target.value, lastEdge: e.target.value, edgeOffset: null, visible: true });
@@ -1272,6 +1326,7 @@ function bind() {
     if (id === 'dClose') { setClosed(x, true); return refresh(); }
     if (id === 'dReopen') { setClosed(x, false); return refresh(); }
     if (id === 'dDelete') return deleteTask(x);
+    if (id === 'dLogAdd') return addLogEntry(x);
     const sd = e.target.closest('[data-sub-del]');
     if (sd) { x.subtasks = x.subtasks.filter((s) => s.id !== sd.dataset.subDel); touch(x); return refresh(); }
     const ld = e.target.closest('[data-log-del]');
@@ -1327,11 +1382,6 @@ function bind() {
     }
     if (el.id === 'dTitle') { x.title = el.value.replace(/\s*\n\s*/g, ' '); fitTitle(); }
     else if (el.id === 'dNextNote') x.nextNote = el.value;
-    else if (el.id === 'dNotes') {
-      x.notes = el.value;
-      const urls = el.value.match(/https?:\/\/[^\s]+/g) || [];
-      $('dLinks').innerHTML = urls.map((u) => linkify(u)).join('<br>');
-    }
     else if (el.dataset.subTitle) x.subtasks.find((s) => s.id === el.dataset.subTitle).title = el.value;
     else return;
     touch(x); refreshLists();
@@ -1401,6 +1451,7 @@ function bind() {
   bindDragAndDrop();
   bindKeyboard();
   bindAttachments();
+  bindNotes();
 }
 
 // 1.2: the next round of a repeating task used to start on the day the last one closed.
@@ -1431,6 +1482,10 @@ function migrateRepeatStarts() {
     refreshLists();
     // Don't wipe what the user is typing in the task page.
     if (!$('detail').contains(document.activeElement)) renderDetail();
+  });
+  window.api.onCloseTask((id) => {
+    const x = taskById(id);
+    if (x && !x.closure) { setClosed(x, true); refresh(); }
   });
   window.api.onOpenTask((id) => {
     const x = taskById(id); if (!x) return;

@@ -373,13 +373,17 @@ function renderReport() {
 function tasksCsv(tasks) {
   const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const head = ['Title', 'Folder', 'Status', 'Priority', 'Start', 'Due', 'Closure', 'Pending with', 'Subtasks', 'Repeat', 'Notes'];
-  const rows = tasks.map((x) => [x.title, areaLabel(x.areaId), statusOf(x), x.priority ? t(x.priority + 'a') : '', x.start, x.due, x.closure,
+  const rows = tasks.map((x) => [x.title, areaLabel(x.areaId), statusOf(x), x.priority ? t(x.priority) : '', x.start, x.due, x.closure,
     peopleNames(x).join(', '), (x.subtasks || []).length ? `${x.subtasks.filter((s) => s.done).length}/${x.subtasks.length}` : '', repeatLabel(x.repeat), x.notes]);
   return [head, ...rows].map((r) => r.map(q).join(',')).join('\r\n');
 }
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.7.0': {
+    ar: ['صفحة الملاحظات بقت بتتنسق: عناوين، تقيل، مايل، نقط، ترقيم، قايمة تشيك، اقتباس ولينكات. وكمان تقدر تعمل كذا صفحة للتاسك', 'إضافة تاسك جديد ليها وضعين: سريع، وكامل فيه البداية والملاحظات والمهام الفرعية ومع مين', 'التصنيف وإنت بتختاره مكتوب بالأهمية (مهم ومستعجل…)، والمصفوفة بتقولك تعمل إيه (اعملها دلوقتي…)', 'المصفوفة أوضح: محاور، عنوان لكل مربع، والمربع بيعمل Scroll لو التاسكات كتير، وشرح لكل مربع تحت', 'التذكير: فار بيطلع على جنب الشاشة ويرن الجرس 🔔، وتختار الصوت، وتقدر تقول "فكّرني تاني بعد 10 دقايق"', 'سجل المتابعة بقى بينزل سطر جديد لما الصفحة تضيق'],
+    en: ['Notes can be formatted: headings, bold, italic, bullets, numbers, checklists, quotes and links. A task can also have several pages', 'Adding a task has two modes: Quick, and Full with start date, notes, subtasks and who it is with', 'When you pick a priority it is named by importance (Important & urgent…); the Matrix tells you what to do (Do it now…)', 'A clearer Matrix: axes, a header for each box, boxes scroll when full, and what each box means below', 'Reminders: a mouse walks in at the side of the screen and rings a bell 🔔, with a sound you choose, and "remind me again in 10 min"', 'The follow-up log wraps onto a new line when the page is narrow']
+  },
   '1.6.0': {
     ar: ['امسك ديل الفار اللي على جنب الشاشة واسحب: الفار بيمشي معاك لفوق ولتحت', 'اسحبه لفوق خالص يتثبت أعلى الشاشة وديله نازل لتحت، أو اسحبه للنص التاني يروح الجنب التاني', 'دوسة على الديل من غير سحب بتفتح الويدجت'],
     en: ['Hold the tail of the mouse at the screen edge and drag: the mouse follows you up and down', 'Drag it to the very top to dock it there with its tail hanging down, or to the other half of the screen to switch sides', 'A click on the tail without dragging opens the widget']

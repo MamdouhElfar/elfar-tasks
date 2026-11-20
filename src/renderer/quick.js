@@ -31,7 +31,7 @@ function render() {
         <option value="week">${t('nextWeek')}</option>
       </select>
     </div>
-    <div class="qa-prio">${QUADS.map((q) => `<button class="${q}" data-p="${q}" title="${t(q)}">${t(q + 'a')}</button>`).join('')}</div>
+    <div class="qa-prio">${QUADS.map((q) => `<button class="${q}" data-p="${q}" title="${t(q + 'a')}">${t(q)}</button>`).join('')}</div>
     <div class="qa-foot">${t('composerHint')}</div>`;
   setTimeout(() => $('qTitle').focus(), 20);
 }

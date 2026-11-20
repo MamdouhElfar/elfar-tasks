@@ -324,7 +324,8 @@ function tick() {
     if (t.due) bits.push((ar() ? 'الـ Due: ' : 'Due: ') + t.due);
     if ((t.subtasks || []).length) bits.push(`${t.subtasks.filter((s) => s.done).length}/${t.subtasks.length}`);
     if (t.pinnedNote) bits.unshift('📌 ' + t.pinnedNote);
-    notify((ar() ? '🔔 تذكير: ' : '🔔 Reminder: ') + t.title, bits.join(' · ') || (ar() ? 'اضغط لفتح التاسك' : 'Click to open the task'), () => showMain(t.id));
+    if ((data.settings.remindStyle || 'mouse') === 'mouse') showReminder(t);
+    else notify((ar() ? '🔔 تذكير: ' : '🔔 Reminder: ') + t.title, bits.join(' · ') || (ar() ? 'اضغط لفتح التاسك' : 'Click to open the task'), () => showMain(t.id));
   }
   const s = data.settings.summary;
   const today = now.slice(0, 10);
@@ -335,6 +336,62 @@ function tick() {
   }
   if (changed) { store.replace(data); broadcast(); }
 }
+
+// ---------- reminder pop-up: a mouse with a bell in the corner of the screen ----------
+// It doesn't take the keyboard focus, so it never interrupts typing. Several reminders queue up.
+let remindWin = null;
+const remindQueue = [];
+function showReminder(t, test) {
+  if (remindQueue.some((r) => r.id === t.id)) return;
+  remindQueue.push({ id: t.id, title: t.title, due: t.due || null, dueTime: t.dueTime || null, pinnedNote: t.pinnedNote || '',
+    subs: (t.subtasks || []).length ? `${t.subtasks.filter((s) => s.done).length}/${t.subtasks.length}` : '', test: !!test });
+  openRemindWin();
+}
+function sendRemindList() {
+  const s = store.get().settings;
+  if (remindWin && !remindWin.isDestroyed()) remindWin.webContents.send('remind:list', { items: remindQueue, lang: s.lang, sound: s.remindSound || 'chime' });
+}
+function openRemindWin() {
+  if (remindWin && !remindWin.isDestroyed()) { sendRemindList(); remindWin.showInactive(); return; }
+  const area = screen.getPrimaryDisplay().workArea;
+  const W = 440, H = 240;
+  remindWin = new BrowserWindow({
+    width: W, height: H, x: area.x + area.width - W - 8, y: area.y + area.height - H - 8,
+    frame: false, transparent: true, hasShadow: false, resizable: false, skipTaskbar: true, alwaysOnTop: true,
+    focusable: false, show: false, title: `${APP_NAME} reminder`,
+    webPreferences: { ...webPrefs, autoplayPolicy: 'no-user-gesture-required' }
+  });
+  remindWin.setAlwaysOnTop(true, 'screen-saver');
+  remindWin.loadFile(path.join(__dirname, 'renderer', 'remind.html'));
+  remindWin.webContents.on('did-finish-load', () => { sendRemindList(); remindWin.showInactive(); });
+  remindWin.on('closed', () => { remindWin = null; });
+}
+// Ask the app window to close a task (it also starts the next round of a repeating one).
+function closeTaskInApp(id) {
+  const send = () => mainWin.webContents.send('task:close', id);
+  if (!mainWin) { createMain(); mainWin.webContents.once('did-finish-load', send); } else send();
+}
+ipcMain.on('remind:action', (e, { id, action, minutes }) => {
+  const i = remindQueue.findIndex((r) => r.id === id);
+  if (i >= 0) remindQueue.splice(i, 1);
+  if (!String(id).startsWith('test-')) {
+    if (action === 'open') showMain(id);
+    if (action === 'done') closeTaskInApp(id);
+    if (action === 'snooze') {
+      const data = store.get();
+      const t = data.tasks.find((x) => x.id === id);
+      if (t) {
+        t.remindBefore = null;
+        t.remindAt = localNow(new Date(Date.now() + (minutes || 10) * 60000));
+        delete t.reminded;
+        store.replace(data); broadcast();
+      }
+    }
+  }
+  if (remindQueue.length) sendRemindList();
+  else if (remindWin) remindWin.close();
+});
+ipcMain.on('remind:test', () => showReminder({ id: 'test-' + Date.now(), title: ar() ? 'كده هيبان التذكير 🐭' : 'This is how a reminder looks 🐭', due: localNow().slice(0, 10), dueTime: localNow().slice(11) }, true));
 
 function morningSummary(data, today) {
   const open = data.tasks.filter((t) => !t.closure);

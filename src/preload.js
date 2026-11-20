@@ -38,6 +38,11 @@ contextBridge.exposeInMainWorld('api', {
   installUpdate: () => ipcRenderer.invoke('app:install-update'),
   onUpdateStatus: (cb) => ipcRenderer.on('update-status', (e, s) => cb(s)),
 
+  onRemindList: (cb) => ipcRenderer.on('remind:list', (e, s) => cb(s)),
+  remindAction: (a) => ipcRenderer.send('remind:action', a),
+  testReminder: () => ipcRenderer.send('remind:test'),
+  onCloseTask: (cb) => ipcRenderer.on('task:close', (e, id) => cb(id)),
+
   onDataChanged: (cb) => ipcRenderer.on('data-changed', (e, d) => cb(d)),
   onOpenTask: (cb) => ipcRenderer.on('open-task', (e, id) => cb(id))
 });
