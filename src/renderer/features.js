@@ -379,6 +379,16 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.17.3': {
+    ar: ['"مش النهارده": أجّل التاسك لبكرة أو بعد بكرة أو الأسبوع الجاي أو أي يوم، فتختفي من النهارده وترجع في يومها. موجود في كارت "دلوقتي"، وعلى الكروت في صفحة النهارده، وفي صفحة التاسك. ولو كانت متأخرة، موعدها بيتنقل وبتتحسب تأجيل',
+      'اللي خلص النهارده من الخطة والعادات بقى يتلم في سطر واحد "✓ خلصت 2" بدل ما يفضل في الصفحة',
+      'Pending ← الكل مبقاش فيها التاسكات المجدولة لقدام، بقت في "مجدولة" بس',
+      'زرار ▶ ركّز في عادات النهارده بقى زي باقي الزراير'],
+    en: ['"Not today": move a task to tomorrow, the day after, next week or any day; it leaves Today and comes back on its day. It is on the Now card, on cards on the Today page, and on the task page. If it was late, its due date moves and it counts as put off',
+      "What's done today in the plan and habits folds into one line (\"✓ 2 done\") instead of staying on the page",
+      'Pending › All no longer lists tasks scheduled for later; they are under "Scheduled" only',
+      "The ▶ Focus button on today's habits looks like the others"]
+  },
   '1.17.2': {
     ar: ['التحديثات بقت تتسطب في هدوء من غير شاشة الـ Setup، والتطبيق بيفتح تاني لوحده بعد التحديث'],
     en: ['Updates install quietly without the setup screens, and the app opens again by itself afterwards']

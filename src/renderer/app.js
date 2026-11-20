@@ -265,7 +265,7 @@ function rowHtml(x) {
         ${isOpen(x) ? pendingOf(x).map((pw) => `<span class="pill person" title="${t('since')} ${fmtDate(pw.since, lang())}">${icon('user')} <bdi>${esc(personById(pw.personId).name)}</bdi> · ${sinceWord(pw.since)}</span>`).join('') : ''}
         ${showArea ? `<span class="pill area">${esc(areaLabel(x.areaId))}</span>` : ''}
       </div>
-    </div>${isOpen(x) && !focusOn ? `<button class="row-focus" data-focus="${x.id}" title="${t('fStartTip')}">▶ ${t('fShort')}</button>` : ''}</div>`;
+    </div>${isOpen(x) && !focusOn ? `<span class="row-acts">${ui.view === 'today' ? `<button class="row-defer" data-defer="${x.id}" title="${t('dfTip')}">${icon('calendar')} ${t('dfShort')}</button>` : ''}<button class="row-focus" data-focus="${x.id}" title="${t('fStartTip')}">▶ ${t('fShort')}</button></span>` : ''}</div>`;
 }
 
 function renderList() {
@@ -289,9 +289,7 @@ function renderList() {
   const subBar = ui.view === 'pending' ? pendingSubBar() : ui.view === 'closed' ? reviewSubBar() : '';
   // Pending › All: tasks that haven't started yet sit at the bottom, faded, so a folder
   // never looks empty while it still has work coming.
-  const later = ui.view === 'pending' && ui.pendingSub === 'all' && !ui.search.trim()
-    ? data.tasks.filter((x) => inScope(x) && statusOf(x) === 'scheduled' && (!ui.person || isPendingWith(x, ui.person))).sort((a, b) => a.start.localeCompare(b.start))
-    : [];
+  const later = []; // scheduled tasks live under Pending › Scheduled only
   const laterHtml = later.length ? `<div class="group-title later-title">${icon('calendar')} ${t('later')} · ${later.length}</div><div class="later-rows">${later.map(rowHtml).join('')}</div>` : '';
   if (!list.length) { $('list').innerHTML = subBar + (laterHtml || `<div class="empty">${t('emptyList')}</div>`); return; }
   // Today: overdue first, then due today, then starred ones that aren't due yet.
@@ -485,6 +483,7 @@ function renderDetail() {
       ${statusPill(x)} <span class="small muted">${span}${x.focusMs >= 60000 ? ` · ⏱ ${focusTimeLabel(focusMinsOf(x))}` : ''}</span>
       <span class="spacer"></span>
       <div class="d-acts">
+        ${x.closure ? '' : `<button class="d-defer" data-defer="${x.id}" title="${t('dfTip')}">${icon('calendar')} ${t('dfShort')}</button>`}
         ${x.closure ? '' : data.focus && data.focus.taskId === x.id && data.focus.mode === 'work' ? `<button class="focus-btn on" data-focus="${x.id}">◉ ${t('fWorkingOn')}…</button>` : `<button class="focus-btn" data-focus="${x.id}" title="${t('fStartTip')}">▶ ${t('fStart')}</button>`}
         ${x.closure ? `<button id="dReopen">${t('reopen')}</button>` : `<button class="primary" id="dClose">✓ ${t('closeToday')}</button>`}
         <button class="d-act ${x.starred ? 'on' : ''}" id="dStar" title="${t('star')}">${x.starred ? '★' : '☆'}</button>

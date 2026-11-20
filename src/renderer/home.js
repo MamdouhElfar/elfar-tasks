@@ -62,9 +62,9 @@ function renderHome() {
   const planDone = planned.filter((x) => x.closure).length;
   const work = (plan
       ? `<div class="group-title plan-title">${icon('today')} ${t('planTitle')} <span class="plan-n">${planDone}/${planned.length}</span><button class="link" data-plan>${t('planEdit')}</button></div>${capacityHtml(plannedLoad(planned))}
-         ${planned.length ? planned.map(rowHtml).join('') : `<div class="h-empty">${t('planEmpty')}</div>`}`
+         ${planned.length ? planned.filter((x) => !x.closure).map(rowHtml).join('') + doneFold(planned.filter((x) => x.closure).map(rowHtml), 'plan') : `<div class="h-empty">${t('planEmpty')}</div>`}`
       : `<button class="plan-cta" data-plan><span class="pc-ico">${icon('today')}</span><span><b>${t('planCta')}</b><small>${t('planCtaSub')}</small></span></button>`) +
-    (() => { const hs = habitsToday(); return hs.length ? `<div class="group-title habit-title">${icon('habits')} ${t('hbToday')} · ${hs.filter((h) => hLog(h, td) === 'done').length}/${hs.length}<button class="link" data-hopen>${t('hSeeAll')}</button></div>${hs.map(habitRowHtml).join('')}` : ''; })() +
+    (() => { const hs = habitsToday(); return hs.length ? `<div class="group-title habit-title">${icon('habits')} ${t('hbToday')} · ${hs.filter((h) => hLog(h, td) === 'done').length}/${hs.length}<button class="link" data-hopen>${t('hSeeAll')}</button></div>${hs.filter((h) => hLog(h, td) !== 'done').map(habitRowHtml).join('')}${doneFold(hs.filter((h) => hLog(h, td) === 'done').map(habitRowHtml), 'habits')}` : ''; })() +
     sec(t('overdue'), 'danger', lateRest) + sec(t('stDueToday'), '', todayRest) + sec(t('starred'), '', starredRest) + sec(t('hDoNow'), '', doNow);
 
   // Coming up, by day.
@@ -143,6 +143,17 @@ function renderHome() {
   </div>`;
 }
 
+// What's already done today folds into one line ("✓ 2 done"), so Today shows what's left.
+function doneFold(rows, key) {
+  if (!rows.length) return '';
+  ui.foldOpen = ui.foldOpen || {};
+  return `<details class="done-fold" data-fold="${key}" ${ui.foldOpen[key] ? 'open' : ''}><summary>✓ ${t('doneFold').replace('{n}', rows.length)}</summary>${rows.join('')}</details>`;
+}
+document.addEventListener('toggle', (e) => {
+  const d = e.target;
+  if (d.matches && d.matches('[data-fold]')) { ui.foldOpen = ui.foldOpen || {}; ui.foldOpen[d.dataset.fold] = d.open; }
+}, true);
+
 // The one thing to do now: the first open task of your plan, else what's late, due today
 // (soonest time first), important & urgent, or starred. "Not now" shows the next one.
 function pickNow(plan, overdue, dueToday, open) {
@@ -169,7 +180,7 @@ function nowCardHtml({ x, why }) {
       <button class="link now-skip" data-nowskip="${x.id}" title="${t('nowSkipTip')}">${t('nowSkip')} ›</button></div>
     <h3 dir="auto" data-task="${x.id}">${x.starred ? '<span class="star">★</span> ' : ''}${esc(x.title)}</h3>
     ${next ? `<div class="now-next"><span class="arrow">↳</span> <span dir="auto">${esc(next.title)}</span></div>` : ''}
-    <div class="now-acts"><button class="primary now-go" data-focus="${x.id}">▶ ${t('nowStart')}${left ? ` · ${fmtMins(left, lang())}` : ''}</button><button class="ok" data-check="${x.id}">✓ ${t('nowDone')}</button>${estChip(x)}</div>
+    <div class="now-acts"><button class="primary now-go" data-focus="${x.id}">▶ ${t('nowStart')}${left ? ` · ${fmtMins(left, lang())}` : ''}</button><button class="ok" data-check="${x.id}">✓ ${t('nowDone')}</button><button class="ghost now-defer" data-defer="${x.id}" title="${t('dfTip')}">${icon('calendar')} ${t('dfShort')}</button>${estChip(x)}</div>
   </section>`;
 }
 document.addEventListener('click', (e) => {
