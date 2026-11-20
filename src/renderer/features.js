@@ -221,7 +221,7 @@ function bindKeyboard() {
     // The rest only when you're not typing and no dialog is open.
     const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName) || document.activeElement?.isContentEditable;
     if (typing || $('modalRoot').innerHTML || e.ctrlKey || e.altKey || e.metaKey) return;
-    if (['home', 'calendar', 'matrix', 'report'].includes(ui.view)) return;
+    if (['calendar', 'matrix', 'report'].includes(ui.view)) return;
     const list = currentTasks();
     if (!list.length) return;
     const i = list.findIndex((x) => x.id === ui.selected);
@@ -345,7 +345,7 @@ function renderReport() {
   const byArea = {};
   for (const x of closed) byArea[areaLabel(x.areaId)] = (byArea[areaLabel(x.areaId)] || 0) + 1;
   const row = (x, extra = '') => `<div class="r-item ${quadClass(x)}" data-task="${x.id}"><span dir="auto">${esc(x.title)}</span><span class="muted small">${extra}</span></div>`;
-  $('list').innerHTML = `<div class="report">
+  $('list').innerHTML = `${reviewSubBar()}<div class="report">
     <div class="r-head">
       <label class="small muted">${t('reportFrom')} <input type="date" id="rFrom" value="${from}"></label>
       <span style="flex:1"></span>
@@ -388,6 +388,16 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.13.0': {
+    ar: ['تابات أقل: "النهارده" بقت فيها الرئيسية والنهارده مع بعض، و"المقفولة" بقت جوه "المراجعة" جنب التقرير. 5 تابات بدل 7',
+      'خطة النهارده: أول ما تفتح التطبيق الصبح، تختار 3 لـ 5 حاجات بس تخلّصهم. بيظهروا أول حاجة في "النهارده"، ومعاهم عدّاد (1/4)',
+      'مراجعة آخر اليوم: الساعة 5 الفار يفكّرك تراجع يومك. تشوف خلصت كام وركزت قد إيه، وتنقل اللي فاضل لبكرة بدوسة، وبكرة الصبح بيظهرلك أول حاجة في الخطة',
+      'وقت المراجعة تغيّره من الإعدادات ← الإشعارات، والخطة اللي بتفتح لوحدها من الإعدادات ← عام'],
+    en: ['Fewer tabs: "Today" now holds Home and Today together, and "Closed" moved into "Review" next to the report. 5 tabs instead of 7',
+      "Today's plan: when you open the app in the morning, pick 3 to 5 things to finish. They lead the Today page with a counter (1/4)",
+      'End-of-day review: at 5 PM the mouse reminds you to review your day. See what got done and how long you focused, move what is left to tomorrow in one click, and it comes first in tomorrow’s plan',
+      'Change the review time in Settings › Notifications, and the morning plan in Settings › General']
+  },
   '1.12.0': {
     ar: ['وضع التركيز: دوس "▶ ركّز فيها" على أي تاسك (أو حرف F). تايمر 25 دقيقة، وقدامك الخطوة الجاية بس. ولما الوقت يخلص، الفار يسألك تكمّل ولا تاخد استراحة',
       'الخطوة الجاية (أول مهمة فرعية لسه ما خلصتش) بتظهر تحت اسم التاسك',

@@ -45,5 +45,6 @@ contextBridge.exposeInMainWorld('api', {
   onCloseTask: (cb) => ipcRenderer.on('task:close', (e, id) => cb(id)),
 
   onDataChanged: (cb) => ipcRenderer.on('data-changed', (e, d) => cb(d)),
+  onOpenReview: (cb) => ipcRenderer.on('review:open', () => cb()),
   onOpenTask: (cb) => ipcRenderer.on('open-task', (e, id) => cb(id))
 });

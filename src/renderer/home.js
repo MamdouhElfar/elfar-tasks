@@ -1,6 +1,7 @@
-// ---------------- Home: the dashboard the app opens on ----------------
-// Everything here follows the area picked in the sidebar (or all tasks).
-// Every number and row is clickable and leads to the list behind it.
+// ---------------- Today: the page the app opens on ----------------
+// Home and Today in one: how the day looks at the top, the tasks to work on (your plan
+// first) on the main side, and what's around them (reminders, who you wait on, what's
+// coming, folders) on the other. Everything follows the folder picked in the sidebar.
 
 function renderHome() {
   const td = todayStr();
@@ -44,8 +45,22 @@ function renderHome() {
 
   // Start with these: overdue, due today, then "do it now" boxes that aren't due yet.
   const seen = new Set();
-  const focus = [...overdue, ...dueToday, ...open.filter((x) => x.priority === 'q1')]
-    .filter((x) => !seen.has(x.id) && seen.add(x.id));
+  // The work list: your plan for today first, then what's late, due today, and starred.
+  const plan = todayPlan();
+  const planned = plan ? plan.ids.map(taskById).filter((x) => x && inScope(x) && (!x.closure || x.closure === td)) : [];
+  planned.forEach((x) => seen.add(x.id));
+  const take = (xs) => xs.filter((x) => !seen.has(x.id) && seen.add(x.id));
+  const lateRest = take(overdue), todayRest = take(dueToday);
+  const starredRest = take(open.filter((x) => x.starred));
+  const doNow = take(open.filter((x) => x.priority === 'q1'));
+  ui.todayOrder = [...planned, ...lateRest, ...todayRest, ...starredRest, ...doNow].map((x) => x.id);
+  const sec = (title, cls, xs, extra = '') => (xs.length ? `<div class="group-title ${cls}">${title} · ${xs.length}${extra}</div>${xs.map(rowHtml).join('')}` : '');
+  const planDone = planned.filter((x) => x.closure).length;
+  const work = (plan
+      ? `<div class="group-title plan-title">☀ ${t('planTitle')} <span class="plan-n">${planDone}/${planned.length}</span><button class="link" data-plan>${t('planEdit')}</button></div>
+         ${planned.length ? planned.map(rowHtml).join('') : `<div class="h-empty">${t('planEmpty')}</div>`}`
+      : `<button class="plan-cta" data-plan><span class="pc-ico">☀</span><span><b>${t('planCta')}</b><small>${t('planCtaSub')}</small></span></button>`) +
+    sec(t('overdue'), 'danger', lateRest) + sec(t('stDueToday'), '', todayRest) + sec(t('starred'), '', starredRest) + sec(t('hDoNow'), '', doNow);
 
   // Coming up, by day.
   const days = new Map();
@@ -104,23 +119,24 @@ function renderHome() {
       ${dayTotal ? `<div class="h-day-prog" title="${doneToday} / ${dayTotal}">
         <div class="h-ring" style="--p:${pct}"><b>${doneToday}<small>/${dayTotal}</small></b></div>
         <span>${t('hDoneToday')}</span></div>` : ''}
+      <button class="h-review" data-review title="${t('reviewTip')}">🌙 ${t('reviewBtn')}</button>
     </div>
     <div class="h-stats">
-      ${stat('today', overdue.length, t('overdue'), 'danger', 'overdue')}
-      ${stat('today', dueToday.length, t('stDueToday'), 'warn', 'today')}
+      ${stat('pending', overdue.length, t('overdue'), 'danger', 'overdue')}
+      ${stat('pending', dueToday.length, t('stDueToday'), 'warn', 'today')}
       ${stat('calendar', week.length, t('hWeek'), 'info', 'calendar')}
       ${stat('others', withOthers.length, t('hOthers'), 'violet', 'waiting')}
       ${stat('closed', closedWeek.length, t('hClosedWeek'), 'ok', 'closed')}
     </div>
-    <div class="h-cols">
-      <div class="h-col">
-        ${panel(t('hFocus'), 'today', focus.length ? capped(focus, 7, 'today') : empty(t('hAllClear')), focus.length > 7 ? 'today' : '')}
-        ${panel(t('hComing'), 'calendar', coming || empty(t('hNothing')), 'calendar')}
+    <div class="h-cols today-cols">
+      <div class="h-col t-work">
+        ${work || empty(t('hAllClear'))}
       </div>
       <div class="h-col">
         ${reminders.length ? panel(t('hReminders'), 'bell', reminders.map((x) =>
           `<div class="h-row" data-task="${x.id}"><span class="h-time ${x.remindAt <= nowLocal() ? 'past' : ''}">${fmtTime(x.remindAt, lang())}</span><span class="h-title" dir="auto">${esc(x.title)}</span></div>`).join('')) : ''}
         ${people.size ? panel(t('hWaiting'), 'waiting', `<div class="h-people">${waiting}</div>`, 'others') : ''}
+        ${panel(t('hComing'), 'calendar', coming || empty(t('hNothing')), 'calendar')}
         ${areaList.length ? panel(t('hAreasTitle'), 'folder', `<div class="h-areas">${areas}</div>`) : ''}
       </div>
     </div>
@@ -132,6 +148,7 @@ function renderHome() {
 function homeGo(go) {
   const [kind, id] = go.split(':');
   if (kind === 'today' || kind === 'calendar' || kind === 'closed') ui.view = kind;
+  if (kind === 'pending') { ui.view = 'pending'; ui.pendingSub = 'all'; }
   if (kind === 'others') { ui.view = 'pending'; ui.pendingSub = 'others'; }
   if (kind === 'person') { ui.person = id; ui.view = 'pending'; ui.pendingSub = 'others'; }
   if (kind === 'area') { ui.scope = id; ui.view = 'pending'; ui.pendingSub = 'all'; }

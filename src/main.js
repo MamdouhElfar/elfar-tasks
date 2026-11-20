@@ -327,8 +327,20 @@ function tick() {
     if ((data.settings.remindStyle || 'mouse') === 'mouse') showReminder(t);
     else notify((ar() ? '🔔 تذكير: ' : '🔔 Reminder: ') + t.title, bits.join(' · ') || (ar() ? 'اضغط لفتح التاسك' : 'Click to open the task'), () => showMain(t.id));
   }
-  const s = data.settings.summary;
   const today = now.slice(0, 10);
+  const rv = { enabled: true, time: '17:00', ...(data.settings.review || {}) };
+  if (rv.enabled && now.slice(11) >= rv.time && data.settings.lastReview !== today) {
+    data.settings.lastReview = today;
+    changed = true;
+    const busy = data.tasks.some((t) => t.closure === today || (!t.closure && t.due && t.due <= today)) || (data.plan && data.plan.date === today);
+    if (busy) {
+      if ((data.settings.remindStyle || 'mouse') === 'mouse') {
+        remindQueue.push({ id: 'review:' + today, kind: 'review', title: ar() ? 'يومك قرب يخلص 🌙' : 'Your day is almost over 🌙', done: data.tasks.filter((t) => t.closure === today).length });
+        openRemindWin();
+      } else notify(ar() ? '🌙 راجع يومك' : '🌙 Review your day', ar() ? 'شوف خلصت إيه وانقل الباقي لبكرة' : 'See what got done and move the rest to tomorrow', openReviewInApp);
+    }
+  }
+  const s = data.settings.summary;
   if (s.enabled && now.slice(11) >= s.time && data.settings.lastSummary !== today) {
     data.settings.lastSummary = today;
     changed = true;
@@ -366,6 +378,12 @@ function openRemindWin() {
   remindWin.webContents.on('did-finish-load', () => { sendRemindList(); remindWin.showInactive(); });
   remindWin.on('closed', () => { remindWin = null; });
 }
+// Show the app with the end-of-day review open.
+function openReviewInApp() {
+  const send = () => mainWin.webContents.send('review:open');
+  if (!mainWin) { createMain(); mainWin.webContents.once('did-finish-load', () => setTimeout(send, 800)); return; }
+  showMain(); send();
+}
 // Ask the app window to close a task (it also starts the next round of a repeating one).
 function closeTaskInApp(id) {
   const send = () => mainWin.webContents.send('task:close', id);
@@ -373,6 +391,13 @@ function closeTaskInApp(id) {
 }
 ipcMain.on('remind:action', (e, { id, action, minutes, what }) => {
   // The end-of-focus pop-up: keep going, take a break, stop, or the task is done.
+  if (String(id).startsWith('review:')) {
+    const i = remindQueue.findIndex((r) => r.id === id);
+    if (i >= 0) remindQueue.splice(i, 1);
+    if (action === 'review') openReviewInApp();
+    if (remindQueue.length) sendRemindList(); else if (remindWin) remindWin.close();
+    return;
+  }
   if (String(id).startsWith('focus:')) {
     if (action === 'focus') focusAction(what, id.slice(6));
     else if (action === 'open') { dropFocusPopup(); showMain(id.slice(6)); }
@@ -526,7 +551,7 @@ ipcMain.handle('data:save', (e, data) => {
   // Window positions are owned by the main process; don't let a stale renderer copy overwrite them.
   const cur = store.get().settings;
   const { x, y, width, height } = cur.widget;
-  data.settings = { ...data.settings, mainBounds: cur.mainBounds, lastSummary: cur.lastSummary, widget: { ...data.settings.widget, x, y, width, height } };
+  data.settings = { ...data.settings, mainBounds: cur.mainBounds, lastSummary: cur.lastSummary, lastReview: cur.lastReview, widget: { ...data.settings.widget, x, y, width, height } };
   // Keep "already notified" flags even if the window sent an older copy.
   const prev = new Map(store.get().tasks.map((t) => [t.id, t]));
   for (const t of data.tasks || []) {

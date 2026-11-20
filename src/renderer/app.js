@@ -1,7 +1,7 @@
 let data = null;
 // scope = which area you're looking at (sidebar); view = how you're filtering it (tabs on top).
 // person = optional filter: only tasks pending with that person.
-const ui = { scope: 'all', view: 'home', pendingSub: 'all', selected: null, search: '', sort: 'priority', calMonth: null, person: null };
+const ui = { scope: 'all', view: 'today', pendingSub: 'all', selected: null, search: '', sort: 'priority', calMonth: null, person: null };
 let saveTimer = null;
 let dragTaskId = null;
 
@@ -71,16 +71,16 @@ function suggestedPeople(x) {
 
 // ---------------- filtering ----------------
 // Two groups of tabs: task lists (filters) and boards (other ways to look at the same tasks).
-// Home is the dashboard. Today also holds what's overdue; Pending splits into "on me" and "with others".
+// Five tabs: Today (your day, with the plan) · All open tasks · Matrix · Calendar · Review.
+// "Closed" lives inside Review, next to the report.
 const VIEWS = [
-  { id: 'home', test: isOpen, noCount: true, lead: true },
-  { id: 'today', test: (x) => isOpen(x) && ((x.due && x.due <= todayStr()) || x.starred),
+  { id: 'today', lead: true, test: (x) => isOpen(x) && ((x.due && x.due <= todayStr()) || x.starred || inPlan(x)),
     cls: () => (data.tasks.some((x) => inScope(x) && statusOf(x) === 'overdue') ? 'danger' : '') },
   { id: 'pending', test: isActive, cls: () => 'warn' },
-  { id: 'closed', test: (x) => !!x.closure, noCount: true },
+  { id: 'closed', test: (x) => !!x.closure, noCount: true, hidden: true },
   { id: 'matrix', test: isActive, noCount: true, board: true },
   { id: 'calendar', test: () => true, noCount: true, board: true },
-  { id: 'report', test: () => true, noCount: true, board: true }
+  { id: 'report', label: 'review', test: () => true, noCount: true, board: true, also: 'closed' }
 ];
 
 function inScope(x, scope = ui.scope) {
@@ -107,6 +107,10 @@ function currentTasks() {
   }[ui.sort];
   list.sort((a, b) => {
     if (ui.view === 'closed') return (b.closure || '').localeCompare(a.closure || '');
+    if (ui.view === 'today' && ui.todayOrder) {
+      const ia = ui.todayOrder.indexOf(a.id), ib = ui.todayOrder.indexOf(b.id);
+      return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib);
+    }
     if (!!a.starred !== !!b.starred) return a.starred ? -1 : 1;
     return cmp(a, b);
   });
@@ -138,17 +142,18 @@ function renderAll() {
 function renderTabs() {
   const tab = (v) => {
     const n = v.noCount ? 0 : data.tasks.filter((x) => inScope(x) && v.test(x) && (!ui.person || isPendingWith(x, ui.person))).length;
-    return `<button class="tab ${v.board ? 'board' : ''} ${v.lead ? 'lead' : ''} ${ui.view === v.id ? 'active' : ''}" data-view="${v.id}" title="${esc(t(v.id))}">
-      ${icon(v.id)}<span class="tab-label">${esc(t(v.id))}</span>${n ? `<span class="count ${v.cls ? v.cls() : ''}">${n}</span>` : ''}</button>`;
+    const on = ui.view === v.id || ui.view === v.also;
+    return `<button class="tab ${v.board ? 'board' : ''} ${v.lead ? 'lead' : ''} ${on ? 'active' : ''}" data-view="${v.id}" title="${esc(t(v.label || v.id))}">
+      ${icon(v.id)}<span class="tab-label">${esc(t(v.label || v.id))}</span>${n ? `<span class="count ${v.cls ? v.cls() : ''}">${n}</span>` : ''}</button>`;
   };
   $('tabs').innerHTML = `<div class="tab-group">${VIEWS.filter((v) => v.lead).map(tab).join('')}</div>
     <span class="tab-sep"></span>
-    <div class="tab-group">${VIEWS.filter((v) => !v.board && !v.lead).map(tab).join('')}</div>
+    <div class="tab-group">${VIEWS.filter((v) => !v.board && !v.lead && !v.hidden).map(tab).join('')}</div>
     <span class="tab-sep"></span>
     <div class="tab-group boards">${VIEWS.filter((v) => v.board).map(tab).join('')}</div>`;
   fitTabs();
   // Tools that don't apply to a view are hidden instead of sitting there doing nothing.
-  const tools = { search: !['home', 'calendar', 'report'].includes(ui.view), sort: !['home', 'matrix', 'calendar', 'report'].includes(ui.view) };
+  const tools = { search: !['today', 'calendar', 'report'].includes(ui.view), sort: !['today', 'matrix', 'calendar', 'report'].includes(ui.view) };
   $('search').hidden = !tools.search;
   $('sort').hidden = !tools.sort;
 }
@@ -268,13 +273,13 @@ function renderList() {
       .map((p) => `<option value="${p.id}" ${ui.person === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
   $('personFilter').classList.toggle('active', !!ui.person);
 
-  if (ui.view === 'home') return renderHome();
+  if (ui.view === 'today') return renderHome();
   if (ui.view === 'calendar') return renderCalendar();
   if (ui.view === 'matrix') return renderMatrix();
   if (ui.view === 'report') return renderReport();
   const list = currentTasks();
-  // Pending: all / on me / with others.
-  const subBar = ui.view === 'pending' ? pendingSubBar() : '';
+  // Pending: all / on me / with others. Closed: the Review switch (report / closed).
+  const subBar = ui.view === 'pending' ? pendingSubBar() : ui.view === 'closed' ? reviewSubBar() : '';
   // Pending › All: tasks that haven't started yet sit at the bottom, faded, so a folder
   // never looks empty while it still has work coming.
   const later = ui.view === 'pending' && ui.pendingSub === 'all' && !ui.search.trim()
@@ -1131,6 +1136,7 @@ async function openSettings(section) {
       ${sec('general', t('general'), card(
         row(t('language'), '', `<div class="seg"><button data-lang="ar" class="${s.lang === 'ar' ? 'on' : ''}">عربي</button><button data-lang="en" class="${s.lang === 'en' ? 'on' : ''}">English</button></div>`) +
         row(t('launch'), t('launchDesc'), toggle('sLogin', login)) +
+        row(t('planTitle'), t('planAuto'), toggle('sPlanAuto', s.planAuto !== false)) +
         row(t('focusLen'), t('focusLenDesc'), `<div class="seg">${[15, 25, 45, 60].map((m) => `<button data-fmins="${m}" class="${(s.focusMins || 25) === m ? 'on' : ''}">${m}</button>`).join('')}</div>
           <span class="small muted" style="margin-inline:8px 4px">${t('breakLen')}</span><div class="seg">${[5, 10].map((m) => `<button data-bmins="${m}" class="${(s.breakMins || 5) === m ? 'on' : ''}">${m}</button>`).join('')}</div>`) +
         row(`${t('textSize')} <span class="muted" id="sZoomVal">${zoom}%</span>`, t('textSizeDesc'), `<input type="range" id="sZoom" min="80" max="160" step="10" value="${zoom}">`)
@@ -1139,6 +1145,7 @@ async function openSettings(section) {
 
       ${sec('notifications', t('notifications'), card(
         row(t('morningSummary'), t('summaryDesc'), `${timeBox('sSumTime', s.summary.time)} ${toggle('sSum', s.summary.enabled)}`) +
+        row(t('reviewSet'), t('reviewSetDesc'), `${timeBox('sRevTime', (s.review || {}).time || '17:00')} ${toggle('sRev', (s.review || {}).enabled !== false)}`) +
         row(t('nudgeTitle'), t('nudgeAfter'), `<span class="num-days"><input type="number" id="sNudge" min="1" max="30" value="${s.nudgeDays || 3}"> ${t('days')}</span>`)
       ) + card(
         row(t('remindStyle'), t('remindStyleDesc'), `<select id="sRemStyle"><option value="mouse" ${(s.remindStyle || 'mouse') === 'mouse' ? 'selected' : ''}>${t('styleMouse')}</option><option value="notification" ${s.remindStyle === 'notification' ? 'selected' : ''}>${t('styleNotif')}</option></select>`) +
@@ -1249,8 +1256,11 @@ async function openSettings(section) {
     }
   };
   $('sLogin').onchange = (e) => window.api.loginItem(e.target.checked);
+  $('sPlanAuto').onchange = (e) => { data.settings.planAuto = e.target.checked; save(); };
   $('sZoom').oninput = (e) => { $('sZoomVal').textContent = e.target.value + '%'; };
   $('sZoom').onchange = (e) => { data.settings.zoom = Number(e.target.value) / 100; save(); };
+  $('sRev').onchange = (e) => { data.settings.review = { time: '17:00', ...(data.settings.review || {}), enabled: e.target.checked }; save(); };
+  $('sRevTime').onchange = (e) => { if (timeValue(e.target)) { data.settings.review = { enabled: true, ...(data.settings.review || {}), time: timeValue(e.target) }; save(); } };
   $('sSum').onchange = (e) => { data.settings.summary = { ...data.settings.summary, enabled: e.target.checked }; save(); };
   $('sSumTime').onchange = (e) => { if (timeValue(e.target)) { data.settings.summary = { ...data.settings.summary, time: timeValue(e.target) }; save(); } };
   $('sRemStyle').onchange = (e) => { data.settings.remindStyle = e.target.value; save(); };
@@ -1522,6 +1532,8 @@ function migrateRepeatStarts() {
 }
 
 (async function init() {
+  // Wait for the scripts after this one (focus.js, plan.js…) before the first draw.
+  if (document.readyState === 'loading') await new Promise((r) => document.addEventListener('DOMContentLoaded', r));
   data = await window.api.getData();
   if (data.settings.sort) ui.sort = data.settings.sort;
   migrateRepeatStarts();
@@ -1529,6 +1541,7 @@ function migrateRepeatStarts() {
   bindSplitters();
   renderAll();
   maybeWhatsNew();
+  setTimeout(maybeAskPlan, 1500);
   window.api.onUpdateStatus((u) => showUpdateBanner(u));
   // An update that finished downloading before this window opened shows its bar right away.
   window.api.appInfo().then((i) => i.update && showUpdateBanner(i.update));
