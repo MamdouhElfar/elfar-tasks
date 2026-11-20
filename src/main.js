@@ -621,7 +621,10 @@ function setupAutoUpdate() {
   setTimeout(check, 10000);
   setInterval(check, 30 * 60 * 1000);
   app.on('browser-window-focus', () => { if (Date.now() - lastCheck > 10 * 60 * 1000) check(); });
-  ipcMain.handle('app:install-update', () => { quitting = true; autoUpdater.quitAndInstall(); });
+  // Updates install quietly (no setup wizard: that's only for the first install, to pick a folder)
+  // and the app opens again by itself when it's done.
+  autoUpdater.autoInstallOnAppQuit = true;
+  ipcMain.handle('app:install-update', () => { quitting = true; autoUpdater.quitAndInstall(true, true); });
   ipcMain.handle('app:check-update', () => check());
 }
 
