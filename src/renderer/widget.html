@@ -74,6 +74,9 @@
     /* The tail is a handle: hover it, hold and drag. */
     .peek .pk-grab { position: absolute; top: calc(100% - 2px); left: 50%; width: 30px; height: 80px; margin-left: -15px; cursor: grab; }
     body.tail-hot .peek .pk-tail { animation-duration: .6s; }
+    /* Open on click: the face lights up under the mouse, inviting a click. */
+    body.face-hot .peek { cursor: pointer; border-color: var(--accent); background: var(--accent-bg); }
+    body.face-hot .peek .pk-face svg { transform: scale(1.15) rotate(-6deg); }
     body.tail-hot .peek .pk-tail path { stroke: #ec8aa2; stroke-width: 3.8; }
     body.tail-drag, body.tail-drag .peek .pk-grab { cursor: grabbing; }
     body.tail-drag .peek .pk-tail { animation-duration: .35s; }

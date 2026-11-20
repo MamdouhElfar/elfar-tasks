@@ -380,6 +380,10 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.10.0': {
+    ar: ['الويدجت اللي على جنب الشاشة: تقدر تخليه يفتح لما تدوس على الفار بس، مش أول ما الماوس يعدّي عليه (الإعدادات ← الويدجت ← يفتح إمتى)'],
+    en: ['The widget at the screen edge can open only when you click the mouse, not as soon as the cursor passes over it (Settings › Desktop widget › Opens when)']
+  },
   '1.9.0': {
     ar: ['الرئيسية اتنظمت في عمودين، وفوق فيها جملة بتلخص يومك ودايرة بتوريك خلصت كام من تاسكات النهارده', 'زرار اللغة بقى شكله زرار واضح', 'في التذكير: "اقفل التاسك" بيسأل الأول، وبعدها الفار بيقولك شكرًا. و✕ بيوقف التذكير بس'],
     en: ['Home is laid out in two columns, with a line that sums up your day and a ring showing how much of today is done', 'The language button now looks like a button', 'In a reminder, "Close the task" asks first, then the mouse says thanks. ✕ just stops the reminder']

@@ -150,20 +150,31 @@ function setCollapsed(c) {
 // While tucked away, mouse moves are still forwarded to us.
 // Hovering the mouse's face slides the card out. Hovering the tail makes it grabbable:
 // hold and drag to move the mouse along the edge, or to another edge (top, left, right).
-let tailHot = false, tailDragging = false;
+// "Open on click" (Settings › Desktop widget): hovering the face only highlights it; a click opens it.
+const openOnClick = () => (data.settings.widget.openOn || 'hover') === 'click';
+let tailHot = false, tailDragging = false, hotPart = null;
 const inRect = (e, r, pad = 4) => e.clientX >= r.left - pad && e.clientX <= r.right + pad && e.clientY >= r.top - pad && e.clientY <= r.bottom + pad;
-function setTailHot(hot) {
-  if (hot === tailHot) return;
-  tailHot = hot;
-  document.body.classList.toggle('tail-hot', hot);
-  window.api.widgetIgnoreMouse(!hot);
+// part: 'tail' / 'face' = the window takes the mouse there (to drag or click); null = clicks pass through.
+function setHot(part) {
+  if (part === hotPart) return;
+  hotPart = part; tailHot = !!part;
+  document.body.classList.toggle('tail-hot', part === 'tail');
+  document.body.classList.toggle('face-hot', part === 'face');
+  window.api.widgetIgnoreMouse(!part);
 }
+const setTailHot = (hot) => setHot(hot ? 'tail' : null);
+function openCard() { hotPart = null; tailHot = false; document.body.classList.remove('tail-hot', 'face-hot'); setCollapsed(false); }
 document.addEventListener('mousemove', (e) => {
   if (curEdge === 'off' || !collapsed || tailDragging) return;
   const grab = $('pkGrab');
-  if (grab && inRect(e, grab.getBoundingClientRect(), 2)) return setTailHot(true);
-  if (inRect(e, $('peek').getBoundingClientRect())) { tailHot = false; document.body.classList.remove('tail-hot'); return setCollapsed(false); }
-  setTailHot(false);
+  if (grab && inRect(e, grab.getBoundingClientRect(), 2)) return setHot('tail');
+  if (inRect(e, $('peek').getBoundingClientRect())) return openOnClick() ? setHot('face') : openCard();
+  setHot(null);
+});
+// Open on click: a click on the face opens the card.
+document.addEventListener('click', (e) => {
+  if (curEdge === 'off' || !collapsed || !e.target.closest || !e.target.closest('#peek') || e.target.closest('#pkGrab')) return;
+  openCard();
 });
 document.addEventListener('pointerdown', (e) => {
   if (!e.target.closest || !e.target.closest('#pkGrab') || curEdge === 'off') return;
@@ -180,7 +191,7 @@ document.addEventListener('pointerdown', (e) => {
     tailDragging = false;
     document.body.classList.remove('tail-drag');
     // A click without dragging opens the card.
-    if (Math.abs(ev.screenX - x0) + Math.abs(ev.screenY - y0) < 4) { tailHot = false; document.body.classList.remove('tail-hot'); setCollapsed(false); }
+    if (Math.abs(ev.screenX - x0) + Math.abs(ev.screenY - y0) < 4) openCard();
   };
   e.target.addEventListener('pointerup', up);
   e.target.addEventListener('pointercancel', up);
@@ -191,7 +202,7 @@ window.api.onWidgetDock((edge) => { document.body.dataset.edge = edge; curEdge =
 window.api.onWidgetCollapse(() => {
   if (curEdge === 'off' || tailDragging) return;
   if (!collapsed) setCollapsed(true);
-  else setTailHot(false);
+  else setHot(null);
 });
 $('wHide').onclick = () => window.api.setWidgetVisible(false);
 $('wAdd').onkeydown = (e) => {

@@ -1101,6 +1101,7 @@ async function openSettings(section) {
           <option value="right" ${w.edge === 'right' ? 'selected' : ''}>${t('autoHide')} · ${t('edgeRight')}</option>
           <option value="left" ${w.edge === 'left' ? 'selected' : ''}>${t('autoHide')} · ${t('edgeLeft')}</option>
           <option value="top" ${w.edge === 'top' ? 'selected' : ''}>${t('autoHide')} · ${t('edgeTop')}</option></select>`) +
+        row(t('openOn'), t('openOnDesc'), `<div class="seg"><button data-openon="hover" class="${(w.openOn || 'hover') === 'hover' ? 'on' : ''}">${t('openHover')}</button><button data-openon="click" class="${w.openOn === 'click' ? 'on' : ''}">${t('openClick')}</button></div>`) +
         row(t('widgetShows'), t('widgetShowsDesc'), `<select id="sFilter">${filterOpts.map(([v, l]) => `<option value="${v}" ${w.filter === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`) +
         (displays.length > 1 ? row(t('screen'), '', `<select id="sDisplay">${displays.map((d) => `<option value="${d.id}" ${w.display === d.id ? 'selected' : ''}>${d.label}</option>`).join('')}</select>`) : '') +
         row(t('opacity'), '', `<input type="range" id="sOpacity" min="0.4" max="1" step="0.05" value="${w.opacity || 1}">`)
@@ -1169,6 +1170,7 @@ async function openSettings(section) {
       return;
     }
     if (e.target.dataset.lang) { data.settings.lang = e.target.dataset.lang; save(); renderAll(); openSettings(); }
+    if (e.target.dataset.openon) { setW({ openOn: e.target.dataset.openon }); document.querySelectorAll('[data-openon]').forEach((b) => b.classList.toggle('on', b === e.target)); }
     if (id === 'sBug') window.api.openGithub('bug');
     if (id === 'sIdea') window.api.openGithub('idea');
     if (id === 'sIssues') window.api.openGithub('list');
