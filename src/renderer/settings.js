@@ -192,6 +192,8 @@ function shortcutList(quickKey) {
     ['Space', ar ? 'قفل التاسك' : 'Close the task'],
     ['1 – 4', ar ? 'التصنيف' : 'Priority'],
     ['S', ar ? 'تمييز' : 'Star'],
+    ['F', ar ? 'ركّز على التاسك' : 'Focus on the task'],
+    ['Esc', ar ? 'قفل اللي مفتوح' : 'Close what is open'],
     ['Delete', ar ? 'حذف' : 'Delete'],
     ['Ctrl + / −', ar ? 'حجم الخط' : 'Text size']
   ];

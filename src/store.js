@@ -51,11 +51,12 @@ function firstRun(lang) {
       id: uid(), areaId: null, title: ar ? '👋 أهلاً بيك في Elfar Tasks' : '👋 Welcome to Elfar Tasks',
       start: today(), due: today(), closure: null, priority: 'q2', starred: true, pendingWith: [],
       notes: ar
-        ? 'جولة سريعة:\n• زرار + تحت (أو Ctrl+N) يضيف تاسك، و Ctrl+Alt+Space يضيف من أي برنامج.\n• تاب المصفوفة يرتّب حسب الأهمية والاستعجال.\n• "معلّق عند" يتابع التاسكات اللي مستنيه فيها حد.\n• Ctrl+K للبحث في كل حاجة.\n• الويدجت يقدر يفضل فوق كل البرامج أو يستخبى على جنب الشاشة.\n\nلما تخلص الجولة اقفل التاسك دي ✓'
-        : 'Quick tour:\n• The + button (or Ctrl+N) adds a task; Ctrl+Alt+Space adds one from any app.\n• The Matrix tab sorts by importance and urgency.\n• "Pending with" tracks tasks waiting on someone.\n• Ctrl+K searches everything.\n• The widget can stay on top of all apps or hide at the screen edge.\n\nClose this task ✓ when you are done.',
+        ? 'التطبيق مبني على روتين بسيط:\n• الصبح: خطط يومك (3 لـ 5 حاجات بس).\n• طول اليوم: ابدأ بكارت "دلوقتي" ودوس ▶ ابدأ عشان تركّز.\n• بالليل: راجع يومك وانقل اللي فاضل لبكرة.\n• آخر الأسبوع: راجع أسبوعك واختار أهدافك.\n\nزرار + (أو Ctrl+N) يضيف تاسك، و Ctrl+Alt+Space يضيف من أي برنامج.\nكل المميزات في الإعدادات ← دليل التطبيق.\n\nلما تخلص الخطوات اقفل التاسك دي ✓'
+        : 'The app is built around a simple routine:\n• Morning: plan your day (3 to 5 things).\n• All day: start with the "Now" card and press ▶ Start to focus.\n• Evening: review your day and move the rest to tomorrow.\n• Week end: review your week and set goals.\n\nThe + button (or Ctrl+N) adds a task; Ctrl+Alt+Space adds one from any app.\nEvery feature is in Settings › App guide.\n\nClose this task ✓ when you are done.',
+      estimate: 15,
       subtasks: ar
-        ? [sub('افتح التاسك دي واقرا الملاحظات', true), sub('ضيف أول تاسك حقيقية'), sub('جرّب الويدجت'), sub('اختار لغتك من تحت')]
-        : [sub('Open this task and read the notes', true), sub('Add your first real task'), sub('Try the widget'), sub('Pick your language at the bottom left')],
+        ? [sub('ضيف أول تاسك حقيقية (زرار +)'), sub('خطط يومك (النهارده ← خطط يومك)'), sub('جرّب التركيز: ▶ ابدأ على أي تاسك'), sub('ضيف عادة (تاب عاداتي)'), sub('بص على الإعدادات ← دليل التطبيق')]
+        : [sub('Add your first real task (the + button)'), sub('Plan your day (Today › Plan your day)'), sub('Try focus: ▶ Start on any task'), sub('Add a habit (Habits tab)'), sub('Look at Settings › App guide')],
       log: [], created: Date.now(), updated: Date.now()
     }]
   };

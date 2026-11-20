@@ -293,13 +293,6 @@ function renderList() {
   const laterHtml = later.length ? `<div class="group-title later-title">${icon('calendar')} ${t('later')} · ${later.length}</div><div class="later-rows">${later.map(rowHtml).join('')}</div>` : '';
   if (!list.length) { $('list').innerHTML = subBar + (laterHtml || `<div class="empty">${t('emptyList')}</div>`); return; }
   // Today: overdue first, then due today, then starred ones that aren't due yet.
-  if (ui.view === 'today') {
-    const sec = (title, cls, xs) => (xs.length ? `<div class="group-title ${cls}">${title} · ${xs.length}</div>${xs.map(rowHtml).join('')}` : '');
-    $('list').innerHTML = sec(t('overdue'), 'danger', list.filter((x) => statusOf(x) === 'overdue')) +
-      sec(t('stDueToday'), '', list.filter((x) => statusOf(x) === 'today')) +
-      sec(t('starred'), '', list.filter((x) => !['overdue', 'today'].includes(statusOf(x))));
-    return;
-  }
   // "With others" with no person picked: group by person, for follow-up rounds.
   if (ui.view === 'pending' && ui.pendingSub === 'others' && !ui.person) {
     const groups = new Map();

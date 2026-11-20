@@ -52,6 +52,15 @@
   // Minutes of work left on a task: its estimate minus the time already focused on it.
   const minutesLeft = (x) => (x.estimate ? Math.max(0, Math.round(x.estimate - (x.focusMs || 0) / 60000)) : null);
 
+  // Moving a task to another day: it starts that day; if it was due earlier, the due date moves too.
+  // Returns true when that counts as putting it off.
+  function deferTo(x, day) {
+    let putOff = false;
+    if (x.due && x.due < day) { x.due = day; putOff = true; }
+    x.start = day;
+    return putOff;
+  }
+
   // ---------- habits ----------
   function hWeekStart(h, s) { const ws = h.weekStart ?? appWeekStart(); const d = new Date(s + 'T00:00'); d.setDate(d.getDate() - ((d.getDay() - ws + 7) % 7)); return todayStr(d); }
   const hLog = (h, s) => (h.log || {})[s] || null;
@@ -166,7 +175,7 @@
 
   return {
     todayStr, daysBetween, hAdd, hDow, shiftDate, uid, configure, appWeekStart,
-    QUADS, QUAD_RANK, byPriorityThenDue, statusOf, isActive, minutesLeft,
+    QUADS, QUAD_RANK, byPriorityThenDue, statusOf, isActive, minutesLeft, deferTo,
     hWeekStart, hLog, hMins, hDoneCount, hEnded, hLive, hActiveOn, hScheduled, hWeek, hTarget, hWeekVal, hPartial,
     habitsDueOn, habitStillDue, habitAddMinutes,
     arCount, fmtMins,

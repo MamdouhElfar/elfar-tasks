@@ -88,18 +88,6 @@ function renderHome() {
       <span class="h-n">${p.n}</span><span class="h-age ${d >= nudge ? 'old' : ''}">${t('oldestDays')} ${daysWord(d, lang())}</span></button>`;
   }).join('');
 
-  // Areas: open work per area, with what's overdue.
-  const areaList = ui.scope === 'all' ? topAreas() : childrenOf(ui.scope);
-  const maxOpen = Math.max(1, ...areaList.map((a) => data.tasks.filter((x) => isOpen(x) && inScope(x, a.id)).length));
-  const areas = areaList.map((a) => {
-    const xs = data.tasks.filter((x) => isOpen(x) && inScope(x, a.id));
-    const od = xs.filter((x) => statusOf(x) === 'overdue').length;
-    return `<button class="h-area" data-go="area:${a.id}"><span class="dot" style="background:${areaColor(a)}"></span>
-      <span class="h-an" dir="auto">${esc(a.name)}</span>
-      <span class="h-track"><i style="width:${(xs.length / maxOpen) * 100}%;background:${areaColor(a)}"></i></span>
-      <span class="h-n">${xs.length}</span>${od ? `<span class="pill overdue">${od}</span>` : ''}</button>`;
-  }).join('');
-
   const reminders = open.filter((x) => x.remindAt && x.remindAt.startsWith(td)).sort((a, b) => a.remindAt.localeCompare(b.remindAt));
 
   const durations = mine.filter((x) => x.closure && x.start).map((x) => daysBetween(x.start, x.closure));
@@ -125,7 +113,7 @@ function renderHome() {
       ${dayTotal ? `<div class="h-day-prog" title="${doneToday} / ${dayTotal}">
         <div class="h-ring" style="--p:${pct}"><b>${doneToday}<small>/${dayTotal}</small></b></div>
         <span>${t('hDoneToday')}</span></div>` : ''}
-      <div class="h-btns"><button class="h-review" data-plan>${icon('today')} ${t('planBtn')}</button><button class="h-review" data-review title="${t('reviewTip')}">${icon('moon')} ${t('reviewBtn')}</button></div>
+      <div class="h-btns"><button class="h-review" data-review title="${t('reviewTip')}">${icon('moon')} ${t('reviewBtn')}</button></div>
     </div>
     ${weekBannerHtml()}${weekGoalsHtml()}
     <div class="h-cols today-cols">
@@ -171,12 +159,18 @@ function pickNow(plan, overdue, dueToday, open) {
   for (const [xs, why] of lists) { const x = xs.find(ok); if (x) return { x, why }; }
   return null;
 }
+// Why this task is "now", said once: "2 days late", "Due today · 2:00 PM", "From your plan"…
+function nowWhy(why, x, w) {
+  if (why === 'nowLate' && w) return w.text;
+  if (why === 'nowToday') return t('nowToday') + (x.dueTime ? ` · ${fmtTime(`${x.due}T${x.dueTime}`, lang())}` : '');
+  return t(why) + (w && w.cls === 'overdue' ? ` · ${w.text}` : '');
+}
 function nowCardHtml({ x, why }) {
   const w = whenInfo(x);
   const next = (x.subtasks || []).find((s) => !s.done);
   const left = minutesLeft(x);
   return `<section class="now-card ${quadClass(x)}">
-    <div class="now-top"><span class="now-lbl">${icon('target')} ${t('nowLbl')}</span><span class="now-why">${t(why)}${w && why !== 'nowLate' && why !== 'nowToday' ? '' : w ? ` · ${w.text}` : ''}</span>
+    <div class="now-top"><span class="now-lbl">${icon('target')} ${t('nowLbl')}</span><span class="now-why">${nowWhy(why, x, w)}</span>
       <button class="link now-skip" data-nowskip="${x.id}" title="${t('nowSkipTip')}">${t('nowSkip')} ›</button></div>
     <h3 dir="auto" data-task="${x.id}">${x.starred ? '<span class="star">★</span> ' : ''}${esc(x.title)}</h3>
     ${next ? `<div class="now-next"><span class="arrow">↳</span> <span dir="auto">${esc(next.title)}</span></div>` : ''}

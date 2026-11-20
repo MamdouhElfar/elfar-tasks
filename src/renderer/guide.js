@@ -1,47 +1,80 @@
 // ---------------- App guide (Settings › Guide) ----------------
-// Every feature in one place: what it does, where to find it, and a "Show me" button that
-// takes you there. Grouped by how you'd use them during a day.
+// Two parts, so it helps instead of overwhelming:
+//  1) "Your day in 4 steps": the one routine the app is built around.
+//  2) Every feature as a short, searchable list. Open one to see what it does and where it is.
+// "Show me" takes you to the exact place, highlights it, and leaves a small card with
+// "Back to the guide", which reopens the guide on the same item.
 
-const GUIDE = [
-  { group: 'day', items: [
-    { ico: 'today', go: 'today', ar: ['صفحة النهارده', 'يومك كله في صفحة: كارت "دلوقتي" بحاجة واحدة تبدأ بيها، وخطتك، وعادات النهارده، واللي متأخر.', 'أول تاب'], en: ['The Today page', 'Your whole day on one page: a "Now" card with one thing to start, your plan, today\'s habits, and what\'s late.', 'The first tab'] },
-    { ico: 'today', go: 'plan', ar: ['خطة النهارده', 'الصبح بتختار 3 لـ 5 حاجات بس، وبتشوف يومك اتملى ولا لسه من الوقت المتوقع لكل تاسك.', 'النهارده ← الخطة'], en: ["Today's plan", 'Each morning pick 3 to 5 things, and see from each task\'s time whether your day is full.', 'Today › Plan'] },
-    { ico: 'clock', go: null, ar: ['وضع التركيز', 'تختار المدة وتشتغل على حاجة واحدة، والخطوة الجاية قدامك، والفار ماسك ساعة. ولما الوقت يخلص يسألك تكمّل ولا تستريح.', '▶ ركّز على الكارت، أو حرف F'], en: ['Focus mode', 'Pick a length and work on one thing with the next step in front of you while the mouse times you. When time is up it asks: another round or a break?', '▶ Focus on a card, or F'] },
-    { ico: 'clock', go: null, ar: ['الوقت المتوقع', 'تحدد التاسك هتاخد قد إيه، والتطبيق يحسب يومك ويقارن تقديرك بالوقت الحقيقي.', 'صفحة التاسك ← هتاخد قد إيه'], en: ['Time estimates', 'Say how long a task takes; the app adds up your day and compares your guesses with the real time.', 'Task page › How long it takes'] },
-    { ico: 'moon', go: 'review', ar: ['مراجعة آخر اليوم', 'الساعة 5 الفار يفكّرك: خلصت إيه، وانقل الباقي لبكرة بدوسة.', 'النهارده ← راجع يومك'], en: ['End-of-day review', 'At 5 PM the mouse reminds you: see what got done and move the rest to tomorrow in one click.', 'Today › Review your day'] }
-  ] },
-  { group: 'long', items: [
-    { ico: 'habits', go: 'habits', ar: ['عاداتي', 'مذاكرة أو جيم أو قراية: أيام محددة، أو مرات في الأسبوع، أو وقت في الأسبوع. ومتابعة زي النتيجة، واليوم اللي يفوت بيتسجل فات.', 'تاب عاداتي'], en: ['Habits', 'Study, gym, reading: set days, times a week, or time a week, tracked like a calendar. A missed day stays missed.', 'Habits tab'] },
-    { ico: 'calendar', go: 'week', ar: ['مراجعة الأسبوع', 'أرقام أسبوعك ومقارنتها باللي قبله، وحاجات عن نفسك، و3 أهداف للأسبوع الجاي.', 'المراجعة ← مراجعة الأسبوع'], en: ['Weekly review', 'Your week in numbers against the last one, what your data says about you, and 3 goals for next week.', 'Review › Weekly review'] },
-    { ico: 'report', go: 'report', ar: ['التقرير', 'اللي اتقفل واتضاف، ومين عنده حاجات متعطلة، ووقت التركيز حسب الفولدر. وتقدر تنسخه أو تطلّعه Excel.', 'تاب المراجعة'], en: ['Report', 'What was closed and added, who is holding things up, focus time by folder. Copy it or export to Excel.', 'Review tab'] }
-  ] },
-  { group: 'tasks', items: [
-    { ico: 'matrix', go: 'matrix', ar: ['المصفوفة', 'رتّب التاسكات بالأهمية والاستعجال: 1 اعملها دلوقتي، 2 خطط لها، 3 فوّضها، 4 استغنى عنها.', 'تاب المصفوفة، أو الأرقام 1–4'], en: ['Matrix', 'Sort tasks by importance and urgency: 1 do now, 2 plan, 3 delegate, 4 drop.', 'Matrix tab, or keys 1–4'] },
-    { ico: 'calendar', go: 'calendar', ar: ['التقويم', 'كل تاسكاتك على أيام الشهر. اسحب تاسك ليوم تاني عشان تغيّر ميعادها.', 'تاب التقويم'], en: ['Calendar', 'All your tasks on the month. Drag one to another day to move it.', 'Calendar tab'] },
-    { ico: 'folder', go: null, ar: ['الفولدرات', 'فولدرات جوه فولدرات. اسحب الفولدر عشان ترتّبه أو تحطه جوه فولدر تاني.', 'الشريط الجانبي'], en: ['Folders', 'Folders inside folders. Drag a folder to reorder it or put it inside another.', 'Sidebar'] },
-    { ico: 'user', go: null, ar: ['مستني رد من', 'لما تاسك تبقى عند حد تاني، سجّل اسمه وتابع بقالها كام يوم عنده.', 'صفحة التاسك ← معلّق عند'], en: ['Waiting on people', "When a task is with someone else, add their name and see how long they've had it.", 'Task page › Pending with'] },
-    { ico: 'repeat', go: null, ar: ['التاسكات المتكررة', 'يومي أو أسبوعي أو شهري أو سنوي. كل مرة بتبقى تاسك لوحدها في يومها.', 'صفحة التاسك ← تكرار'], en: ['Repeating tasks', 'Daily, weekly, monthly or yearly. Each round is its own task on its own day.', 'Task page › Repeat'] },
-    { ico: 'note', go: null, ar: ['الملاحظات والسجل', 'صفحات ملاحظات منسّقة، وسجل متابعة بالتاريخ والساعة، وملفات ولينكات.', 'صفحة التاسك'], en: ['Notes and log', 'Formatted note pages, a follow-up log with date and time, files and links.', 'Task page'] },
-    { ico: 'overdue', go: null, ar: ['عداد التأجيل', 'كل ما تأخّر موعد تاسك بيتحسب. وبعد 3 مرات الفار يسألك: تبدأ؟ تقسّمها؟ تديها لحد؟ ولا تشيلها؟', 'بيشتغل لوحده'], en: ['Put-off counter', 'Each time a due date moves later it counts. After 3 the mouse asks: start, split, hand off, or drop?', 'Works by itself'] }
-  ] },
-  { group: 'anywhere', items: [
-    { ico: 'edgeRight', go: 'widget', ar: ['الويدجت', 'تاسكاتك وعاداتك والتايمر فوق كل البرامج، أو مستخبي على جنب الشاشة. ولو عايز تحرّكه، اسحب الفار من ديله.', 'الإعدادات ← ويدجت سطح المكتب'], en: ['Desktop widget', 'Your tasks, habits and timer above every app, or tucked at the screen edge. Drag the mouse by its tail to move it.', 'Settings › Desktop widget'] },
-    { ico: 'plus', go: null, ar: ['إضافة سريعة', 'ضيف تاسك من أي برنامج من غير ما تفتح التطبيق.', 'Ctrl+Alt+Space'], en: ['Quick add', 'Add a task from any app without opening this one.', 'Ctrl+Alt+Space'] },
-    { ico: 'bell', go: 'notifications', ar: ['التذكيرات', 'الفار بيطلع ويرن الجرس في الميعاد، وتقدر تقوله "فكّرني بعد 10 دقايق".', 'صفحة التاسك ← تذكير'], en: ['Reminders', 'The mouse walks in and rings a bell on time; you can say "remind me in 10 min".', 'Task page › Reminder'] },
-    { ico: 'folder', go: 'data', ar: ['النسخ الاحتياطية', 'نسخة تلقائية كل يوم، وتقدر ترجع لأي واحدة أو تحفظ نسخة في أي مكان.', 'الإعدادات ← البيانات'], en: ['Backups', 'An automatic copy every day; restore any of them or save a copy anywhere.', 'Settings › Data & backups'] }
-  ] }
+// [id, icon, target, ar:[name, one line, where], en:[...]]
+// target: how "Show me" gets there — a view, a dialog, a settings section, or a spot on a task page.
+const GUIDE_STEPS = [
+  ['plan', 'today', { open: 'plan' }, ['الصبح: خطط يومك', 'اختار 3 لـ 5 حاجات بس'], ['Morning: plan', 'Pick 3 to 5 things']],
+  ['now', 'target', { view: 'today', spot: '.now-card, .plan-cta' }, ['طول اليوم: دلوقتي', 'ابدأ بحاجة واحدة وركّز'], ['All day: Now', 'Start one thing and focus']],
+  ['review', 'moon', { open: 'review' }, ['بالليل: راجع يومك', 'انقل اللي فاضل لبكرة'], ['Evening: review', 'Move the rest to tomorrow']],
+  ['week', 'calendar', { open: 'week' }, ['آخر الأسبوع: راجع أسبوعك', 'شوف أرقامك واختار أهدافك'], ['Week end: review', 'See your numbers, set goals']]
 ];
-const GUIDE_GROUPS = { day: ['يومك', 'Your day'], long: ['على المدى الطويل', 'The long run'], tasks: ['تنظيم التاسكات', 'Organizing tasks'], anywhere: ['في أي مكان', 'Anywhere'] };
+const GUIDE_GROUPS = [
+  ['day', ['يومك', 'Your day'], [
+    ['today', 'today', { view: 'today', spot: '.tab[data-view="today"]' }, ['صفحة النهارده', 'يومك كله في صفحة واحدة', 'أول تاب'], ['The Today page', 'Your whole day on one page', 'The first tab']],
+    ['focus', 'clock', { task: '#detail .focus-btn' }, ['وضع التركيز', 'تايمر بالمدة اللي تختارها على حاجة واحدة', '▶ ركّز، أو حرف F'], ['Focus mode', 'A timer you set, on one thing', '▶ Focus, or F']],
+    ['estimate', 'clock', { task: '#detail .est-field' }, ['الوقت المتوقع', 'التاسك هتاخد قد إيه، والخطة تحسب يومك', 'صفحة التاسك'], ['Time estimates', 'How long a task takes; the plan adds up your day', 'Task page']],
+    ['defer', 'calendar', { task: '#detail .d-defer' }, ['مش النهارده', 'أجّل تاسك ليوم تاني فتختفي من النهارده', 'الكارت أو صفحة التاسك'], ['Not today', 'Move a task to another day', 'Card or task page']]
+  ]],
+  ['long', ['على المدى الطويل', 'The long run'], [
+    ['habits', 'habits', { view: 'habits', spot: '.tab[data-view="habits"]' }, ['عاداتي', 'مذاكرة وجيم وقراية، بمتابعة زي النتيجة', 'تاب عاداتي'], ['Habits', 'Study, gym, reading, tracked like a calendar', 'Habits tab']],
+    ['report', 'report', { view: 'report', spot: '.tab[data-view="report"]' }, ['التقرير', 'اللي اتقفل، ومين معطّل حاجة، ووقت التركيز', 'تاب المراجعة'], ['Report', 'What got closed, who holds what, focus time', 'Review tab']]
+  ]],
+  ['tasks', ['تنظيم التاسكات', 'Organizing tasks'], [
+    ['matrix', 'matrix', { view: 'matrix', spot: '.tab[data-view="matrix"]' }, ['المصفوفة', 'رتّب بالأهمية والاستعجال من 1 لـ 4', 'تاب المصفوفة'], ['Matrix', 'Sort by importance and urgency, 1 to 4', 'Matrix tab']],
+    ['calendar', 'calendar', { view: 'calendar', spot: '.tab[data-view="calendar"]' }, ['التقويم', 'تاسكاتك على الشهر، واسحب لتغيّر اليوم', 'تاب التقويم'], ['Calendar', 'Your month; drag to change a day', 'Calendar tab']],
+    ['folders', 'folder', { view: 'today', spot: '#areasNav' }, ['الفولدرات', 'فولدرات جوه فولدرات، وبتترتب بالسحب', 'الشريط الجانبي'], ['Folders', 'Folders in folders, reordered by dragging', 'Sidebar']],
+    ['people', 'user', { task: '#detail .pending-box' }, ['مستني رد من', 'تابع التاسكات اللي عند حد تاني', 'صفحة التاسك'], ['Waiting on people', "Track tasks someone else has", 'Task page']],
+    ['repeat', 'repeat', { task: '#dRepeat' }, ['التكرار', 'يومي أو أسبوعي أو شهري أو سنوي', 'صفحة التاسك'], ['Repeating', 'Daily, weekly, monthly or yearly', 'Task page']],
+    ['notes', 'note', { task: '#detail .notes-sec, #detail [id^=nEd]' }, ['الملاحظات', 'صفحات منسّقة وسجل متابعة لكل تاسك', 'صفحة التاسك'], ['Notes', 'Formatted pages and a follow-up log', 'Task page']],
+    ['putoff', 'overdue', { coach: true }, ['عداد التأجيل', 'بعد 3 تأجيلات الفار يسألك تعمل إيه', 'بيشتغل لوحده'], ['Put-off counter', 'After 3 put-offs the mouse asks what would help', 'Works by itself']]
+  ]],
+  ['anywhere', ['في أي مكان', 'Anywhere'], [
+    ['widget', 'edgeRight', { settings: 'widget' }, ['الويدجت', 'تاسكاتك وعاداتك والتايمر فوق كل البرامج', 'الإعدادات'], ['Desktop widget', 'Tasks, habits and timer above every app', 'Settings']],
+    ['quick', 'plus', { coach: true }, ['إضافة سريعة', 'ضيف تاسك من أي برنامج', 'Ctrl+Alt+Space'], ['Quick add', 'Add a task from any app', 'Ctrl+Alt+Space']],
+    ['reminders', 'bell', { settings: 'notifications' }, ['التذكيرات', 'الفار بيرن الجرس في الميعاد', 'الإعدادات'], ['Reminders', 'The mouse rings a bell on time', 'Settings']],
+    ['backup', 'folder', { settings: 'data' }, ['النسخ الاحتياطية', 'نسخة كل يوم، وترجع لأي واحدة', 'الإعدادات'], ['Backups', 'A copy every day; restore any', 'Settings']]
+  ]]
+];
+// Longer explanation shown when an item is opened.
+const GUIDE_MORE = {
+  today: ['فوق كارت "دلوقتي" بحاجة واحدة تبدأ بيها، وتحته خطتك وعادات النهارده واللي متأخر. واللي خلص بيتلم في سطر.', 'A "Now" card with one thing to start, then your plan, today\'s habits and what\'s late. What\'s done folds into one line.'],
+  focus: ['تختار المدة، والخطوة الجاية بتبقى قدامك، والفار ماسك ساعة. ولما الوقت يخلص يسألك: تكمّل ولا تستريح؟ ووقتك بيتحسب على التاسك.', 'Pick a length; the next step stays in front of you and the mouse times you. When time is up it asks: another round or a break? The time counts on the task.'],
+  estimate: ['15 دقيقة، أو ساعة، أو اللي تكتبه. الخطة بتقولك "خططت 5 ساعات من 6"، والتركيز بيقترح الباقي، ومراجعة الأسبوع بتقولك تقديرك مظبوط ولا لأ.', '15m, 1h, or your own. The plan says "Planned 5h of 6h", focus suggests what\'s left, and the weekly review tells you how good your guesses are.'],
+  defer: ['بكرة، أو بعد بكرة، أو الأسبوع الجاي، أو أي يوم. بتختفي من النهارده وترجع في يومها. ولو كانت متأخرة بتتحسب تأجيل.', 'Tomorrow, the day after, next week or any day. It leaves Today and comes back on its day. If it was late it counts as put off.'],
+  habits: ['3 أنواع: أيام محددة، أو مرات في الأسبوع، أو وقت في الأسبوع. اليوم اللي يعدّي من غير ما تعملها بيتسجل فات، والجزئي بيتحسب بقد اللي عملته.', 'Three kinds: set days, times a week, or time a week. A day that passes without it is missed; a partial day counts for its share.'],
+  report: ['من أي تاريخ: اتقفل كام، واتضاف كام، ومين عنده حاجات متعطلة، ووقت التركيز حسب الفولدر. وتقدر تنسخه أو تطلّعه Excel.', 'From any date: closed, added, who is holding things up, focus time by folder. Copy it or export to Excel.'],
+  matrix: ['1 اعملها دلوقتي، 2 خطط لها، 3 فوّضها، 4 استغنى عنها. اسحب الكارت بين المربعات، أو دوس 1–4 على أي تاسك.', '1 do now, 2 plan, 3 delegate, 4 drop. Drag cards between boxes, or press 1–4 on any task.'],
+  calendar: ['اسحب التاسك ليوم تاني عشان تغيّر ميعادها، ودوس + في أي يوم تضيف عليه.', 'Drag a task to another day to move it; press + on any day to add one.'],
+  folders: ['اسحب الفولدر لفوق أو لتحت عشان ترتّبه، أو حطّه على فولدر تاني يبقى جواه.', 'Drag a folder up or down to reorder it, or onto another to put it inside.'],
+  people: ['اكتب اسم الشخص في "معلّق عند"، والتطبيق بيعد بقالها كام يوم عنده وبيفكّرك تتابع.', 'Add a name under "Pending with"; the app counts the days and nudges you to follow up.'],
+  repeat: ['كل مرة بتبقى تاسك لوحدها في يومها، ولو قفلتها المرة الجاية بتتعمل لوحدها.', 'Each round is its own task on its own day; closing one creates the next.'],
+  notes: ['عناوين ونقط وقايمة تشيك وكذا صفحة، وسجل متابعة بالتاريخ والساعة، وملفات ولينكات.', 'Headings, bullets, checklists and several pages, a dated follow-up log, files and links.'],
+  putoff: ['كل ما تأخّر موعد تاسك بيتعد. وفي المرة التالتة الفار يسألك: تبدأ فيها؟ تقسّمها؟ تديها لحد؟ ولا تشيلها؟', 'Every time a due date moves later it counts. On the third time the mouse asks: start, split, hand off, or drop?'],
+  widget: ['فوق كل البرامج، أو مستخبي على جنب الشاشة. وتقدر تسحب الفار من ديله عشان تحرّكه، أو تخلّيه يفتح بالدوس بس.', 'Above every app, or tucked at the screen edge. Drag the mouse by its tail to move it, or make it open on click only.'],
+  quick: ['من أي برنامج دوس Ctrl+Alt+Space، اكتب التاسك، ودوس Enter. وخلاص.', 'From any app press Ctrl+Alt+Space, type the task, press Enter. Done.'],
+  reminders: ['الفار بيطلع ويرن، وتقدر تقوله "فكّرني بعد 10 دقايق". وبيفكّرك كمان بمراجعة آخر اليوم والعادات.', 'The mouse rings; you can say "remind me in 10 min". It also reminds you of the evening review and your habits.'],
+  backup: ['نسخة تلقائية كل يوم، وتقدر ترجع لأي واحدة، أو تحفظ نسخة في أي مكان زي OneDrive.', 'An automatic copy every day; restore any, or save a copy anywhere like OneDrive.']
+};
 
+const gLang = () => (lang() === 'ar' ? 0 : 1);
 function guideHtml() {
-  const L = lang() === 'ar' ? 0 : 1;
-  const k = lang() === 'ar' ? 'ar' : 'en';
-  return `<p class="small muted guide-intro">${t('guideIntro')}</p>` + GUIDE.map((g) => `
-    <h5 class="guide-h">${GUIDE_GROUPS[g.group][L]}</h5>
-    <div class="guide-grid">${g.items.map((it) => `<div class="guide-card">
-      <span class="g-ico">${icon(it.ico)}</span>
-      <div class="g-txt"><b>${it[k][0]}</b><p>${it[k][1]}</p>
-        <div class="g-foot"><small>${icon('pin')} ${it[k][2]}</small>${it.go ? `<button class="g-go" data-guide-go="${it.go}">${t('showMe')} ›</button>` : ''}</div></div></div>`).join('')}</div>`).join('');
+  const L = gLang();
+  const open = ui.guideOpen;
+  const steps = GUIDE_STEPS.map(([id, ico, , ar, en], i) => { const x = L ? en : ar; return `<button class="g-step" data-guide-go="${id}">
+      <span class="g-num">${i + 1}</span><span class="g-ico">${icon(ico)}</span><b>${x[0]}</b><small>${x[1]}</small></button>`; }).join('');
+  const groups = GUIDE_GROUPS.map(([gid, names, items]) => `<div class="g-group" data-ggroup="${gid}"><h5 class="guide-h">${names[L]}</h5>
+    ${items.map(([id, ico, , ar, en]) => { const x = L ? en : ar; return `<details class="g-item" data-gitem="${id}" ${open === id ? 'open' : ''}>
+      <summary><span class="g-ico sm">${icon(ico)}</span><span class="g-name"><b>${x[0]}</b><small>${x[1]}</small></span><span class="g-chev">${icon('chevron')}</span></summary>
+      <div class="g-body"><p>${(GUIDE_MORE[id] || [])[L] || ''}</p><div class="g-foot"><small>${icon('pin')} ${x[2]}</small><button class="primary g-go" data-guide-go="${id}">${t('showMe')}</button></div></div></details>`; }).join('')}</div>`).join('');
+  return `<p class="small muted guide-intro">${t('guideIntro')}</p>
+    <div class="g-steps-wrap"><div class="g-steps-t">${t('guideSteps')}</div><div class="g-steps">${steps}</div></div>
+    <div class="g-search"><input type="search" id="gSearch" placeholder="${t('guideSearch')}"></div>
+    <div class="g-list">${groups}<p class="g-none small muted" hidden>${t('guideNone')}</p></div>`;
 }
 
 // Every version's "what's new", newest first (Settings › Updates).
@@ -51,14 +84,74 @@ function changelogHtml() {
     `<div class="cl-ver"><b>${v}</b><ul>${(c[k] || c.en).map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}</details>`;
 }
 
-document.addEventListener('click', (e) => {
-  const b = e.target.closest && e.target.closest('[data-guide-go]');
-  if (!b) return;
-  const go = b.dataset.guideGo;
-  if (['widget', 'notifications', 'data'].includes(go)) return openSettings(go);
+function guideItem(id) {
+  for (const s of GUIDE_STEPS) if (s[0] === id) return { id, ico: s[1], target: s[2], names: s[gLang() ? 4 : 3] };
+  for (const [, , items] of GUIDE_GROUPS) for (const it of items) if (it[0] === id) return { id, ico: it[1], target: it[2], names: it[gLang() ? 4 : 3] };
+  return null;
+}
+
+// "Show me": go there, light it up, and leave a card to come back to the guide.
+function guideGo(id) {
+  const it = guideItem(id); if (!it) return;
+  const tg = it.target;
+  ui.guideOpen = id;
+  if (tg.settings) { openSettings(tg.settings); return coach(it, null); }
   closeModal();
-  if (go === 'plan') return openPlan();
-  if (go === 'review') return openReview();
-  if (go === 'week') return openWeekReview();
-  ui.view = go; ui.selected = null; refresh(); animateIn($('list'));
+  if (tg.open === 'plan') { openPlan(); return coach(it, null); }
+  if (tg.open === 'review') { openReview(); return coach(it, null); }
+  if (tg.open === 'week') { openWeekReview(); return coach(it, null); }
+  if (tg.view) { ui.view = tg.view; ui.selected = null; refresh(); return setTimeout(() => coach(it, tg.spot), 60); }
+  if (tg.task) {
+    // Open a task page (the selected one, or the first open task) to show the spot on it.
+    const x = taskById(ui.selected) || data.tasks.find((y) => isActive(y));
+    if (x) { ui.view = ui.view === 'today' ? 'pending' : ui.view; ui.selected = x.id; refresh(); }
+    return setTimeout(() => coach(it, x ? tg.task : null), 120);
+  }
+  coach(it, null);
+}
+function coach(it, spot) {
+  document.querySelector('.coach')?.remove();
+  document.querySelectorAll('.coach-spot').forEach((e) => e.classList.remove('coach-spot'));
+  const el = spot && document.querySelector(spot);
+  if (el) { el.classList.add('coach-spot'); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+  const L = gLang();
+  const card = document.createElement('div');
+  card.className = 'coach';
+  card.innerHTML = `<span class="g-ico">${icon(it.ico)}</span>
+    <div class="coach-txt"><b>${it.names[0]}</b><span>${(GUIDE_MORE[it.id] || [])[L] || it.names[1]}</span></div>
+    <div class="coach-acts"><button data-coach-back>${L ? '‹' : '›'} ${t('guideBack')}</button><button class="primary" data-coach-ok>${t('guideGotIt')}</button></div>`;
+  document.body.appendChild(card);
+  clearTimeout(coach.timer);
+  coach.timer = setTimeout(() => el && el.classList.remove('coach-spot'), 6000);
+}
+function closeCoach() {
+  document.querySelector('.coach')?.remove();
+  document.querySelectorAll('.coach-spot').forEach((e) => e.classList.remove('coach-spot'));
+}
+
+document.addEventListener('click', (e) => {
+  const q = (s) => e.target.closest && e.target.closest(s);
+  let b;
+  if ((b = q('[data-guide-go]'))) { e.preventDefault(); return guideGo(b.dataset.guideGo); }
+  if (q('[data-coach-ok]')) return closeCoach();
+  if (q('[data-coach-back]')) {
+    closeCoach();
+    document.querySelectorAll('.modal-bg').forEach((m) => { if (!m.closest('#modalRoot')) m.remove(); }); // a plan / review dialog
+    openSettings('guide').then(() => document.querySelector(`[data-gitem="${ui.guideOpen}"]`)?.scrollIntoView({ block: 'center' }));
+  }
+});
+// Only one item open at a time; remember it.
+document.addEventListener('toggle', (e) => {
+  const d = e.target;
+  if (!d.matches || !d.matches('.g-item')) return;
+  if (d.open) { ui.guideOpen = d.dataset.gitem; document.querySelectorAll('.g-item[open]').forEach((o) => o !== d && (o.open = false)); }
+}, true);
+// Search: filters the list as you type.
+document.addEventListener('input', (e) => {
+  if (e.target.id !== 'gSearch') return;
+  const q = e.target.value.trim().toLowerCase();
+  let shown = 0;
+  document.querySelectorAll('.g-item').forEach((d) => { const hit = !q || d.textContent.toLowerCase().includes(q); d.hidden = !hit; if (hit) shown++; });
+  document.querySelectorAll('.g-group').forEach((g) => { g.hidden = ![...g.querySelectorAll('.g-item')].some((d) => !d.hidden); });
+  document.querySelector('.g-none').hidden = shown > 0;
 });

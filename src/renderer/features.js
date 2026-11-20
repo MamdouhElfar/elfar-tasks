@@ -379,6 +379,18 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.17.4': {
+    ar: ['دليل التطبيق اتعمل من جديد: فوق "يومك في 4 خطوات"، وتحته المميزات في ليستة قصيرة تفتح واحدة واحدة، وفيها بحث',
+      '"وريني" بقى يوديك للمكان بالظبط ويحدده بإطار، ويسيبلك كارت تحت فيه الشرح وزرار "ارجع للدليل" اللي بيرجعك لنفس الميزة',
+      'كارت "دلوقتي" مبقاش بيكرر نفس الكلام ("عليها الدور النهارده · عليها الدور النهارده")، واتشال زرار "الخطة" المكرر من فوق',
+      'تاسك الترحيب للمستخدم الجديد بقت بتشرح التطبيق زي ما هو دلوقتي، والاختصارات فيها F (ركّز) و Esc',
+      'الكيبورد: لما تتنقل بـ Tab بتشوف إطار على الزرار اللي واقف عليه'],
+    en: ['A new App guide: "Your day in 4 steps" on top, then the features as a short list you open one at a time, with search',
+      '"Show me" takes you to the exact spot and frames it, and leaves a card at the bottom with the explanation and "Back to the guide", which reopens the same feature',
+      'The "Now" card no longer repeats itself ("Due today · Due today"), and the extra "Plan" button at the top is gone',
+      'The welcome task for new users explains the app as it is now, and the shortcuts list has F (focus) and Esc',
+      'Keyboard: moving with Tab shows a frame on the button you are on']
+  },
   '1.17.3': {
     ar: ['"مش النهارده": أجّل التاسك لبكرة أو بعد بكرة أو الأسبوع الجاي أو أي يوم، فتختفي من النهارده وترجع في يومها. موجود في كارت "دلوقتي"، وعلى الكروت في صفحة النهارده، وفي صفحة التاسك. ولو كانت متأخرة، موعدها بيتنقل وبتتحسب تأجيل',
       'اللي خلص النهارده من الخطة والعادات بقى يتلم في سطر واحد "✓ خلصت 2" بدل ما يفضل في الصفحة',

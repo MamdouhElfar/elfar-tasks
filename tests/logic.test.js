@@ -41,6 +41,18 @@ test('task status', () => {
   assert.equal(L.minutesLeft({}), null);
 });
 
+test('moving a task to another day', () => {
+  const late = { due: plus(-2), start: plus(-5) };
+  assert.equal(L.deferTo(late, plus(1)), true);           // was late → counts as put off
+  assert.equal(late.due, plus(1)); assert.equal(late.start, plus(1));
+  assert.equal(L.statusOf(late), 'scheduled');            // gone from today until its day
+  const later = { due: plus(5), start: TD };
+  assert.equal(L.deferTo(later, plus(1)), false);          // due still ahead → not put off
+  assert.equal(later.due, plus(5)); assert.equal(L.statusOf(later), 'scheduled');
+  const none = {};
+  assert.equal(L.deferTo(none, plus(2)), false); assert.equal(L.statusOf(none), 'scheduled');
+});
+
 test('words', () => {
   assert.equal(L.arCount(1, 'يوم', 'يومين', 'أيام', 'يوم'), 'يوم');
   assert.equal(L.arCount(2, 'يوم', 'يومين', 'أيام', 'يوم'), 'يومين');
