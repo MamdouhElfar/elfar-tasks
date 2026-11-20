@@ -388,6 +388,12 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.16.2': {
+    ar: ['زرار "▶ ركّز" رجع مكانه الصح: صغير في آخر الكارت، بعيد عن دايرة القفل ومش بيغطي الكلام',
+      'متابعة العادات بقت زي النتيجة: الأسبوع ده أيام بالتاريخ واسم اليوم، و"السجل" بيفتح شهر كامل تقلّب فيه، وجنب كل أسبوع نتيجته لو العادة أسبوعية'],
+    en: ['The "▶ Focus" button is back where it belongs: small, at the far end of the card, away from the close circle and not covering the text',
+      "Habit tracking looks like a calendar: this week's days with their dates and names, and \"History\" opens a full month you can page through, with each week's result for weekly habits"]
+  },
   '1.16.1': {
     ar: ['العادات: لو عملت جزء بس (ذاكرت 35 دقيقة من ساعتين) اليوم بيتسجل "جزئي" وبيتحسب بقد اللي عملته، وتقدر تكمّل الباقي أو تعتبرها خلصت',
       'عادات النهارده بقت تظهر في الويدجت، ولكل عادة اختيار "تظهر في الويدجت"',

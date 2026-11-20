@@ -172,28 +172,61 @@ function habitCardHtml(h) {
       <span title="${t('hbRateTip')}">🎯 <b>${st.rate === null ? '—' : st.rate + '%'}</b> ${t('hbRate')}</span>
       <span>${h.kind === 'minutes' ? `⏱ <b>${hMinsLabel(st.total)}</b>` : `✓ <b>${st.total}</b> ${t('hbTimes')}`}${h.end && h.end.type === 'count' ? ` / ${h.end.count}` : ''}</span>
     </div>
-    ${h.kind === 'minutes' ? hWeekBars(h) : hHeatmap(h)}
+    ${h.kind === 'minutes' ? hWeekBars(h) : hWeekStrip(h)}
+    ${hHistory(h)}
   </section>`;
 }
 
-// The last 12 weeks: one column per week, one square per day. Click a past day to fix it.
-function hHeatmap(h) {
+// This week as seven day circles (like a calendar row), then the full history as a month calendar.
+// Colors: done = filled, partly = filled part of the way round, missed = red, day off = 🌴, not due = faint.
+function hCell(h, d, small) {
+  const s = hDayState(h, d);
   const td = todayStr();
-  const cur = hWeekStart(h, td);
-  const weeks = [...Array(12)].map((_, i) => hAdd(cur, -7 * (11 - i)));
-  const rowsLbl = [...Array(7)].map((_, i) => hDayName(((h.weekStart ?? appWeekStart()) + i) % 7, 'narrow'));
-  const cols = weeks.map((ws) => {
+  const part = s === 'partial' ? Math.round(hPartial(h, d) * 100) : 0;
+  const mins = hMins(h, d);
+  const tip = `${hDayName(hDow(d), 'long')} ${fmtDate(d, lang())} · ${t('hbSt_' + s)}${mins ? ` · ${hMinsLabel(mins)}` : ''}`;
+  const fixable = s !== 'off' && s !== 'future' && d <= td;
+  return `<span class="hc ${s} ${d === td ? 'is-today' : ''} ${small ? 'sm' : ''}" ${part ? `style="--part:${part}%"` : ''} ${fixable ? `data-hday="${d}"` : ''} title="${esc(tip)}"><b>${s === 'skip' ? '🌴' : Number(d.slice(8))}</b></span>`;
+}
+function hWeekStrip(h) {
+  const td = todayStr();
+  const w = hWeek(h, td);
+  return `<div class="hw-strip">${w.days.map((d) => `<div class="hw-day"><small>${hDayName(hDow(d), 'short')}</small>${hCell(h, d)}</div>`).join('')}</div>`;
+}
+// Month calendar, rows starting on the habit's week day; weekly habits get the week's result at the end of each row.
+function hMonthCal(h) {
+  ui.hbMonth = ui.hbMonth || {};
+  const td = todayStr();
+  const month = ui.hbMonth[h.id] || td.slice(0, 7);
+  const [y, m] = month.split('-').map(Number);
+  const first = `${month}-01`;
+  const last = todayStr(new Date(y, m, 0));
+  const ws0 = hWeekStart(h, first);
+  const weekly = h.kind !== 'days';
+  const head = [...Array(7)].map((_, i) => `<small>${hDayName(hDow(hAdd(ws0, i)), 'narrow')}</small>`).join('') + (weekly ? `<small>${t('hbWeekCol')}</small>` : '');
+  let rows = '';
+  for (let ws = ws0; ws <= last; ws = hAdd(ws, 7)) {
     const days = [...Array(7)].map((_, i) => hAdd(ws, i));
-    const cells = days.map((d) => { const s = hDayState(h, d); return `<i class="hm ${s}" ${s === 'partial' ? `style="--part:${Math.round(hPartial(h, d) * 100)}%"` : ''} ${s !== 'off' && s !== 'future' ? `data-hday="${d}"` : ''} title="${fmtDate(d, lang())} · ${t('hbSt_' + s)}${s === 'partial' ? ` (${hMinsLabel(hMins(h, d))} / ${hMinsLabel(h.duration)})` : ''}"></i>`; }).join('');
-    let mark = '';
-    if (h.kind === 'times' && ws >= hWeekStart(h, h.start)) {
-      const w = hWeek(h, ws);
-      mark = ws === cur ? `<em class="wk cur">${w.done}</em>` : `<em class="wk ${w.done >= h.perWeek ? 'ok' : 'bad'}" title="${w.done}/${h.perWeek}">${w.done >= h.perWeek ? '✓' : '✗'}</em>`;
+    rows += days.map((d) => (d.slice(0, 7) === month ? hCell(h, d, true) : '<span class="hc blank sm"></span>')).join('');
+    if (weekly) {
+      const wk = hWeek(h, ws), val = hWeekVal(h, wk), target = hTarget(h);
+      const started = hAdd(ws, 6) >= h.start;
+      const label = h.kind === 'times' ? `${val}/${target}` : hMinsLabel(val);
+      rows += !started || ws > td ? '<span class="hc-wk"></span>' : ws === hWeekStart(h, td) ? `<span class="hc-wk cur" title="${t('hbThisWeek')}">${label}</span>` : `<span class="hc-wk ${val >= target ? 'ok' : 'bad'}" title="${val >= target ? t('hbMet') : t('hbBelow')}">${val >= target ? '✓' : '✗'} ${label}</span>`;
     }
-    return `<div class="hm-col">${cells}${mark}</div>`;
-  }).join('');
-  return `<div class="hm-wrap"><div class="hm-days">${rowsLbl.map((d) => `<span>${d}</span>`).join('')}</div><div class="hm-grid">${cols}</div></div>
-    <div class="hm-legend"><span><i class="hm done"></i>${t('hbSt_done')}</span>${h.kind === 'days' ? `<span><i class="hm missed"></i>${t('hbSt_missed')}</span>` : `<span><i class="wk bad">✗</i>${t('hbBelow')}</span>`}${h.duration && h.kind !== 'minutes' ? `<span><i class="hm partial"></i>${t('hbSt_partial')}</span>` : ''}<span><i class="hm skip"></i>${t('hbSt_skip')}</span></div>`;
+  }
+  const prev = todayStr(new Date(y, m - 2, 1)).slice(0, 7), next = todayStr(new Date(y, m, 1)).slice(0, 7);
+  return `<div class="hc-cal ${weekly ? 'weekly' : ''}">
+    <div class="hc-head"><button class="icon" data-hmon="${h.id}:${prev}" ${prev < h.start.slice(0, 7) ? 'disabled' : ''}>${lang() === 'ar' ? '›' : '‹'}</button>
+      <b>${new Date(y, m - 1, 1).toLocaleDateString(hLoc(), { month: 'long', year: 'numeric' })}</b>
+      <button class="icon" data-hmon="${h.id}:${next}" ${next > td.slice(0, 7) ? 'disabled' : ''}>${lang() === 'ar' ? '‹' : '›'}</button></div>
+    <div class="hc-grid">${head}${rows}</div>
+    <p class="hc-hint">${t('hbFixHint')}</p></div>`;
+}
+function hHistory(h) {
+  ui.hbOpen = ui.hbOpen || {};
+  const legend = `<div class="hm-legend"><span><i class="hc sm done"></i>${t('hbSt_done')}</span>${h.kind !== 'minutes' && h.duration ? `<span><i class="hc sm partial" style="--part:50%"></i>${t('hbSt_partial')}</span>` : ''}${h.kind === 'days' ? `<span><i class="hc sm missed"></i>${t('hbSt_missed')}</span>` : ''}<span>🌴 ${t('hbSt_skip')}</span></div>`;
+  return `<details class="hb-hist" data-hhist="${h.id}" ${ui.hbOpen[h.id] ? 'open' : ''}><summary>${icon('calendar')} ${t('hbHistory')}</summary>${hMonthCal(h)}${legend}</details>`;
 }
 
 // Minutes per week: the last 8 weeks against the target.
@@ -201,8 +234,9 @@ function hWeekBars(h) {
   const cur = hWeekStart(h, todayStr());
   const weeks = [...Array(8)].map((_, i) => hAdd(cur, -7 * (7 - i)));
   const max = Math.max(h.minutesPerWeek, ...weeks.map((ws) => hWeek(h, ws).mins), 1);
-  return `<div class="hb-bars"><span class="hb-target" style="bottom:${(h.minutesPerWeek / max) * 100}%" title="${t('hbTarget')}"></span>
-    ${weeks.map((ws) => { const m = hWeek(h, ws).mins; const ok = m >= h.minutesPerWeek; return `<span class="hb-b ${ws === cur ? 'cur' : ok ? 'ok' : ws < hWeekStart(h, h.start) ? 'off' : 'bad'}" title="${fmtDate(ws, lang())}: ${hMinsLabel(m)}"><i style="height:${Math.max(3, (m / max) * 100)}%"></i></span>`; }).join('')}</div>`;
+  return `<div class="hb-bars-wrap"><div class="hb-bars"><span class="hb-target" style="bottom:${(h.minutesPerWeek / max) * 100}%"><em>${t('hbTarget')} ${hMinsLabel(h.minutesPerWeek)}</em></span>
+    ${weeks.map((ws) => { const m = hWeek(h, ws).mins; const ok = m >= h.minutesPerWeek; return `<span class="hb-b ${ws === cur ? 'cur' : ok ? 'ok' : ws < hWeekStart(h, h.start) ? 'off' : 'bad'}" title="${fmtDate(ws, lang())} → ${fmtDate(hAdd(ws, 6), lang())}: ${hMinsLabel(m)}"><i style="height:${Math.max(3, (m / max) * 100)}%"></i></span>`; }).join('')}</div>
+    <div class="hb-bars-x">${weeks.map((ws) => `<small>${ws === cur ? t('hbThisWeek') : fmtDate(ws, lang())}</small>`).join('')}</div></div>`;
 }
 
 // ---------- add / edit ----------
@@ -388,6 +422,7 @@ document.addEventListener('click', (e) => {
   if ((b = q('[data-hfocus]'))) { e.stopPropagation(); const h = habitById(b.dataset.hfocus); if (h) hStartFocus(h, b.dataset.hrest || hPartial(h, todayStr())); return; }
   if ((b = q('[data-hadd]'))) return hAddTime(habitById(b.dataset.hadd));
   if ((b = q('[data-hopen]'))) { ui.view = 'habits'; ui.selected = null; refresh(); return; }
+  if ((b = q('[data-hmon]'))) { const [id, mon] = b.dataset.hmon.split(':'); ui.hbMonth = ui.hbMonth || {}; ui.hbMonth[id] = mon; ui.hbOpen = ui.hbOpen || {}; ui.hbOpen[id] = true; return renderList(); }
   // Fix a past day on the tracker: nothing → done → day off → nothing.
   if ((b = q('[data-hday]'))) {
     const h = habitById(b.closest('[data-habit]').dataset.habit); const d = b.dataset.hday;
@@ -396,4 +431,9 @@ document.addEventListener('click', (e) => {
     if (!cur) h.log[d] = 'done'; else if (cur === 'done') h.log[d] = 'skip'; else delete h.log[d];
     save(); refresh();
   }
+}, true);
+
+document.addEventListener('toggle', (e) => {
+  const d = e.target;
+  if (d.matches && d.matches('[data-hhist]')) { ui.hbOpen = ui.hbOpen || {}; ui.hbOpen[d.dataset.hhist] = d.open; }
 }, true);

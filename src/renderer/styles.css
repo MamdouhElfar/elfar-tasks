@@ -1464,3 +1464,58 @@ body.pk-timing .peek .pk-face svg { animation: none; }
 .wh-m { font-size: 11px; color: var(--text-3); white-space: nowrap; }
 .wh-ring { --p: 0; flex: none; width: 16px; height: 16px; border-radius: 50%; background: conic-gradient(var(--hc) calc(var(--p) * 1%), color-mix(in srgb, var(--hc) 20%, transparent) 0); }
 .wh-row:hover .w-play { opacity: 1; }
+
+/* ================= 1.16.2 ================= */
+/* ▶ Focus sits at the far end of the card (the old rule pinned it to the start too, which stretched it). */
+.task-row .row-focus { inset-inline-start: auto; }
+
+/* Habit days look like calendar days: a circle with the date. */
+.hc { --hc2: var(--hc, var(--accent)); width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 600;
+  color: var(--text-2); background: color-mix(in srgb, var(--text) 6%, transparent); font-variant-numeric: tabular-nums; position: relative; }
+.hc.sm { width: 26px; height: 26px; font-size: 11px; }
+.hc.done { background: var(--hc2); color: #fff; }
+.hc.missed { background: var(--danger-bg); color: var(--danger); }
+.hc.partial { background: conic-gradient(var(--hc2) var(--part, 50%), color-mix(in srgb, var(--hc2) 18%, transparent) 0); color: var(--text); }
+.hc.partial::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--panel); z-index: 0; }
+.hc.partial { isolation: isolate; }
+.hc.partial { text-shadow: none; }
+.hc.skip { background: color-mix(in srgb, var(--text) 9%, transparent); font-size: 13px; }
+.hc.off { background: transparent; color: color-mix(in srgb, var(--text-3) 60%, transparent); font-weight: 400; }
+.hc.future { background: transparent; color: var(--text-3); box-shadow: inset 0 0 0 1px var(--border-2); }
+.hc.none { background: transparent; color: var(--text-3); box-shadow: inset 0 0 0 1px var(--border); }
+.hc.today { background: transparent; color: var(--hc2); box-shadow: inset 0 0 0 2px var(--hc2); }
+.hc.is-today:not(.today) { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--hc2); }
+.hc.blank { background: transparent; box-shadow: none; }
+.hc[data-hday] { cursor: pointer; }
+.hc[data-hday]:hover { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* the date inside a partial ring sits above the inner disc */
+.hc.partial { z-index: 0; }
+.hc.partial > * { position: relative; z-index: 1; }
+
+.hw-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.hw-day { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.hw-day small { font-size: 10.5px; color: var(--text-3); }
+
+.hb-hist summary { cursor: pointer; font-size: 12.5px; color: var(--text-3); display: inline-flex; align-items: center; gap: 5px; }
+.hb-hist summary .ico { width: 13px; height: 13px; }
+.hb-hist[open] summary { margin-bottom: 8px; }
+.hc-cal { border: 1px solid var(--border); border-radius: 12px; padding: 10px; }
+.hc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.hc-head b { font-size: 13px; }
+.hc-head button { font-size: 16px; width: 28px; height: 28px; border-radius: 8px; }
+.hc-head button:disabled { opacity: .3; cursor: default; }
+.hc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; justify-items: center; align-items: center; }
+.hc-cal.weekly .hc-grid { grid-template-columns: repeat(7, 1fr) auto; }
+.hc-grid > small { font-size: 10.5px; color: var(--text-3); }
+.hc-wk { font-size: 11px; font-weight: 700; white-space: nowrap; min-width: 44px; text-align: center; }
+.hc-wk.ok { color: var(--ok); } .hc-wk.bad { color: var(--danger); } .hc-wk.cur { color: var(--text-3); }
+.hc-hint { margin: 8px 0 0; font-size: 11px; color: var(--text-3); }
+.hm-legend .hc { width: 12px; height: 12px; font-size: 0; }
+.hm-legend .hc.partial::after { inset: 2px; }
+
+.hb-bars-wrap { display: flex; flex-direction: column; gap: 4px; }
+.hb-target em { position: absolute; inset-inline-end: 0; top: -16px; font-style: normal; font-size: 10.5px; color: var(--text-3); background: var(--panel); padding: 0 4px; }
+.hb-bars-x { display: flex; gap: 6px; }
+.hb-bars-x small { flex: 1; text-align: center; font-size: 9.5px; color: var(--text-3); white-space: nowrap; overflow: hidden; }
+
+.hc b { font-weight: inherit; position: relative; z-index: 1; }
