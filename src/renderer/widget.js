@@ -81,8 +81,11 @@ function render() {
   // The edge tab shows how many tasks are waiting, red if any are "do it now".
   // The edge tab is a little mouse peeking in, with its tail hanging below 🐭
   const idle = !list.length;
+  // A focus session is running: the mouse holds a stopwatch, as if it's timing you ⏱
+  const timing = () => !!(data.focus && data.focus.runFrom && ['work', 'break'].includes(data.focus.mode));
+  document.body.classList.toggle('pk-timing', timing());
   document.body.classList.toggle('pk-idle', idle);
-  $('peek').innerHTML = `<span class="pk-face">${tailDragging ? mouseLogo('', 'annoyed') : idle ? mouseLogo('', 'happy') : mouseLogo()}</span><span class="pk-say">${esc(t('pkAnnoyed'))}</span><span class="pk-count" data-n="${list.length}">${list.length}</span>
+  $('peek').innerHTML = `<span class="pk-face">${tailDragging ? mouseLogo('', 'annoyed') : timing() ? mouseLogo('', 'timer') : idle ? mouseLogo('', 'happy') : mouseLogo()}</span><span class="pk-say">${esc(t('pkAnnoyed'))}</span><span class="pk-count" data-n="${list.length}">${list.length}</span>
     <svg class="pk-tail" viewBox="0 0 30 100" aria-hidden="true"><path d="M15 0 C 3 16, 27 28, 15 46 S 3 74, 18 88 Q 24 94, 20 99"/></svg>
     <span class="pk-grab" id="pkGrab" title="${esc(t('dragTail'))}"></span>`;
   $('peek').classList.toggle('q1', list.some((x) => x.priority === 'q1' || statusOf(x) === 'overdue'));
@@ -120,12 +123,12 @@ function renderFocusStrip() {
   const b = (what, label, cls = '') => `<button class="${cls}" data-fdo="${what}">${label}</button>`;
   const m = s.f.mode;
   const head = m === 'work' ? (s.f.runFrom ? t('fWorkingOn') : t('fPaused')) : m === 'break' ? '☕ ' + t('fOnBreak') : m === 'ended' ? '🎉 ' + t('fEnded').replace('{n}', s.f.mins) : '☕ ' + t('fBreakOver');
-  const acts = m === 'work' ? (s.f.runFrom ? b('pause', '❚❚') : b('resume', '▶', 'primary')) + b('stop', '■')
+  const acts = m === 'work' ? (s.f.runFrom ? b('pause', '❚❚', 'pause-btn') : b('resume', '▶', 'primary')) + b('stop', '■')
     : m === 'break' ? b('more', '▶ ' + t('fSkipBreak')) + b('stop', '■')
     : m === 'ended' ? b('more', '▶ ' + t('fMore'), 'primary') + b('break', '☕') + b('stop', '■')
     : b('more', '▶ ' + t('fBack'), 'primary') + b('stop', '■');
   const timing = m === 'work' || m === 'break';
-  el.innerHTML = `<div class="wf mode-${m}"><div class="wf-main"><small>${head}</small><b dir="auto" data-open="${s.x.id}">${esc(s.x.title)}</b></div>
+  el.innerHTML = `<div class="wf mode-${m}"><span class="wf-mouse">${mouseLogo('', s.f.runFrom ? 'timer' : m === 'ended' ? 'happy' : '')}</span><div class="wf-main"><small>${head}</small><b dir="auto" data-open="${s.x.id}">${esc(s.x.title)}</b></div>
     ${timing ? `<b class="wf-clock" id="wfClock">${wClock(s.left)}</b>` : ''}<span class="wf-acts">${acts}</span>
     ${timing ? `<i class="wf-prog"><em id="wfProg" style="width:${Math.min(100, (1 - s.left / s.total) * 100)}%"></em></i>` : ''}</div>`;
 }
@@ -151,7 +154,10 @@ $('wFocus').onclick = (e) => {
 
 $('wList').onclick = (e) => {
   const p = e.target.closest('[data-wfocus]');
-  if (p) return window.api.focus('start', p.dataset.wfocus).then((nd) => { data = nd; render(); });
+  if (p) return askFocusMins(t, Number(data.settings.focusMins) || 25, (mins) => {
+    data.settings.focusMins = mins; save();
+    window.api.focus('start', p.dataset.wfocus, { mins }).then((nd) => { data = nd; render(); });
+  });
   const c = e.target.closest('[data-check]');
   if (c) {
     const x = data.tasks.find((y) => y.id === c.dataset.check);

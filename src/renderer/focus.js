@@ -24,7 +24,12 @@ function startFocus(id) {
   ui.focusView = true;
   // Already working on it: just show the focus screen.
   if (data.focus && data.focus.taskId === id && data.focus.mode === 'work') return renderFocus(true);
-  focusDo('start', id);
+  ui.focusView = false;
+  askFocusMins(t, Number(data.settings.focusMins) || 25, (mins) => {
+    data.settings.focusMins = mins; save();
+    ui.focusView = true;
+    window.api.focus('start', id, { mins }).then((d) => { data = d; refreshLists(); renderFocus(true); });
+  });
 }
 const focusMinsOf = (x) => Math.round((x.focusMs || 0) / 60000);
 function focusTimeLabel(mins) {
@@ -36,8 +41,8 @@ function focusTimeLabel(mins) {
 
 function focusButtons(s, big) {
   const { f } = s;
-  const b = (what, label, cls = '') => `<button class="${cls}" data-fdo="${what}">${label}</button>`;
-  if (f.mode === 'work') return (s.running ? b('pause', `❚❚ ${t('fPause')}`) : b('resume', `▶ ${t('fResume')}`, 'primary')) + b('add5', '+5') +
+  const b = (what, label, cls = '', tip = '') => `<button class="${cls}" data-fdo="${what}" ${tip ? `title="${esc(tip)}"` : ''}>${label}</button>`;
+  if (f.mode === 'work') return (s.running ? b('pause', '❚❚', 'pause-btn', t('fPause')) : b('resume', `▶ ${t('fResume')}`, 'primary')) + b('add5', '+5', '', t('fAdd5')) +
     (big ? b('done', `✓ ${t('fTaskDone')}`, 'ok') : '') + b('stop', `■ ${t('fStop')}`, 'ghost');
   if (f.mode === 'break') return b('more', `▶ ${t('fSkipBreak')}`, 'primary') + b('stop', `■ ${t('fStop')}`, 'ghost');
   if (f.mode === 'ended') return b('more', `▶ ${t('fMore')} ${data.settings.focusMins || 25}`, 'primary') + b('break', `☕ ${t('fBreak')} ${data.settings.breakMins || 5}`) +
@@ -73,7 +78,7 @@ function renderFocus(force) {
   if (force || sig !== focusSig) {
     focusSig = sig;
     bar.className = `focus-bar on mode-${s.f.mode} ${s.running ? 'running' : ''}`;
-    bar.innerHTML = `<span class="fb-mouse">${mouseLogo('fb-logo', s.f.mode === 'ended' ? 'happy' : '')}</span>
+    bar.innerHTML = `<span class="fb-mouse">${mouseLogo('fb-logo', s.f.mode === 'ended' ? 'happy' : s.running ? 'timer' : '')}</span>
       <div class="fb-main"><small>${focusHead(s)}</small><b dir="auto" data-fopen>${esc(s.x.title)}</b></div>
       ${s.f.mode === 'work' ? nextStepHtml(s) : ''}
       ${timing ? `<div class="fb-time"><b id="fbClock">${fmtClock(s.left)}</b><i><em id="fbProg" style="width:${pct * 100}%"></em></i></div>` : ''}

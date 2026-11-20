@@ -1025,7 +1025,24 @@ body.is-dragging .unclassified.is-empty { display: block; }
 .h-row { position: relative; }
 .h-row .row-focus { position: static; flex: none; width: 22px; height: 22px; font-size: 9px; }
 .row-focus { font-size: 9px; }
-.fb-acts button[data-fdo=pause], .fv-acts button[data-fdo=pause], .wf-acts button[data-fdo=pause] { letter-spacing: -2px; }
+.pause-btn { letter-spacing: -2px; padding-inline: 12px 14px !important; }
+
+/* How long to focus */
+.fm-bg { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: rgba(0,0,0,.28); animation: popIn var(--dur-fast) var(--ease); }
+.fm-card { width: min(340px, calc(100vw - 24px)); background: var(--panel); border: 1px solid var(--border-2); border-radius: 14px; box-shadow: 0 16px 40px rgba(0,0,0,.25); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.fm-q { font-size: 15px; }
+.fm-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.fm-chips button, .fm-own { flex: 1 1 60px; display: flex; align-items: baseline; justify-content: center; gap: 3px; padding: 10px 6px; border-radius: 10px; font-size: 18px; font-weight: 700; border: 1px solid var(--border-2); background: var(--panel); color: var(--text); }
+.fm-chips small, .fm-own small { font-size: 11px; font-weight: 500; color: var(--text-3); }
+.fm-chips button:hover { border-color: var(--accent); }
+.fm-chips button.on, .fm-own.on { border-color: var(--accent); background: var(--accent-bg); color: var(--accent-text); }
+.fm-own { flex-basis: 90px; padding: 4px 8px; align-items: center; cursor: text; }
+.fm-own input { width: 100%; min-width: 0; border: none; background: transparent; font-size: 16px; font-weight: 700; text-align: center; padding: 4px 0; color: inherit; -moz-appearance: textfield; }
+.fm-own input::-webkit-outer-spin-button, .fm-own input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.fm-own input::placeholder { font-size: 12px; font-weight: 500; color: var(--text-3); }
+.fm-own input.bad { color: var(--danger); }
+.fm-hint { margin: 0; font-size: 11.5px; color: var(--text-3); }
+.fm-acts { display: flex; justify-content: flex-end; gap: 8px; }
 .focus-btn { color: var(--accent-text); border-color: color-mix(in srgb, var(--accent) 45%, transparent); background: var(--accent-bg); font-weight: 600; }
 .focus-btn:hover { background: color-mix(in srgb, var(--accent) 22%, var(--panel)); }
 
@@ -1219,3 +1236,10 @@ body.pk-annoyed .peek .pk-tail path { stroke: #e5484d; }
 body[data-edge=left] .pk-say { right: auto; left: calc(100% + 8px); }
 body.pk-annoyed .pk-say { display: block; animation: popIn .18s var(--ease); }
 @media (prefers-reduced-motion: reduce) { body.pk-idle .peek .pk-face svg, body.pk-idle .peek .ml-cheese, body.pk-annoyed .peek .pk-face svg { animation: none; } }
+
+/* The mouse holds a stopwatch while a focus session runs */
+.mouse-logo .ml-hand { transform-box: view-box; transform-origin: 32px 54.2px; animation: mlTick 4s steps(8) infinite; }
+@keyframes mlTick { to { transform: rotate(360deg); } }
+.wf-mouse svg { width: 30px; height: 30px; display: block; flex: none; }
+body.pk-timing .peek .pk-face svg { animation: none; }
+@media (prefers-reduced-motion: reduce) { .mouse-logo .ml-hand { animation: none; } }

@@ -1138,8 +1138,7 @@ async function openSettings(section) {
         row(t('launch'), t('launchDesc'), toggle('sLogin', login)) +
         row(t('planTitle'), t('planAuto'), toggle('sPlanAuto', s.planAuto !== false)) +
         row(t('theme'), t('themeDesc'), `<div class="seg">${['system', 'light', 'dark'].map((m) => `<button data-theme="${m}" class="${(s.theme || 'system') === m ? 'on' : ''}">${t('theme_' + m)}</button>`).join('')}</div>`) +
-        row(t('focusLen'), t('focusLenDesc'), `<div class="seg">${[15, 25, 45, 60].map((m) => `<button data-fmins="${m}" class="${(s.focusMins || 25) === m ? 'on' : ''}">${m}</button>`).join('')}</div>
-          <span class="small muted" style="margin-inline:8px 4px">${t('breakLen')}</span><div class="seg">${[5, 10].map((m) => `<button data-bmins="${m}" class="${(s.breakMins || 5) === m ? 'on' : ''}">${m}</button>`).join('')}</div>`) +
+        row(t('breakLen'), t('focusLenDesc'), `<div class="seg">${[5, 10].map((m) => `<button data-bmins="${m}" class="${(s.breakMins || 5) === m ? 'on' : ''}">${m}</button>`).join('')}</div>`) +
         row(`${t('textSize')} <span class="muted" id="sZoomVal">${zoom}%</span>`, t('textSizeDesc'), `<input type="range" id="sZoom" min="80" max="160" step="10" value="${zoom}">`)
       ) + card(`<div class="set-txt"><b>${t('shortcuts')}</b></div>
         <div class="keys">${shortcutList(info.quickKey).map(([k, d]) => `<div><kbd>${k}</kbd><span>${d}</span></div>`).join('')}</div>`))}

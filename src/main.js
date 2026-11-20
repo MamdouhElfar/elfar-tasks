@@ -464,7 +464,12 @@ function focusAction(what, taskId, extra) {
   const f = data.focus;
   const id = taskId || (f && f.taskId);
   dropFocusPopup();
-  if (what === 'start') { focusCredit(data); data.focus = workSession(data, id, extra && extra.mins); }
+  if (what === 'start') {
+    focusCredit(data);
+    // The length you just picked is remembered for next time (and for "another round").
+    if (extra && extra.mins) data.settings.focusMins = extra.mins;
+    data.focus = workSession(data, id, extra && extra.mins);
+  }
   else if (what === 'pause' && f && f.runFrom) { f.workedMs = focusWorked(f); f.runFrom = null; }
   else if (what === 'resume' && f && !f.runFrom && (f.mode === 'work' || f.mode === 'break')) f.runFrom = Date.now();
   else if (what === 'add5' && f && (f.mode === 'work' || f.mode === 'break')) f.mins += 5;

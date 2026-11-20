@@ -388,6 +388,14 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.14.1': {
+    ar: ['وضع التركيز: كل مرة تبدأ بتختار المدة: 15 أو 25 أو 45 دقيقة، أو تكتب الوقت اللي يناسبك. وآخر مدة اخترتها بتتعلّم',
+      'زرار الوقفة بقى علامة بس من غير كلمة',
+      'وإنت في جلسة تركيز، الفار في الويدجت (وفي شريط التركيز) ماسك ساعة وبيحسبلك ⏱'],
+    en: ['Focus mode: each time you start, pick the length: 15, 25 or 45 minutes, or type your own. The last one you used is remembered',
+      'The pause button is just the icon now',
+      'During a focus session the mouse in the widget (and in the focus bar) holds a stopwatch, timing you ⏱']
+  },
   '1.14.0': {
     ar: ['شكل التطبيق: فاتح، غامق، أو زي ويندوز (الإعدادات ← عام)',
       'أسماء التاسكات العربي والإنجليزي بقت كلها جنب الدايرة بتاعتها، مهما كانت لغة التطبيق',
