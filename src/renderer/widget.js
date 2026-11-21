@@ -87,7 +87,7 @@ function render() {
   const timing = () => !!(data.focus && data.focus.runFrom && ['work', 'break'].includes(data.focus.mode));
   document.body.classList.toggle('pk-timing', timing());
   document.body.classList.toggle('pk-idle', idle);
-  $('peek').innerHTML = `<span class="pk-face">${tailDragging ? mouseLogo('', 'annoyed') : timing() ? mouseLogo('', 'timer') : idle ? mouseLogo('', 'happy') : mouseLogo()}</span><span class="pk-say">${esc(t('pkAnnoyed'))}</span><span class="pk-count" data-n="${list.length}">${list.length}</span>
+  $('peek').innerHTML = `<span class="pk-face">${tailDragging ? mouseLogo('', 'annoyed') : timing() ? mouseLogo('', 'timer') : idle ? mouseLogo('', 'happy') : mouseLogo()}</span><span class="pk-say">${esc(t('pkAnnoyed'))}</span><span class="pk-count" data-n="${list.length}">${list.length}</span>${(() => { const n = habitsToday().filter((h) => h.widget !== false && hLog(h, todayStr()) !== 'done' && hLog(h, todayStr()) !== 'skip').length; return n ? `<span class="pk-hab" title="${esc(t('wHabitsLeft'))}">${n}</span>` : ''; })()}
     <svg class="pk-tail" viewBox="0 0 30 100" aria-hidden="true"><path d="M15 0 C 3 16, 27 28, 15 46 S 3 74, 18 88 Q 24 94, 20 99"/></svg>
     <span class="pk-grab" id="pkGrab" title="${esc(t('dragTail'))}"></span>`;
   $('peek').classList.toggle('q1', list.some((x) => x.priority === 'q1' || statusOf(x) === 'overdue'));
@@ -126,7 +126,7 @@ function renderWidgetHabits() {
     const canFocus = !isDone && (h.kind === 'minutes' || h.duration);
     return `<div class="wh-row ${isDone ? 'done' : ''}" style="--hc:var(--c-${h.color || 'blue'})">
       ${h.kind === 'minutes' ? `<span class="wh-ring" style="--p:${Math.min(100, Math.round((hWeek(h, td).mins / h.minutesPerWeek) * 100))}"></span>` : `<button class="check ${isDone ? 'on' : ''}" data-whcheck="${h.id}">✓</button>`}
-      <span class="wh-e">${esc(h.emoji || '🔁')}</span><span class="wh-n" dir="auto">${esc(h.name)}</span><span class="wh-m">${meta}</span>
+      <span class="wh-e">${esc(h.emoji || '🔁')}</span><span class="wh-n" dir="auto" title="${(() => { const s = habitLastStop(h, td); return s ? esc('↩ ' + (s.stop || s.note)) : ''; })()}">${esc(h.name)}</span><span class="wh-m">${meta}</span>
       ${canFocus ? `<button class="w-play" data-whfocus="${h.id}" title="${esc(t('fStartTip'))}">▶</button>` : ''}</div>`;
   }).join('');
 }

@@ -110,6 +110,35 @@
     return h;
   }
 
+  // ---------- habit days: what you did, how much, and where you stopped ----------
+  // h.measures = [{ id, name, unit }]  (pages, minutes, push ups…, set on the habit)
+  // h.entries  = { 'YYYY-MM-DD': { note, stop, vals: { measureId: number } } }
+  function habitSetEntry(h, d, e) {
+    h.entries = h.entries || {};
+    const vals = {};
+    for (const [k, v] of Object.entries((e && e.vals) || {})) if (Number(v) > 0) vals[k] = Number(v);
+    const clean = { note: ((e && e.note) || '').trim(), stop: ((e && e.stop) || '').trim(), vals };
+    if (!clean.note && !clean.stop && !Object.keys(vals).length) delete h.entries[d];
+    else h.entries[d] = clean;
+    return h;
+  }
+  const habitEntry = (h, d) => (h.entries || {})[d] || null;
+  // The last time you wrote where you stopped (or a note), before a given day: "you were here".
+  function habitLastStop(h, before = todayStr()) {
+    const days = Object.keys(h.entries || {}).filter((d) => d < before).sort().reverse();
+    for (const d of days) { const e = h.entries[d]; if (e.stop || e.note) return { date: d, stop: e.stop || '', note: e.note || '' }; }
+    return null;
+  }
+  // How much of each measure between two days (e.g. this week's pages and push ups).
+  function habitTotals(h, from, to) {
+    const out = {};
+    for (const [d, e] of Object.entries(h.entries || {})) {
+      if (d < from || d > to) continue;
+      for (const [k, v] of Object.entries(e.vals || {})) out[k] = (out[k] || 0) + v;
+    }
+    return out;
+  }
+
   // ---------- words ----------
   // Arabic counts: 1 يوم, 2 يومين, 3–10 أيام, 11+ يوم.
   function arCount(n, one, two, few, many) {
@@ -269,7 +298,7 @@
         if (o && t) {
           if (eq(o, t) || eq(o, b)) list.push(t);
           else if (eq(t, b)) list.push(o);
-          else if (k === 'habits') list.push({ ...t, ...o, log: { ...(t.log || {}), ...(o.log || {}) }, minutes: { ...(t.minutes || {}), ...(o.minutes || {}) } });
+          else if (k === 'habits') list.push({ ...t, ...o, log: { ...(t.log || {}), ...(o.log || {}) }, minutes: { ...(t.minutes || {}), ...(o.minutes || {}) }, entries: { ...(t.entries || {}), ...(o.entries || {}) } });
           else list.push((o.updated || 0) >= (t.updated || 0) ? o : t);
         } else if (o && !t) { if (!b || !eq(o, b)) list.push(o); }   // new here, or changed here after they deleted it
         else if (t && !o) { if (!b || !eq(t, b)) list.push(t); }
@@ -336,7 +365,7 @@
     todayStr, daysBetween, hAdd, hDow, shiftDate, uid, configure, appWeekStart,
     QUADS, QUAD_RANK, byPriorityThenDue, statusOf, isActive, minutesLeft, deferTo,
     hWeekStart, hLog, hMins, hDoneCount, hEnded, hLive, hActiveOn, hScheduled, hWeek, hTarget, hWeekVal, hPartial,
-    habitsDueOn, habitStillDue, habitAddMinutes,
+    habitsDueOn, habitStillDue, habitAddMinutes, habitSetEntry, habitEntry, habitLastStop, habitTotals,
     arCount, fmtMins,
     makePatch, patchEmpty, applyPatch,
     parseQuick, merge3, layoutBlocks, suggestPlan

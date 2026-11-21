@@ -363,7 +363,8 @@ function tick() {
     h.remindedOn = today;
     changed = true;
     if ((data.settings.remindStyle || 'mouse') === 'mouse') {
-      remindQueue.push({ id: 'habitr:' + h.id, kind: 'habit', title: `${h.emoji ? h.emoji + ' ' : ''}${h.name}`, duration: h.duration || null, mins: h.kind === 'minutes' });
+      const last = logic.habitLastStop(h, today);
+      remindQueue.push({ id: 'habitr:' + h.id, kind: 'habit', title: `${h.emoji ? h.emoji + ' ' : ''}${h.name}`, duration: h.duration || null, mins: h.kind === 'minutes', stop: last ? (last.stop || last.note) : '' });
       openRemindWin();
     } else notify((ar() ? '🔁 وقت ' : '🔁 Time for ') + h.name, ar() ? 'افتح عاداتي' : 'Open Habits', () => showMain());
   }
@@ -789,8 +790,10 @@ function cloudFolders() {
   const home = os.homedir();
   const c = [
     ['OneDrive', process.env.OneDrive], ['OneDrive', process.env.OneDriveConsumer], ['OneDrive (work)', process.env.OneDriveCommercial],
-    ['Dropbox', path.join(home, 'Dropbox')], ['Google Drive', path.join(home, 'Google Drive')], ['Google Drive', 'G:\\My Drive'], ['iCloud', path.join(home, 'iCloudDrive')]
+    ['Dropbox', path.join(home, 'Dropbox')], ['Google Drive', path.join(home, 'Google Drive')], ['Google Drive', path.join(home, 'My Drive')], ['iCloud', path.join(home, 'iCloudDrive')]
   ];
+  // Google Drive for desktop shows up as its own drive (usually G:, but any letter), with "My Drive" inside.
+  for (const L of 'GDEFHIJKLMNOPQRSTUVWXYZ') for (const sub of ['My Drive', 'ملفاتي', 'Google Drive', 'Mon Drive', 'Mi unidad', 'Meine Ablage']) c.push(['Google Drive', `${L}:\\${sub}`]);
   const seen = new Set();
   return c.filter(([, p]) => p && fs.existsSync(p) && !seen.has(p.toLowerCase()) && seen.add(p.toLowerCase())).map(([name, p]) => ({ name, path: p }));
 }

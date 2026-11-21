@@ -1783,3 +1783,45 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 
 .tg-scroll, .tg-top { scrollbar-gutter: stable; }
 .tg-top { overflow-y: hidden; }
+
+/* ================= 1.19: habit days with amounts, notes, where you stopped ================= */
+.hc.has-entry::after { content: ''; position: absolute; bottom: 2px; left: 50%; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: currentColor; opacity: .7; }
+.hc.partial.has-entry::after { inset: 3px; width: auto; height: auto; margin: 0; border-radius: 50%; background: var(--panel); opacity: 1; }
+.hb-stop { font-size: var(--fs-s); color: var(--text-2); display: flex; gap: 4px; align-items: baseline; min-width: 0; }
+.hb-stop b { color: var(--accent-text); font-weight: 600; white-space: nowrap; }
+.hb-stop span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-stop.row { font-size: var(--fs-xs); color: var(--text-3); }
+.hb-namewrap { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.hb-totals { display: flex; align-items: center; gap: 5px; font-size: var(--fs-s); color: var(--text-2); flex-wrap: wrap; }
+.hb-totals .ico { width: 13px; height: 13px; color: var(--hc); }
+.hb-totals b { color: var(--text); }
+.modal.hd { width: min(440px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 10px; }
+.hd-head { display: flex; align-items: center; gap: 10px; }
+.hd-head h3 { margin: 0; }
+.hd-prev { padding: 8px 10px; border-radius: 10px; background: var(--accent-bg); color: var(--accent-text); font-size: var(--fs-m); }
+.hd-prev small { opacity: .8; }
+.hd-status { display: flex; }
+.hd-status button { flex: 1; }
+.hd-status .st-done.on { background: var(--ok); color: #fff; border-color: transparent; }
+.hd-status .st-skip.on { background: var(--text-3); color: #fff; border-color: transparent; }
+.hd-status .st-none.on { background: var(--hover); color: var(--text); }
+.hd-help { margin: -4px 0 0; }
+.hd-ms { display: flex; flex-direction: column; gap: 6px; }
+.hd-m { display: grid; grid-template-columns: 1fr 100px 60px; gap: 8px; align-items: center; font-size: var(--fs-m); }
+.hd-m input { text-align: center; padding: 6px; border-radius: var(--radius); border: 1px solid var(--border-2); background: var(--panel); }
+.hd-m small { color: var(--text-3); font-size: var(--fs-s); }
+.hd-addm { display: flex; gap: 6px; }
+.hd-addm input { flex: 1; min-width: 0; font-size: var(--fs-s); }
+.hd-addm select { font-size: var(--fs-s); }
+.hd-f { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-s); color: var(--text-2); }
+.hd-f input, .hd-f textarea { font-size: var(--fs-m); width: 100%; }
+.hd-askstop { align-self: flex-start; }
+.modal.hd .actions { display: flex; gap: 8px; }
+.hbe-log { display: flex; flex-direction: column; gap: 6px; }
+.hbe-m { display: flex; gap: 6px; align-items: center; }
+.hbe-m input { flex: 1; min-width: 0; }
+.hbe-madd { display: flex; gap: 6px; flex-wrap: wrap; }
+.hbe-madd button { border-radius: 99px; font-size: var(--fs-s); padding: 3px 10px; }
+/* edge mouse: habits left today */
+.peek .pk-hab { min-width: 20px; padding: 1px 5px; border-radius: 99px; background: var(--c-purple); color: #fff; font-size: 11px; font-weight: 600; text-align: center; }
+body:has(.pk-hab) .peek { height: auto; padding: 6px 0; }

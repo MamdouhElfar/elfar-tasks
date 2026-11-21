@@ -379,6 +379,18 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.19.0': {
+    ar: ['العادات بقت بتسجّل تفاصيل كل يوم: دوس على أي يوم، أو "عملتها"، يفتحلك صفحة اليوم: اتعملت ولا إجازة ولا لسه (ومكتوب تحت كل واحدة معناها)، وعملت قد إيه، ووقفت فين، وملاحظة',
+      'كل عادة تختار هي بتسجّل إيه: صفحات للقراية، ودقايق للجيم، وعدد للـ Push ups والـ Pull ups… وتقدر تضيف حاجة جديدة من صفحة اليوم نفسها. وبتشوف مجموع الأسبوع على كارت العادة',
+      '"وقفت عند…": اكتب وقفت فين، والمرة الجاية العادة بتقولك على الكارت، وفي صفحة النهارده، وفي التذكير',
+      'الفار اللي على جنب الشاشة بقى بيوريك العادات الفاضلة النهارده (بالبنفسجي) جنب عدد التاسكات',
+      'Google Drive بقى بيتلاقي على أي حرف (مش G: بس) عشان المزامنة'],
+    en: ['Habits now log each day: click any day, or "Did it", to open the day: done, day off or not yet (each explained), how much, where you stopped, and a note',
+      'Each habit picks what it logs: pages for reading, minutes for the gym, counts for push ups and pull ups… add more right from the day. Week totals show on the habit card',
+      '"You were here…": write where you stopped, and next time the habit tells you on its card, on Today and in its reminder',
+      'The mouse at the screen edge also shows habits left today (purple) next to the task count',
+      'Google Drive is found on any drive letter (not only G:) for sync']
+  },
   '1.18.0': {
     ar: ['التقويم بقى فيه شهر وأسبوع ويوم. في الأسبوع واليوم يومك متقسم ساعات، وخط أحمر بيوريك الساعة دلوقتي. اسحب التاسك من "من غير ميعاد" على أي ساعة، واسحب طرفها عشان تطوّلها، ودوستين على ساعة فاضية تضيف تاسك فيها',
       'من النهارده: "رتّب على الساعات" بيفتح يومك بالساعات، والتاسك اللي في ميعادها دلوقتي بتبقى في كارت "دلوقتي"',

@@ -194,3 +194,16 @@ test('the plan suggests what is most pressing and fits the day', () => {
   assert.ok(!ids.includes('big'));      // doesn't fit in the 4 hours left
   assert.ok(ids.includes('small'));
 });
+
+test('habit days: amounts, notes and where you stopped', () => {
+  const h = { measures: [{ id: 'p', name: 'Pages', unit: 'pages' }, { id: 'pu', name: 'Push ups', unit: 'reps' }] };
+  L.habitSetEntry(h, '2026-11-19', { vals: { p: 20 }, stop: 'Chapter 3, page 45' });
+  L.habitSetEntry(h, '2026-11-20', { vals: { p: 15, pu: 30 }, note: 'good session' });
+  L.habitSetEntry(h, '2026-11-21', { vals: { p: 0 }, note: '  ' });          // nothing real → no entry
+  assert.equal(L.habitEntry(h, '2026-11-21'), null);
+  assert.deepEqual(L.habitTotals(h, '2026-11-14', '2026-11-20'), { p: 35, pu: 30 });
+  const last = L.habitLastStop(h, '2026-11-21');
+  assert.equal(last.date, '2026-11-20'); assert.equal(last.note, 'good session');
+  assert.equal(L.habitLastStop(h, '2026-11-20').stop, 'Chapter 3, page 45');
+  assert.equal(L.habitLastStop(h, '2026-11-19'), null);
+});

@@ -60,6 +60,7 @@ function renderHabitAsk(x, fresh) {
       <button class="rm-x" data-act="dismiss" title="${t('rvLater')}">✕</button>
       <div class="rm-top">🔁 ${t('hbRemind')}</div>
       <div class="rm-title" dir="auto">${esc(x.title)}</div>
+      ${x.stop ? `<div class="rm-meta">↩ ${t('hdWereHere')} <span dir="auto">${esc(x.stop)}</span></div>` : ''}
       <div class="rm-acts">${x.duration || x.mins ? `<button class="primary" data-act="hfocus">▶ ${t('hbRemindStart')}${x.duration ? ` ${x.duration} ${t('minShort')}` : ''}</button>` : ''}
         ${x.mins ? '' : `<button ${x.duration ? '' : 'class="primary"'} data-act="hdone">✓ ${t('hbDidIt')}</button>`}<button data-act="dismiss">${t('rvLater')}</button></div>
     </div></div>`;

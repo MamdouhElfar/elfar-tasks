@@ -65,8 +65,16 @@
     data.habits.push({ id: 'smokeH', name: 'Smoke habit', emoji: '', color: 'blue', kind: 'days', days: [0, 1, 2, 3, 4, 5, 6], start: todayStr(), end: { type: 'never' }, log: {}, minutes: {}, duration: 30 });
     save(); ui.view = 'habits'; refresh(); await w(80);
     check('habit card', !!document.querySelector('[data-habit="smokeH"]'));
-    hToggleToday(habitById('smokeH'));
-    check('habit done today', hLog(habitById('smokeH'), todayStr()) === 'done');
+    // the day sheet: log amounts and where you stopped
+    const h = habitById('smokeH'); h.measures = [{ id: 'm1', name: 'Pages', unit: 'pages' }]; h.askStop = true; save(); refresh(); await w(50);
+    document.querySelector('[data-habit="smokeH"] [data-hday]').click(); await w(80);
+    check('day sheet opens', !!document.querySelector('.modal.hd'));
+    document.querySelector('[data-hdval="m1"]').value = '12';
+    document.getElementById('hdStop').value = 'page 40';
+    document.querySelector('[data-hdsave]').click(); await w(80);
+    check('amount saved', habitEntry(habitById('smokeH'), todayStr())?.vals?.m1 === 12);
+    check('logging marks it done', hLog(habitById('smokeH'), todayStr()) === 'done');
+    check('you were here (tomorrow)', habitLastStop(habitById('smokeH'), hAdd(todayStr(), 1))?.stop === 'page 40');
   });
   await step('dialogs open and close', async () => {
     for (const s of ['general', 'notifications', 'widget', 'data', 'updates', 'guide', 'about']) { await openSettings(s); await w(40); check(`settings ${s}`, !!document.querySelector(`[data-sec="${s}"]`)); }

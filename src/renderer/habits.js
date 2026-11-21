@@ -86,7 +86,7 @@ function hToggleToday(h) {
   h.log = h.log || {};
   if (h.log[td] === 'done') delete h.log[td]; else h.log[td] = 'done';
   save();
-  if (h.log[td] === 'done') showToast(`${h.emoji || '✓'} ${h.name}: ${t('hbDoneToast')}`);
+  if (h.log[td] === 'done') showToast(`${h.emoji || '✓'} ${h.name}: ${t('hbDoneToast')}`, () => openHabitDay(h, td), t('hdAddDetails'));
 }
 function hStartFocus(h, rest) {
   const left = rest && h.duration ? Math.max(1, Math.round(h.duration - hMins(h, todayStr()))) : null;
@@ -110,7 +110,7 @@ function habitRowHtml(h) {
   return `<div class="hb-row ${done ? 'done' : ''}" style="--hc:${areaColor(h)}">
     ${h.kind === 'minutes' ? `<span class="hb-ring" style="--p:${Math.min(100, Math.round((hWeek(h, td).mins / h.minutesPerWeek) * 100))}"></span>` : `<button class="check ${done ? 'on' : ''}" data-hcheck="${h.id}" title="${t('hbMarkToday')}">✓</button>`}
     <span class="hb-emoji">${esc(h.emoji || '🔁')}</span>
-    <span class="hb-name" dir="auto" data-hopen="${h.id}">${esc(h.name)}</span>
+    <span class="hb-namewrap"><span class="hb-name" dir="auto" data-hopen="${h.id}">${esc(h.name)}</span>${done ? '' : lastStopHtml(h, td, 'row')}</span>
     <span class="hb-meta">${meta}</span>
     ${canFocus && !done ? `<button class="row-focus hb-focus" data-hfocus="${h.id}" title="${t('fStartTip')}">▶ ${t('fShort')}</button>` : ''}</div>`;
 }
@@ -126,7 +126,7 @@ function renderHabits() {
       <button class="primary" data-hnew>＋ ${t('hbNew')}</button></div>
     ${live.length ? `<div class="hb-grid">${live.map(habitCardHtml).join('')}</div>` : `<div class="hb-empty">
       <div class="hb-empty-mouse">${mouseLogo('', 'happy')}</div><b>${t('hbEmpty')}</b><p class="small muted">${t('hbEmptySub')}</p>
-      <div class="hb-examples">${examples.map(([e, n, k]) => `<button data-hex="${k}" data-hname="${esc(n)}" data-hemoji="${e}">${e} ${esc(n)}</button>`).join('')}</div></div>`}
+      <div class="hb-examples">${examples.map(([e, n, k], i) => `<button data-hex="${k}" data-hname="${esc(n)}" data-hemoji="${e}" data-hpre="${['study', 'gym', 'read'][i]}">${e} ${esc(n)}</button>`).join('')}</div></div>`}
     ${old.length ? `<details class="hb-old"><summary>${t('hbOld')} · ${old.length}</summary><div class="hb-grid">${old.map(habitCardHtml).join('')}</div></details>` : ''}
   </div>`;
 }
@@ -167,6 +167,7 @@ function habitCardHtml(h) {
     <header><span class="hb-emoji big">${esc(h.emoji || '🔁')}</span><div class="hbc-title"><b dir="auto">${esc(h.name)}</b><small>${hSummary(h)}</small></div>
       <button class="icon" data-hedit="${h.id}" title="${t('edit')}">✎</button></header>
     ${now}
+    ${lastStopHtml(h)}${weekTotalsHtml(h)}
     <div class="hbc-stats">
       <span title="${t(st.streakUnit === 'd' ? 'hbStreakDays' : 'hbStreakWeeks')}">${icon('flame')} <b>${st.streak}</b> ${st.streakUnit === 'd' ? t('hbDaysShort') : t('hbWeeksShort')}</span>
       <span title="${t('hbRateTip')}">${icon('target')} <b>${st.rate === null ? '—' : st.rate + '%'}</b> ${t('hbRate')}</span>
@@ -184,9 +185,11 @@ function hCell(h, d, small) {
   const td = todayStr();
   const part = s === 'partial' ? Math.round(hPartial(h, d) * 100) : 0;
   const mins = hMins(h, d);
-  const tip = `${hDayName(hDow(d), 'long')} ${fmtDate(d, lang())} · ${t('hbSt_' + s)}${mins ? ` · ${hMinsLabel(mins)}` : ''}`;
-  const fixable = s !== 'off' && s !== 'future' && d <= td;
-  return `<span class="hc ${s} ${d === td ? 'is-today' : ''} ${small ? 'sm' : ''}" ${part ? `style="--part:${part}%"` : ''} ${fixable ? `data-hday="${d}"` : ''} title="${esc(tip)}"><b>${s === 'skip' ? '🌴' : Number(d.slice(8))}</b></span>`;
+  const en = habitEntry(h, d);
+  const vals = en ? (h.measures || []).filter((m) => en.vals && en.vals[m.id]).map((m) => `${m.name}: ${fmtVal(m, en.vals[m.id])}`) : [];
+  const tip = [`${hDayName(hDow(d), 'long')} ${fmtDate(d, lang())} · ${t('hbSt_' + s)}${mins ? ` · ${hMinsLabel(mins)}` : ''}`, ...vals, en && en.stop ? `↩ ${en.stop}` : '', en && en.note ? en.note : ''].filter(Boolean).join('\n');
+  const open = s !== 'off' || d <= td; // any day can be opened to log or fix it
+  return `<span class="hc ${s} ${d === td ? 'is-today' : ''} ${small ? 'sm' : ''} ${en ? 'has-entry' : ''}" ${part ? `style="--part:${part}%"` : ''} ${open && d <= td ? `data-hday="${d}"` : ''} title="${esc(tip)}"><b>${s === 'skip' ? '🌴' : Number(d.slice(8))}</b></span>`;
 }
 function hWeekStrip(h) {
   const td = todayStr();
@@ -244,7 +247,9 @@ function openHabitEditor(h, preset = {}) {
   const isNew = !h;
   const ar = lang() === 'ar';
   h = h ? JSON.parse(JSON.stringify(h)) : { id: uid(), name: preset.name || '', emoji: preset.emoji || '', color: 'blue', kind: preset.kind || 'days', days: [0, 2, 4], perWeek: 3, minutesPerWeek: 300,
-    time: '', duration: preset.kind === 'days' ? 60 : null, start: todayStr(), end: { type: 'never' }, weekStart: null, widget: true, log: {}, minutes: {} };
+    time: '', duration: preset.kind === 'days' ? 60 : null, start: todayStr(), end: { type: 'never' }, weekStart: null, widget: true, log: {}, minutes: {},
+    measures: preset.measures || [], askStop: !!preset.askStop, entries: {} };
+  h.measures = h.measures || [];
   const order = [...Array(7)].map((_, i) => ((h.weekStart ?? appWeekStart()) + i) % 7);
   const emojis = ['📚', '🏋️', '📖', '🏃', '🧘', '💧', '✍️', '🕌', '🎸', '💻', '🥗', '😴'];
   const bg = document.createElement('div');
@@ -275,6 +280,10 @@ function openHabitEditor(h, preset = {}) {
       </div>
       <div class="hbe-opts"><label class="hbe-check"><input type="checkbox" id="heWidget" ${h.widget !== false ? 'checked' : ''}> ${t('hbInWidget')}</label>
         ${h.kind !== 'days' ? `<label class="hbe-check">${t('hbWeekStarts')} <select id="heWs"><option value="">${t('hbWsDefault')} (${hDayName(appWeekStart(), 'long')})</option>${[6, 0, 1, 2, 3, 4, 5].map((d) => `<option value="${d}" ${h.weekStart === d ? 'selected' : ''}>${hDayName(d, 'long')}</option>`).join('')}</select></label>` : ''}</div>
+      <div class="hbe-log"><label class="hbe-lbl">${t('hbLogTitle')}</label><p class="small muted hbe-help">${t('hbLogHelp')}</p>
+        ${h.measures.map((m, i) => `<div class="hbe-m" data-mi="${i}"><input type="text" dir="auto" data-mname value="${esc(m.name)}" placeholder="${t('hbMeasureName')}"><select data-munit>${UNITS.map(([u]) => `<option value="${u}" ${m.unit === u ? 'selected' : ''}>${unitLabel(u)}</option>`).join('')}</select><button type="button" class="icon" data-mdel="${i}">✕</button></div>`).join('')}
+        <div class="hbe-madd">${[['pages', t('hbMPages')], ['min', t('hbMMins')], ['reps', t('hbMReps')], ['', t('hbMOther')]].map(([u, l]) => `<button type="button" data-madd="${u}">＋ ${l}</button>`).join('')}</div>
+        <label class="hbe-check"><input type="checkbox" id="heAskStop" ${h.askStop ? 'checked' : ''}> ${t('hbAskStop')}</label></div>
       <div class="hbe-colors">${COLORS.map((c) => `<button type="button" class="swatch ${h.color === c ? 'on' : ''}" data-hcolor="${c}" style="background:var(--c-${c})"></button>`).join('')}</div>
       <div class="actions">${isNew ? '' : `<button class="danger" data-hdel>${icon('trash')}</button><button data-harch>${h.archived ? t('hbResume') : t('hbPause')}</button>`}
         <span style="flex:1"></span><button data-hcancel>${t('cancel')}</button><button class="primary" data-hsave>${t('save')}</button></div></div>`;
@@ -294,6 +303,8 @@ function openHabitEditor(h, preset = {}) {
     if (v('heEndCount')) h.end.count = Number(v('heEndCount').value) || 1;
     if (v('heWidget')) h.widget = v('heWidget').checked;
     if (v('heWs')) h.weekStart = v('heWs').value === '' ? null : Number(v('heWs').value);
+    if (v('heAskStop')) h.askStop = v('heAskStop').checked;
+    h.measures = [...bg.querySelectorAll('.hbe-m')].map((row) => ({ id: h.measures[Number(row.dataset.mi)].id, name: row.querySelector('[data-mname]').value.trim(), unit: row.querySelector('[data-munit]').value }));
   };
   draw();
   document.body.appendChild(bg);
@@ -307,6 +318,8 @@ function openHabitEditor(h, preset = {}) {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.hset) { read(); h[b.dataset.hset] = b.dataset.v; if (h.kind === 'days' && !h.duration) h.duration = 60; draw(); return; }
     if (b.dataset.hdayPick !== undefined) { read(); const d = Number(b.dataset.hdayPick); h.days = h.days.includes(d) ? h.days.filter((x) => x !== d) : [...h.days, d]; draw(); return; }
+    if (b.dataset.madd !== undefined) { read(); const ar = lang() === 'ar'; const names = { pages: ar ? 'صفحات' : 'Pages', min: ar ? 'دقايق' : 'Minutes', reps: ar ? 'Push ups' : 'Push ups' }; h.measures.push({ id: uid(), name: names[b.dataset.madd] || '', unit: b.dataset.madd || 'times' }); draw(); setTimeout(() => bg.querySelector('.hbe-m:last-of-type [data-mname]')?.select(), 0); return; }
+    if (b.dataset.mdel !== undefined) { read(); h.measures.splice(Number(b.dataset.mdel), 1); draw(); return; }
     if (b.dataset.hemo) { bg.querySelector('#heEmoji').value = b.dataset.hemo; return; }
     if (b.dataset.hcolor) { read(); h.color = b.dataset.hcolor; draw(); return; }
     if (b.hasAttribute('data-hcancel')) return close();
@@ -323,7 +336,8 @@ function openHabitEditor(h, preset = {}) {
       if (h.kind === 'days' && !h.days.length) { showToast(t('hbPickDays')); return; }
       const list = habitsList();
       const i = list.findIndex((x) => x.id === h.id);
-      if (i >= 0) list[i] = { ...list[i], ...h, log: list[i].log, minutes: list[i].minutes }; else list.push(h);
+      h.measures = h.measures.filter((m) => m.name);
+      if (i >= 0) list[i] = { ...list[i], ...h, log: list[i].log, minutes: list[i].minutes, entries: list[i].entries }; else list.push(h);
       save(); close();
       ui.view = 'habits'; ui.selected = null; refresh();
     }
@@ -415,9 +429,18 @@ document.addEventListener('click', (e) => {
   const q = (sel) => e.target.closest && e.target.closest(sel);
   let b;
   if ((b = q('[data-hnew]'))) return openHabitEditor(null);
-  if ((b = q('[data-hex]'))) return openHabitEditor(null, { kind: b.dataset.hex, name: b.dataset.hname, emoji: b.dataset.hemoji });
+  if ((b = q('[data-hex]'))) {
+    const ar = lang() === 'ar';
+    const pre = { study: { askStop: true, measures: [] }, gym: { measures: [{ id: uid(), name: ar ? 'تمرين' : 'Workout', unit: 'min' }] }, read: { askStop: true, measures: [{ id: uid(), name: ar ? 'قريت' : 'Read', unit: 'pages' }] } }[b.dataset.hpre] || {};
+    return openHabitEditor(null, { kind: b.dataset.hex, name: b.dataset.hname, emoji: b.dataset.hemoji, ...pre });
+  }
   if ((b = q('[data-hedit]'))) return openHabitEditor(habitById(b.dataset.hedit));
-  if ((b = q('[data-hcheck]'))) { e.stopPropagation(); const h = habitById(b.dataset.hcheck); if (h) { hToggleToday(h); refresh(); } return; }
+  if ((b = q('[data-hcheck]'))) {
+    e.stopPropagation(); const h = habitById(b.dataset.hcheck); if (!h) return;
+    // Habits that log amounts or where you stopped: "Did it" opens the day to fill them in.
+    if (hLog(h, todayStr()) !== 'done' && ((h.measures || []).length || h.askStop)) return openHabitDay(h, todayStr(), { markDone: true });
+    hToggleToday(h); refresh(); return;
+  }
   if ((b = q('[data-hskip]'))) { const h = habitById(b.dataset.hskip); const td = todayStr(); h.log = h.log || {}; if (h.log[td] === 'skip') delete h.log[td]; else h.log[td] = 'skip'; save(); return refresh(); }
   if ((b = q('[data-hfocus]'))) { e.stopPropagation(); const h = habitById(b.dataset.hfocus); if (h) hStartFocus(h, b.dataset.hrest || hPartial(h, todayStr())); return; }
   if ((b = q('[data-hadd]'))) return hAddTime(habitById(b.dataset.hadd));
@@ -425,11 +448,8 @@ document.addEventListener('click', (e) => {
   if ((b = q('[data-hmon]'))) { const [id, mon] = b.dataset.hmon.split(':'); ui.hbMonth = ui.hbMonth || {}; ui.hbMonth[id] = mon; ui.hbOpen = ui.hbOpen || {}; ui.hbOpen[id] = true; return renderList(); }
   // Fix a past day on the tracker: nothing → done → day off → nothing.
   if ((b = q('[data-hday]'))) {
-    const h = habitById(b.closest('[data-habit]').dataset.habit); const d = b.dataset.hday;
-    h.log = h.log || {};
-    const cur = h.log[d];
-    if (!cur) h.log[d] = 'done'; else if (cur === 'done') h.log[d] = 'skip'; else delete h.log[d];
-    save(); refresh();
+    const h = habitById(b.closest('[data-habit]').dataset.habit);
+    return openHabitDay(h, b.dataset.hday);
   }
 }, true);
 
