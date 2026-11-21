@@ -207,3 +207,25 @@ test('habit days: amounts, notes and where you stopped', () => {
   assert.equal(L.habitLastStop(h, '2026-11-20').stop, 'Chapter 3, page 45');
   assert.equal(L.habitLastStop(h, '2026-11-19'), null);
 });
+
+test('habit days: items for one day only', () => {
+  const h = { measures: [{ id: 'q', name: 'Quran', unit: 'pages' }, { id: 'pu', name: 'Push ups', unit: 'reps', every: false }, { id: 'x', name: 'typo', unit: 'min', every: false }] };
+  L.habitSetEntry(h, '2026-11-20', { vals: { q: 10, pu: 30 } });
+  // every-day items show on every day; a day-only item only where it has a number
+  assert.deepEqual(L.habitMeasuresFor(h, '2026-11-20').map((m) => m.id), ['q', 'pu']);
+  assert.deepEqual(L.habitMeasuresFor(h, '2026-11-21').map((m) => m.id), ['q']);
+  // and it is offered as "used before" on other days
+  assert.deepEqual(L.habitUsedBefore(h, '2026-11-21').map((m) => m.id), ['pu']);
+  // a day-only item with no number anywhere is removed
+  L.habitTidyMeasures(h);
+  assert.deepEqual(h.measures.map((m) => m.id), ['q', 'pu']);
+});
+
+test('sync keeps habit items added on both computers', () => {
+  const base = { habits: [{ id: 'h', name: 'Gym', measures: [{ id: 'a', name: 'Min', unit: 'min' }], entries: {} }] };
+  const ours = JSON.parse(JSON.stringify(base)); const theirs = JSON.parse(JSON.stringify(base));
+  ours.habits[0].measures.push({ id: 'b', name: 'Push ups', unit: 'reps', every: false }); ours.habits[0].entries['2026-11-20'] = { vals: { b: 20 } };
+  theirs.habits[0].measures.push({ id: 'c', name: 'Pull ups', unit: 'reps', every: false }); theirs.habits[0].entries['2026-11-21'] = { vals: { c: 8 } };
+  const out = L.merge3(base, ours, theirs);
+  assert.deepEqual(out.habits[0].measures.map((m) => m.id).sort(), ['a', 'b', 'c']);
+});

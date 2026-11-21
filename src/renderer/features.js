@@ -379,6 +379,16 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.19.1': {
+    ar: ['اللي بتضيفه من صفحة اليوم في العادة بقى لليوم ده بس، ومبقاش بيظهر في كل الأيام. ولو استخدمته قبل كده بيظهرلك تحت "استخدمتها قبل كده" تضيفه بدوسة',
+      'تقدر تغيّر اسم أي حاجة بتسجلها، أو وحدتها، أو تشيلها (وتتراجع قبل ما تحفظ)، أو تخليها "كل يوم" أو "اليوم ده بس"',
+      'مفيش حاجة بتتغيّر غير لما تدوس حفظ. "إلغاء" بيسيب العادة زي ما كانت',
+      'Enter في خانة الإضافة بيضيف، وفي أي خانة تانية بيحفظ. والخانات الفاضية مبقتش بتبان كأنها صفر'],
+    en: ['What you add from a habit’s day now belongs to that day only, instead of showing on every day. Things you used before show under "Used before" to add with one click',
+      'Rename anything you log, change its unit, remove it (with undo before you save), or switch it between "Every day" and "This day only"',
+      'Nothing changes until you press Save. Cancel leaves the habit as it was',
+      'Enter in the add box adds, and in any other box saves. Empty boxes no longer look like zeros'],
+  },
   '1.19.0': {
     ar: ['العادات بقت بتسجّل تفاصيل كل يوم: دوس على أي يوم، أو "عملتها"، يفتحلك صفحة اليوم: اتعملت ولا إجازة ولا لسه (ومكتوب تحت كل واحدة معناها)، وعملت قد إيه، ووقفت فين، وملاحظة',
       'كل عادة تختار هي بتسجّل إيه: صفحات للقراية، ودقايق للجيم، وعدد للـ Push ups والـ Pull ups… وتقدر تضيف حاجة جديدة من صفحة اليوم نفسها. وبتشوف مجموع الأسبوع على كارت العادة',

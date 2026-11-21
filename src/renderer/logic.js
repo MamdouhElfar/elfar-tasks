@@ -129,6 +129,25 @@
     for (const d of days) { const e = h.entries[d]; if (e.stop || e.note) return { date: d, stop: e.stop || '', note: e.note || '' }; }
     return null;
   }
+  // A measure shows every day unless every === false: then it is a "this day only" item, shown only
+  // on days that have a number for it (and offered as "used before" on other days).
+  const hasVal = (h, mid) => Object.values(h.entries || {}).some((e) => e.vals && e.vals[mid] > 0);
+  function habitMeasuresFor(h, d) {
+    const e = (h.entries || {})[d];
+    return (h.measures || []).filter((m) => m.every !== false || (e && e.vals && e.vals[m.id] > 0));
+  }
+  // Day-only items you used before but not on this day, the most recent first.
+  function habitUsedBefore(h, d) {
+    const shown = new Set(habitMeasuresFor(h, d).map((m) => m.id));
+    const last = {};
+    for (const [day, e] of Object.entries(h.entries || {})) for (const [k, v] of Object.entries(e.vals || {})) if (v > 0 && (!last[k] || day > last[k])) last[k] = day;
+    return (h.measures || []).filter((m) => m.every === false && !shown.has(m.id) && last[m.id]).sort((a, b) => last[b.id].localeCompare(last[a.id]));
+  }
+  // Day-only items with no number on any day are gone for good.
+  function habitTidyMeasures(h) {
+    h.measures = (h.measures || []).filter((m) => m.every !== false || hasVal(h, m.id));
+    return h;
+  }
   // How much of each measure between two days (e.g. this week's pages and push ups).
   function habitTotals(h, from, to) {
     const out = {};
@@ -298,7 +317,15 @@
         if (o && t) {
           if (eq(o, t) || eq(o, b)) list.push(t);
           else if (eq(t, b)) list.push(o);
-          else if (k === 'habits') list.push({ ...t, ...o, log: { ...(t.log || {}), ...(o.log || {}) }, minutes: { ...(t.minutes || {}), ...(o.minutes || {}) }, entries: { ...(t.entries || {}), ...(o.entries || {}) } });
+          else if (k === 'habits') {
+            // Keep the things logged on both computers; a measure added on one side stays (else its numbers vanish).
+            const ms = new Map((t.measures || []).map((m) => [m.id, m]));
+            for (const m of o.measures || []) ms.set(m.id, m);
+            const gone = new Set([...(b && b.measures || [])].map((m) => m.id).filter((id) => !(o.measures || []).some((m) => m.id === id) || !(t.measures || []).some((m) => m.id === id)));
+            const entries = { ...(t.entries || {}), ...(o.entries || {}) };
+            const measures = [...ms.values()].filter((m) => !gone.has(m.id) || Object.values(entries).some((e) => e.vals && e.vals[m.id] > 0));
+            list.push({ ...t, ...o, log: { ...(t.log || {}), ...(o.log || {}) }, minutes: { ...(t.minutes || {}), ...(o.minutes || {}) }, entries, measures });
+          }
           else list.push((o.updated || 0) >= (t.updated || 0) ? o : t);
         } else if (o && !t) { if (!b || !eq(o, b)) list.push(o); }   // new here, or changed here after they deleted it
         else if (t && !o) { if (!b || !eq(t, b)) list.push(t); }
@@ -366,6 +393,7 @@
     QUADS, QUAD_RANK, byPriorityThenDue, statusOf, isActive, minutesLeft, deferTo,
     hWeekStart, hLog, hMins, hDoneCount, hEnded, hLive, hActiveOn, hScheduled, hWeek, hTarget, hWeekVal, hPartial,
     habitsDueOn, habitStillDue, habitAddMinutes, habitSetEntry, habitEntry, habitLastStop, habitTotals,
+    habitMeasuresFor, habitUsedBefore, habitTidyMeasures,
     arCount, fmtMins,
     makePatch, patchEmpty, applyPatch,
     parseQuick, merge3, layoutBlocks, suggestPlan

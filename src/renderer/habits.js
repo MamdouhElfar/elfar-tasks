@@ -281,7 +281,7 @@ function openHabitEditor(h, preset = {}) {
       <div class="hbe-opts"><label class="hbe-check"><input type="checkbox" id="heWidget" ${h.widget !== false ? 'checked' : ''}> ${t('hbInWidget')}</label>
         ${h.kind !== 'days' ? `<label class="hbe-check">${t('hbWeekStarts')} <select id="heWs"><option value="">${t('hbWsDefault')} (${hDayName(appWeekStart(), 'long')})</option>${[6, 0, 1, 2, 3, 4, 5].map((d) => `<option value="${d}" ${h.weekStart === d ? 'selected' : ''}>${hDayName(d, 'long')}</option>`).join('')}</select></label>` : ''}</div>
       <div class="hbe-log"><label class="hbe-lbl">${t('hbLogTitle')}</label><p class="small muted hbe-help">${t('hbLogHelp')}</p>
-        ${h.measures.map((m, i) => `<div class="hbe-m" data-mi="${i}"><input type="text" dir="auto" data-mname value="${esc(m.name)}" placeholder="${t('hbMeasureName')}"><select data-munit>${UNITS.map(([u]) => `<option value="${u}" ${m.unit === u ? 'selected' : ''}>${unitLabel(u)}</option>`).join('')}</select><button type="button" class="icon" data-mdel="${i}">✕</button></div>`).join('')}
+        ${h.measures.map((m, i) => m.every === false ? '' : `<div class="hbe-m" data-mi="${i}"><input type="text" dir="auto" data-mname value="${esc(m.name)}" placeholder="${t('hbMeasureName')}"><select data-munit>${UNITS.map(([u]) => `<option value="${u}" ${m.unit === u ? 'selected' : ''}>${unitLabel(u)}</option>`).join('')}</select><button type="button" class="icon" data-mdel="${i}">✕</button></div>`).join('')}
         <div class="hbe-madd">${[['pages', t('hbMPages')], ['min', t('hbMMins')], ['reps', t('hbMReps')], ['', t('hbMOther')]].map(([u, l]) => `<button type="button" data-madd="${u}">＋ ${l}</button>`).join('')}</div>
         <label class="hbe-check"><input type="checkbox" id="heAskStop" ${h.askStop ? 'checked' : ''}> ${t('hbAskStop')}</label></div>
       <div class="hbe-colors">${COLORS.map((c) => `<button type="button" class="swatch ${h.color === c ? 'on' : ''}" data-hcolor="${c}" style="background:var(--c-${c})"></button>`).join('')}</div>
@@ -304,7 +304,8 @@ function openHabitEditor(h, preset = {}) {
     if (v('heWidget')) h.widget = v('heWidget').checked;
     if (v('heWs')) h.weekStart = v('heWs').value === '' ? null : Number(v('heWs').value);
     if (v('heAskStop')) h.askStop = v('heAskStop').checked;
-    h.measures = [...bg.querySelectorAll('.hbe-m')].map((row) => ({ id: h.measures[Number(row.dataset.mi)].id, name: row.querySelector('[data-mname]').value.trim(), unit: row.querySelector('[data-munit]').value }));
+    const dayOnly = h.measures.filter((m) => m.every === false);
+    h.measures = [...[...bg.querySelectorAll('.hbe-m')].map((row) => ({ id: h.measures[Number(row.dataset.mi)].id, name: row.querySelector('[data-mname]').value.trim(), unit: row.querySelector('[data-munit]').value })), ...dayOnly];
   };
   draw();
   document.body.appendChild(bg);
@@ -319,7 +320,13 @@ function openHabitEditor(h, preset = {}) {
     if (b.dataset.hset) { read(); h[b.dataset.hset] = b.dataset.v; if (h.kind === 'days' && !h.duration) h.duration = 60; draw(); return; }
     if (b.dataset.hdayPick !== undefined) { read(); const d = Number(b.dataset.hdayPick); h.days = h.days.includes(d) ? h.days.filter((x) => x !== d) : [...h.days, d]; draw(); return; }
     if (b.dataset.madd !== undefined) { read(); const ar = lang() === 'ar'; const names = { pages: ar ? 'صفحات' : 'Pages', min: ar ? 'دقايق' : 'Minutes', reps: ar ? 'Push ups' : 'Push ups' }; h.measures.push({ id: uid(), name: names[b.dataset.madd] || '', unit: b.dataset.madd || 'times' }); draw(); setTimeout(() => bg.querySelector('.hbe-m:last-of-type [data-mname]')?.select(), 0); return; }
-    if (b.dataset.mdel !== undefined) { read(); h.measures.splice(Number(b.dataset.mdel), 1); draw(); return; }
+    if (b.dataset.mdel !== undefined) {
+      const id = h.measures[Number(b.dataset.mdel)].id; read();
+      const i = h.measures.findIndex((m) => m.id === id);
+      const used = Object.values((habitById(h.id) || h).entries || {}).some((e) => e.vals && e.vals[id] > 0);
+      if (used) h.measures[i].every = false; else h.measures.splice(i, 1); // earlier days keep their numbers
+      draw(); return;
+    }
     if (b.dataset.hemo) { bg.querySelector('#heEmoji').value = b.dataset.hemo; return; }
     if (b.dataset.hcolor) { read(); h.color = b.dataset.hcolor; draw(); return; }
     if (b.hasAttribute('data-hcancel')) return close();
@@ -336,8 +343,13 @@ function openHabitEditor(h, preset = {}) {
       if (h.kind === 'days' && !h.days.length) { showToast(t('hbPickDays')); return; }
       const list = habitsList();
       const i = list.findIndex((x) => x.id === h.id);
-      h.measures = h.measures.filter((m) => m.name);
-      if (i >= 0) list[i] = { ...list[i], ...h, log: list[i].log, minutes: list[i].minutes, entries: list[i].entries }; else list.push(h);
+      const named = (m) => m.name || m.every === false;
+      if (i >= 0) {
+        // keep day-only items added from a day sheet since the editor opened
+        const now = (list[i].measures || []).filter((m) => m.every === false && !h.measures.some((x) => x.id === m.id));
+        list[i] = { ...list[i], ...h, measures: [...h.measures.filter(named), ...now], log: list[i].log, minutes: list[i].minutes, entries: list[i].entries };
+        habitTidyMeasures(list[i]);
+      } else { h.measures = h.measures.filter(named); list.push(h); }
       save(); close();
       ui.view = 'habits'; ui.selected = null; refresh();
     }

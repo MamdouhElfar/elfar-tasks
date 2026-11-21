@@ -1795,7 +1795,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 .hb-totals { display: flex; align-items: center; gap: 5px; font-size: var(--fs-s); color: var(--text-2); flex-wrap: wrap; }
 .hb-totals .ico { width: 13px; height: 13px; color: var(--hc); }
 .hb-totals b { color: var(--text); }
-.modal.hd { width: min(440px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 10px; }
+.modal.hd { width: min(500px, calc(100vw - 32px)); max-height: calc(100vh - 40px); overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 .hd-head { display: flex; align-items: center; gap: 10px; }
 .hd-head h3 { margin: 0; }
 .hd-prev { padding: 8px 10px; border-radius: 10px; background: var(--accent-bg); color: var(--accent-text); font-size: var(--fs-m); }
@@ -1806,13 +1806,35 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 .hd-status .st-skip.on { background: var(--text-3); color: #fff; border-color: transparent; }
 .hd-status .st-none.on { background: var(--hover); color: var(--text); }
 .hd-help { margin: -4px 0 0; }
-.hd-ms { display: flex; flex-direction: column; gap: 6px; }
-.hd-m { display: grid; grid-template-columns: 1fr 100px 60px; gap: 8px; align-items: center; font-size: var(--fs-m); }
-.hd-m input { text-align: center; padding: 6px; border-radius: var(--radius); border: 1px solid var(--border-2); background: var(--panel); }
-.hd-m small { color: var(--text-3); font-size: var(--fs-s); }
+.hd-val { width: 80px; text-align: center; padding: 6px; border-radius: var(--radius); border: 1px solid var(--border-2); background: var(--panel); font-size: var(--fs-m); }
+.hd-mins { display: flex; align-items: center; gap: 8px; font-size: var(--fs-m); }
+.hd-mins > span { flex: 1; }
+.hd-mins small { color: var(--text-3); font-size: var(--fs-s); min-width: 90px; }
+.hd-sec { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 12px; background: var(--hover); }
+.hd-sec-h { font-size: var(--fs-s); color: var(--text-2); font-weight: 600; }
+.hd-empty { margin: 0; }
+.hd-ms { display: flex; flex-direction: column; gap: 4px; }
+.hd-m { display: flex; align-items: center; gap: 6px; font-size: var(--fs-m); }
+.hd-m .hd-mname { flex: 1; min-width: 0; padding: 5px 6px; border: 1px solid transparent; border-radius: var(--radius); background: transparent; font-size: var(--fs-m); color: var(--text); }
+.hd-m .hd-mname:hover { border-color: var(--border-2); }
+.hd-m .hd-mname:focus { border-color: var(--accent); background: var(--panel); }
+.hd-unit { font-size: var(--fs-s); padding: 4px; width: 70px; }
+.hd-pin { font-size: var(--fs-xs); padding: 3px 8px; border-radius: 99px; white-space: nowrap; color: var(--text-3); background: transparent; border: 1px dashed var(--border-2); display: inline-flex; align-items: center; gap: 3px; }
+.hd-pin svg { width: 12px; height: 12px; }
+.hd-pin.on { color: var(--accent-text); background: var(--accent-bg); border: 1px solid transparent; }
+.hd-del { width: 26px; height: 26px; color: var(--text-3); }
+.hd-del:hover { color: var(--danger, #d33); }
+.hd-m.gone { padding: 4px 6px; opacity: .75; }
+.hd-m.gone .hd-mname { flex: 0 1 auto; text-decoration: line-through; }
+.hd-m.gone small { flex: 1; }
 .hd-addm { display: flex; gap: 6px; }
 .hd-addm input { flex: 1; min-width: 0; font-size: var(--fs-s); }
 .hd-addm select { font-size: var(--fs-s); }
+.hd-addm button { white-space: nowrap; }
+.hd-used { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.hd-used small { color: var(--text-3); }
+.hd-used button { border-radius: 99px; font-size: var(--fs-s); padding: 2px 10px; }
+.hd-legend { margin: 0; font-size: var(--fs-xs); }
 .hd-f { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-s); color: var(--text-2); }
 .hd-f input, .hd-f textarea { font-size: var(--fs-m); width: 100%; }
 .hd-askstop { align-self: flex-start; }
@@ -1825,3 +1847,6 @@ button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-v
 /* edge mouse: habits left today */
 .peek .pk-hab { min-width: 20px; padding: 1px 5px; border-radius: 99px; background: var(--c-purple); color: #fff; font-size: 11px; font-weight: 600; text-align: center; }
 body:has(.pk-hab) .peek { height: auto; padding: 6px 0; }
+/* 1.19.1 day sheet: rows line up in both languages; hints read the right way in Arabic */
+.hd-pin { width: 100px; justify-content: center; }
+html[dir="rtl"] .modal.hd input:placeholder-shown, html[dir="rtl"] .modal.hd textarea:placeholder-shown { direction: rtl; text-align: right; }
