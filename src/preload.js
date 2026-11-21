@@ -15,6 +15,8 @@ contextBridge.exposeInMainWorld('api', {
   restoreBackup: (file) => ipcRenderer.invoke('backup:restore', file),
   dataFolder: () => ipcRenderer.invoke('data:folder'),
   chooseDataFolder: () => ipcRenderer.invoke('data:choose-folder'),
+  cloudFolders: () => ipcRenderer.invoke('data:cloud-folders'),
+  useCloud: (root) => ipcRenderer.invoke('data:use-cloud', root),
 
   setWidgetVisible: (v) => ipcRenderer.invoke('widget:set-visible', v),
   widgetIgnoreMouse: (ignore) => ipcRenderer.send('widget:ignore-mouse', ignore),

@@ -379,6 +379,20 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.18.0': {
+    ar: ['التقويم بقى فيه شهر وأسبوع ويوم. في الأسبوع واليوم يومك متقسم ساعات، وخط أحمر بيوريك الساعة دلوقتي. اسحب التاسك من "من غير ميعاد" على أي ساعة، واسحب طرفها عشان تطوّلها، ودوستين على ساعة فاضية تضيف تاسك فيها',
+      'من النهارده: "رتّب على الساعات" بيفتح يومك بالساعات، والتاسك اللي في ميعادها دلوقتي بتبقى في كارت "دلوقتي"',
+      'الخطة بتقترح بنفسها: أول ما تفتحها بتلاقي الأهم اللي يكفّي يومك متعلّم، وزرار "✨ اقترح عليا" يرجّع الاقتراح',
+      'الإضافة بتفهم الكلام: "اتصل بأحمد بكرة الساعة 3 ساعة !1 #الشغل @سارة" والميعاد والوقت والمدة والأولوية والفولدر والشخص بيتحطوا لوحدهم، وبتشوفهم وإنت بتكتب',
+      'مزامنة بين أجهزتك: من الإعدادات ← البيانات، دوسة واحدة على OneDrive. ولو اتعدّل على الجهازين في نفس الوقت، التعديلات بتتدمج',
+      'من جوه: اختبارات شاشات بتفتح التطبيق مستخبي وتجرب كل حاجة قبل كل إصدار، و13 اختبار للحسابات والمزامنة'],
+    en: ['The calendar has month, week and day. Week and day show your hours with a red line for now. Drag a task from "No time yet" onto an hour, pull its edge to resize, double-click an empty hour to add one',
+      'From Today: "Put on hours" opens your day by the hour, and a task scheduled right now becomes the "Now" card',
+      'The plan suggests itself: it opens with the most pressing things that fit your day picked, and "✨ Suggest" brings the suggestion back',
+      'Adding understands words: "Call Ahmed tomorrow 3pm 1h !1 #Work @Sara" sets the date, time, length, priority, folder and person, shown as you type',
+      'Sync between your computers: Settings › Data, one click on OneDrive. Changes made on both at once are merged',
+      'Under the hood: screen tests open the app hidden and try everything before each release, plus 13 tests for the rules and sync']
+  },
   '1.17.4': {
     ar: ['دليل التطبيق اتعمل من جديد: فوق "يومك في 4 خطوات"، وتحته المميزات في ليستة قصيرة تفتح واحدة واحدة، وفيها بحث',
       '"وريني" بقى يوديك للمكان بالظبط ويحدده بإطار، ويسيبلك كارت تحت فيه الشرح وزرار "ارجع للدليل" اللي بيرجعك لنفس الميزة',

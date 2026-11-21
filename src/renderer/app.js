@@ -322,6 +322,7 @@ function pendingSubBar() {
 }
 
 function renderCalendar() {
+  if (calView() !== 'month') return renderTimeGrid(calView());
   const base = ui.calMonth || todayStr().slice(0, 7);
   const [y, m] = base.split('-').map(Number);
   const first = new Date(y, m - 1, 1);
@@ -368,6 +369,7 @@ function renderCalendar() {
   const chip = (group, val, label, on) => `<button class="chip-f ${on ? 'on' : ''} ${group === 'prio' ? val : ''}" data-cf="${group}" data-cv="${val}">${label}</button>`;
   $('list').innerHTML = `<div class="cal">
     <div class="cal-head">
+      ${calViewSeg()}
       <div class="cal-nav">
         <button class="cal-arrow" data-cal="-1" title="${t('prev')}">${icon('chevron')}</button>
         <b class="cal-month">${monthName}</b>
@@ -670,6 +672,10 @@ function addTask(title, opts = {}) {
     const p = findOrCreatePerson(opts.person, x.areaId);
     if (p && !isPendingWith(x, p.id)) { x.pendingWith.push({ personId: p.id, since: todayStr() }); recordHandoff(x, `${t('nowWith')} ${p.name}`); }
   }
+  if (opts.estimate) x.estimate = opts.estimate;
+  if (opts.blockAt) { x.blockAt = opts.blockAt; x.blockMins = opts.estimate || 30; }
+  else if (ui.tgNewBlock && (!x.due || x.due === ui.tgNewBlock.slice(0, 10))) { x.blockAt = ui.tgNewBlock; x.blockMins = x.estimate || 30; if (!x.due) x.due = ui.tgNewBlock.slice(0, 10); }
+  ui.tgNewBlock = null;
   syncReminder(x);
   data.tasks.push(x);
   save();

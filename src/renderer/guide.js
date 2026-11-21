@@ -26,7 +26,7 @@ const GUIDE_GROUPS = [
   ]],
   ['tasks', ['تنظيم التاسكات', 'Organizing tasks'], [
     ['matrix', 'matrix', { view: 'matrix', spot: '.tab[data-view="matrix"]' }, ['المصفوفة', 'رتّب بالأهمية والاستعجال من 1 لـ 4', 'تاب المصفوفة'], ['Matrix', 'Sort by importance and urgency, 1 to 4', 'Matrix tab']],
-    ['calendar', 'calendar', { view: 'calendar', spot: '.tab[data-view="calendar"]' }, ['التقويم', 'تاسكاتك على الشهر، واسحب لتغيّر اليوم', 'تاب التقويم'], ['Calendar', 'Your month; drag to change a day', 'Calendar tab']],
+    ['calendar', 'calendar', { view: 'calendar', spot: '.cal-views' }, ['التقويم بالساعات', 'شهر أو أسبوع أو يوم، وقسّم يومك على الساعات', 'تاب التقويم'], ['Calendar with hours', 'Month, week or day; put tasks on hours', 'Calendar tab']],
     ['folders', 'folder', { view: 'today', spot: '#areasNav' }, ['الفولدرات', 'فولدرات جوه فولدرات، وبتترتب بالسحب', 'الشريط الجانبي'], ['Folders', 'Folders in folders, reordered by dragging', 'Sidebar']],
     ['people', 'user', { task: '#detail .pending-box' }, ['مستني رد من', 'تابع التاسكات اللي عند حد تاني', 'صفحة التاسك'], ['Waiting on people', "Track tasks someone else has", 'Task page']],
     ['repeat', 'repeat', { task: '#dRepeat' }, ['التكرار', 'يومي أو أسبوعي أو شهري أو سنوي', 'صفحة التاسك'], ['Repeating', 'Daily, weekly, monthly or yearly', 'Task page']],
@@ -37,6 +37,7 @@ const GUIDE_GROUPS = [
     ['widget', 'edgeRight', { settings: 'widget' }, ['الويدجت', 'تاسكاتك وعاداتك والتايمر فوق كل البرامج', 'الإعدادات'], ['Desktop widget', 'Tasks, habits and timer above every app', 'Settings']],
     ['quick', 'plus', { coach: true }, ['إضافة سريعة', 'ضيف تاسك من أي برنامج', 'Ctrl+Alt+Space'], ['Quick add', 'Add a task from any app', 'Ctrl+Alt+Space']],
     ['reminders', 'bell', { settings: 'notifications' }, ['التذكيرات', 'الفار بيرن الجرس في الميعاد', 'الإعدادات'], ['Reminders', 'The mouse rings a bell on time', 'Settings']],
+    ['sync', 'repeat', { settings: 'data' }, ['المزامنة', 'نفس التاسكات على كل أجهزتك', 'الإعدادات ← البيانات'], ['Sync', 'The same tasks on all your computers', 'Settings › Data']],
     ['backup', 'folder', { settings: 'data' }, ['النسخ الاحتياطية', 'نسخة كل يوم، وترجع لأي واحدة', 'الإعدادات'], ['Backups', 'A copy every day; restore any', 'Settings']]
   ]]
 ];
@@ -49,14 +50,15 @@ const GUIDE_MORE = {
   habits: ['3 أنواع: أيام محددة، أو مرات في الأسبوع، أو وقت في الأسبوع. اليوم اللي يعدّي من غير ما تعملها بيتسجل فات، والجزئي بيتحسب بقد اللي عملته.', 'Three kinds: set days, times a week, or time a week. A day that passes without it is missed; a partial day counts for its share.'],
   report: ['من أي تاريخ: اتقفل كام، واتضاف كام، ومين عنده حاجات متعطلة، ووقت التركيز حسب الفولدر. وتقدر تنسخه أو تطلّعه Excel.', 'From any date: closed, added, who is holding things up, focus time by folder. Copy it or export to Excel.'],
   matrix: ['1 اعملها دلوقتي، 2 خطط لها، 3 فوّضها، 4 استغنى عنها. اسحب الكارت بين المربعات، أو دوس 1–4 على أي تاسك.', '1 do now, 2 plan, 3 delegate, 4 drop. Drag cards between boxes, or press 1–4 on any task.'],
-  calendar: ['اسحب التاسك ليوم تاني عشان تغيّر ميعادها، ودوس + في أي يوم تضيف عليه.', 'Drag a task to another day to move it; press + on any day to add one.'],
+  calendar: ['اختار شهر أو أسبوع أو يوم. في الأسبوع واليوم اسحب التاسك على ساعة، واسحب طرفها عشان تطوّلها، والخط الأحمر هو الساعة دلوقتي. وفي الشهر اسحب التاسك ليوم تاني.', 'Pick month, week or day. In week and day drag a task onto an hour and pull its edge to resize; the red line is now. In month, drag a task to another day.'],
+  sync: ['خلّي بيانات التطبيق في OneDrive أو Dropbox بدوسة، وعلى الجهاز التاني اختار نفس الحاجة. التعديلات على الجهازين بتتدمج ومش بتمسح بعض.', 'Keep the data in OneDrive or Dropbox in one click, and pick the same on your other computer. Changes on both are merged, never overwritten.'],
   folders: ['اسحب الفولدر لفوق أو لتحت عشان ترتّبه، أو حطّه على فولدر تاني يبقى جواه.', 'Drag a folder up or down to reorder it, or onto another to put it inside.'],
   people: ['اكتب اسم الشخص في "معلّق عند"، والتطبيق بيعد بقالها كام يوم عنده وبيفكّرك تتابع.', 'Add a name under "Pending with"; the app counts the days and nudges you to follow up.'],
   repeat: ['كل مرة بتبقى تاسك لوحدها في يومها، ولو قفلتها المرة الجاية بتتعمل لوحدها.', 'Each round is its own task on its own day; closing one creates the next.'],
   notes: ['عناوين ونقط وقايمة تشيك وكذا صفحة، وسجل متابعة بالتاريخ والساعة، وملفات ولينكات.', 'Headings, bullets, checklists and several pages, a dated follow-up log, files and links.'],
   putoff: ['كل ما تأخّر موعد تاسك بيتعد. وفي المرة التالتة الفار يسألك: تبدأ فيها؟ تقسّمها؟ تديها لحد؟ ولا تشيلها؟', 'Every time a due date moves later it counts. On the third time the mouse asks: start, split, hand off, or drop?'],
   widget: ['فوق كل البرامج، أو مستخبي على جنب الشاشة. وتقدر تسحب الفار من ديله عشان تحرّكه، أو تخلّيه يفتح بالدوس بس.', 'Above every app, or tucked at the screen edge. Drag the mouse by its tail to move it, or make it open on click only.'],
-  quick: ['من أي برنامج دوس Ctrl+Alt+Space، اكتب التاسك، ودوس Enter. وخلاص.', 'From any app press Ctrl+Alt+Space, type the task, press Enter. Done.'],
+  quick: ['من أي برنامج دوس Ctrl+Alt+Space واكتب التاسك بالكلام: "اتصل بأحمد بكرة الساعة 3 ساعة !1 #الشغل". الميعاد والوقت والمدة والأولوية والفولدر بيتحطوا لوحدهم.', 'From any app press Ctrl+Alt+Space and type it in words: "Call Ahmed tomorrow 3pm 1h !1 #Work". The date, time, length, priority and folder are set for you.'],
   reminders: ['الفار بيطلع ويرن، وتقدر تقوله "فكّرني بعد 10 دقايق". وبيفكّرك كمان بمراجعة آخر اليوم والعادات.', 'The mouse rings; you can say "remind me in 10 min". It also reminds you of the evening review and your habits.'],
   backup: ['نسخة تلقائية كل يوم، وتقدر ترجع لأي واحدة، أو تحفظ نسخة في أي مكان زي OneDrive.', 'An automatic copy every day; restore any, or save a copy anywhere like OneDrive.']
 };

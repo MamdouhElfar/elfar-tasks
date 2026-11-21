@@ -139,3 +139,58 @@ test('saving: only changes travel, and nothing the app wrote is lost', () => {
   assert.deepEqual(p2.dels.tasks, ['b']);
   assert.ok(L.patchEmpty(L.makePatch(base, JSON.parse(JSON.stringify(base)))));
 });
+
+test('quick add understands a sentence', () => {
+  const now = new Date(2026, 10, 21, 10, 0); // Saturday 21 Nov 2026
+  let r = L.parseQuick('اتصل بأحمد بكرة الساعة 3 ساعة', now);
+  assert.deepEqual([r.title, r.due, r.dueTime, r.estimate], ['اتصل بأحمد', '2026-11-22', '15:00', 60]);
+  r = L.parseQuick('Call Ahmed tomorrow 3pm for 30 min !1 #Work @Sara', now);
+  assert.deepEqual([r.title, r.due, r.dueTime, r.estimate, r.priority, r.folder, r.person], ['Call Ahmed', '2026-11-22', '15:00', 30, 'q1', 'Work', 'Sara']);
+  r = L.parseQuick('مذاكرة ساعة ونص بعد بكرة', now);
+  assert.deepEqual([r.title, r.due, r.estimate], ['مذاكرة', '2026-11-23', 90]);
+  r = L.parseQuick('تقرير الخميس 10:30', now);
+  assert.deepEqual([r.title, r.due, r.dueTime], ['تقرير', '2026-11-26', '10:30']);
+  r = L.parseQuick('meeting 25/12 9am', now);
+  assert.deepEqual([r.due, r.dueTime], ['2026-12-25', '09:00']);
+  // ordinary words are left alone
+  for (const q of ['look at 3 options', 'Fix the sun panel', 'buy milk']) assert.equal(L.parseQuick(q, now).title, q);
+});
+
+test('sync merges what changed on each computer', () => {
+  const base = { settings: { zoom: 1 }, tasks: [{ id: 'a', v: 1, updated: 1 }, { id: 'b', v: 1, updated: 1 }, { id: 'c', v: 1, updated: 1 }], habits: [{ id: 'h', log: { d1: 'done' } }], areas: [], people: [] };
+  const ours = JSON.parse(JSON.stringify(base)), theirs = JSON.parse(JSON.stringify(base));
+  ours.tasks[0].v = 2; ours.tasks[0].updated = 5;              // a changed here
+  theirs.tasks[1].v = 3; theirs.tasks[1].updated = 6;          // b changed there
+  ours.tasks.push({ id: 'd', v: 1 });                          // d added here
+  theirs.tasks = theirs.tasks.filter((x) => x.id !== 'c');     // c deleted there
+  ours.habits[0].log.d2 = 'done'; theirs.habits[0].log.d3 = 'done'; // both logged a day
+  ours.settings.zoom = 1.2;
+  const m = L.merge3(base, ours, theirs);
+  assert.deepEqual(m.tasks.map((x) => `${x.id}${x.v}`).sort(), ['a2', 'b3', 'd1']);
+  assert.deepEqual(Object.keys(m.habits[0].log).sort(), ['d1', 'd2', 'd3']);
+  assert.equal(m.settings.zoom, 1.2);
+});
+
+test('calendar blocks that overlap sit side by side', () => {
+  const ev = L.layoutBlocks([{ id: 1, start: 540, end: 600 }, { id: 2, start: 570, end: 630 }, { id: 3, start: 700, end: 760 }]);
+  const by = Object.fromEntries(ev.map((e) => [e.id, e]));
+  assert.equal(by[1].lanes, 2); assert.equal(by[2].lanes, 2); assert.notEqual(by[1].lane, by[2].lane);
+  assert.equal(by[3].lanes, 1);
+});
+
+test('the plan suggests what is most pressing and fits the day', () => {
+  const td = '2026-11-21';
+  const tasks = [
+    { id: 'late', due: '2026-11-19', priority: 'q2', estimate: 60 },
+    { id: 'today', due: td, priority: 'q3', estimate: 60 },
+    { id: 'big', priority: 'q1', estimate: 400 },
+    { id: 'later', start: '2026-11-25', due: '2026-11-26', priority: 'q1' },
+    { id: 'done', closure: td, priority: 'q1' },
+    { id: 'small', priority: 'q2', estimate: 30 }
+  ];
+  const ids = L.suggestPlan(tasks, 240, { today: td });
+  assert.deepEqual(ids.slice(0, 2), ['late', 'today']);
+  assert.ok(!ids.includes('later') && !ids.includes('done'));
+  assert.ok(!ids.includes('big'));      // doesn't fit in the 4 hours left
+  assert.ok(ids.includes('small'));
+});

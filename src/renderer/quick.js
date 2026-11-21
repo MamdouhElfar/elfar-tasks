@@ -20,7 +20,8 @@ function render() {
   prio = null;
   $('qa').innerHTML = `
     <div class="qa-head">${mouseLogo('brand-mini')}<span>Elfar Tasks · ${t('newTask')}</span></div>
-    <input type="text" class="qa-title" id="qTitle" dir="auto" placeholder="${t('newTask')}…" autocomplete="off">
+    <input type="text" class="qa-title" id="qTitle" dir="auto" placeholder="${t('quickPh')}" title="${t('quickTip')}" autocomplete="off">
+    <div class="qp" id="qParse"></div>
     <div class="qa-err" id="qErr">${t('titleRequired')}</div>
     <div class="qa-row">
       <select id="qArea">${areaOpts()}</select>
@@ -45,11 +46,20 @@ function dueValue(v) {
 }
 
 async function submit() {
-  const title = $('qTitle').value.trim();
-  if (!title) { $('qErr').classList.add('show'); return; }
+  const raw = $('qTitle').value.trim();
+  if (!raw) { $('qErr').classList.add('show'); return; }
+  // Words in the title fill what the fields below were left empty.
+  const p = parseQuick(raw);
+  const folder = !$('qArea').value && p.folder && findFolderByName(p.folder);
+  const pendingWith = [];
+  if (p.person) {
+    let person = data.people.find((x) => x.name.toLowerCase() === p.person.toLowerCase());
+    if (!person) { person = { id: uid(), name: p.person, areaIds: [] }; data.people.push(person); await sendChanges(); }
+    pendingWith.push({ personId: person.id, since: todayStr() });
+  }
   await window.api.quickAdd({
-    id: uid(), areaId: $('qArea').value || null, title, start: todayStr(), due: dueValue($('qDue').value), closure: null,
-    priority: prio, starred: false, notes: '', subtasks: [], log: [], pendingWith: [], created: Date.now(), updated: Date.now()
+    id: uid(), areaId: $('qArea').value || (folder && folder.id) || null, title: p.title, start: todayStr(), due: dueValue($('qDue').value) || p.due, dueTime: p.dueTime || null,
+    estimate: p.estimate || null, closure: null, priority: prio || p.priority, starred: false, notes: '', subtasks: [], log: [], pendingWith, created: Date.now(), updated: Date.now()
   });
   render();
 }
@@ -61,7 +71,11 @@ document.addEventListener('click', (e) => {
   syncPrioPicker(document.querySelector('.qa-prio .pp'), prio);
   $('qTitle').focus();
 });
-document.addEventListener('input', (e) => { if (e.target.id === 'qTitle') $('qErr').classList.remove('show'); });
+document.addEventListener('input', (e) => {
+  if (e.target.id !== 'qTitle') return;
+  $('qErr').classList.remove('show');
+  $('qParse').innerHTML = quickChipsHtml(parseQuick(e.target.value), data.settings.lang);
+});
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { window.api.quickClose(); render(); }
   if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') { e.preventDefault(); submit(); }

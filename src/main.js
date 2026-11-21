@@ -592,6 +592,10 @@ function morningSummary(data, today) {
 
 // ---------- auto-update (only in the installed app) ----------
 let updateState = { status: 'idle' };
+// Always answered, even where updates don't run (not installed, screen tests): then they do nothing.
+let updaterCheck = () => null, updaterInstall = () => null;
+ipcMain.handle('app:check-update', () => updaterCheck());
+ipcMain.handle('app:install-update', () => updaterInstall());
 function setupAutoUpdate() {
   if (!app.isPackaged) { updateState = { status: 'dev' }; return; }
   let autoUpdater;
@@ -624,8 +628,8 @@ function setupAutoUpdate() {
   // Updates install quietly (no setup wizard: that's only for the first install, to pick a folder)
   // and the app opens again by itself when it's done.
   autoUpdater.autoInstallOnAppQuit = true;
-  ipcMain.handle('app:install-update', () => { quitting = true; autoUpdater.quitAndInstall(true, true); });
-  ipcMain.handle('app:check-update', () => check());
+  updaterInstall = () => { quitting = true; autoUpdater.quitAndInstall(true, true); };
+  updaterCheck = () => check();
 }
 
 function applyTheme() {
@@ -756,24 +760,46 @@ ipcMain.handle('backup:list', () => store.listBackups());
 ipcMain.handle('backup:open-folder', () => shell.openPath(store.backupsDir()));
 ipcMain.handle('backup:restore', (e, file) => { store.importFrom(file); broadcast(); return true; });
 ipcMain.handle('data:folder', () => store.dataDir());
-ipcMain.handle('data:choose-folder', async () => {
-  const r = await dialog.showOpenDialog(mainWin, { properties: ['openDirectory', 'createDirectory'] });
-  if (r.canceled || !r.filePaths[0]) return null;
-  const dir = r.filePaths[0];
+// Move the data to a folder. If it already has data (another computer), ask: merge both, use
+// theirs, or replace with ours.
+async function useDataFolder(dir) {
   let useExisting = false;
   if (store.hasDataIn(dir)) {
     const c = await dialog.showMessageBox(mainWin, {
       type: 'question',
-      buttons: ar() ? ['استخدم البيانات اللي هناك', 'استبدلها ببياناتي', 'إلغاء'] : ['Use the data there', 'Replace it with mine', 'Cancel'],
-      defaultId: 0, cancelId: 2,
-      message: ar() ? 'الفولدر ده فيه بيانات بالفعل (غالباً من جهاز تاني).' : 'This folder already has data (probably from another computer).'
+      buttons: ar() ? ['ادمج الاتنين (الأفضل)', 'استخدم البيانات اللي هناك', 'استبدلها ببياناتي', 'إلغاء'] : ['Merge both (best)', 'Use the data there', 'Replace it with mine', 'Cancel'],
+      defaultId: 0, cancelId: 3,
+      message: ar() ? 'الفولدر ده فيه بيانات بالفعل (غالباً من جهاز تاني).' : 'This folder already has data (probably from another computer).',
+      detail: ar() ? 'الدمج بيحتفظ بتاسكات وعادات الجهازين.' : 'Merging keeps the tasks and habits from both computers.'
     });
-    if (c.response === 2) return null;
-    useExisting = c.response === 0;
+    if (c.response === 3) return null;
+    useExisting = c.response === 0 ? 'merge' : c.response === 1;
   }
   store.moveTo(dir, useExisting);
   broadcast();
   return store.dataDir();
+}
+ipcMain.handle('data:choose-folder', async () => {
+  const r = await dialog.showOpenDialog(mainWin, { properties: ['openDirectory', 'createDirectory'] });
+  if (r.canceled || !r.filePaths[0]) return null;
+  return useDataFolder(r.filePaths[0]);
+});
+// Cloud folders on this computer (OneDrive, Dropbox, Google Drive, iCloud), to sync through.
+function cloudFolders() {
+  const home = os.homedir();
+  const c = [
+    ['OneDrive', process.env.OneDrive], ['OneDrive', process.env.OneDriveConsumer], ['OneDrive (work)', process.env.OneDriveCommercial],
+    ['Dropbox', path.join(home, 'Dropbox')], ['Google Drive', path.join(home, 'Google Drive')], ['Google Drive', 'G:\\My Drive'], ['iCloud', path.join(home, 'iCloudDrive')]
+  ];
+  const seen = new Set();
+  return c.filter(([, p]) => p && fs.existsSync(p) && !seen.has(p.toLowerCase()) && seen.add(p.toLowerCase())).map(([name, p]) => ({ name, path: p }));
+}
+ipcMain.handle('data:cloud-folders', () => cloudFolders());
+ipcMain.handle('data:use-cloud', async (e, root) => {
+  if (!cloudFolders().some((c) => c.path === root)) return null; // only folders we found ourselves
+  const dir = path.join(root, 'Elfar Tasks');
+  fs.mkdirSync(dir, { recursive: true });
+  return useDataFolder(dir);
 });
 
 // Files attached to tasks
@@ -785,6 +811,24 @@ ipcMain.handle('file:open', (e, p) => (/^https?:\/\//.test(p) ? shell.openExtern
 ipcMain.handle('file:reveal', (e, p) => shell.showItemInFolder(p));
 
 // ---------- lifecycle ----------
+// ---------- screen tests ----------
+// Never shows a window: everything happens in the hidden main window, with a throwaway data folder.
+function runSmoke(scriptPath) {
+  const problems = [];
+  mainWin.webContents.on('console-message', (e, level, msg, line, src) => { if (level >= 2) problems.push(`console: ${msg} @ ${String(src).split('/').pop()}:${line}`); });
+  mainWin.webContents.on('render-process-gone', (e, d) => problems.push('renderer crashed: ' + d.reason));
+  mainWin.webContents.once('did-finish-load', () => setTimeout(async () => {
+    let r;
+    try { r = await mainWin.webContents.executeJavaScript(fs.readFileSync(scriptPath, 'utf8'), true); }
+    catch (err) { r = { ok: false, failures: ['script: ' + (err && err.message || err)] }; }
+    r.failures = [...(r.failures || []), ...problems];
+    r.ok = !r.failures.length;
+    process.stdout.write('SMOKE_RESULT ' + JSON.stringify(r) + String.fromCharCode(10));
+    store.flush();
+    app.exit(r.ok ? 0 : 1);
+  }, 1500));
+}
+
 app.whenReady().then(() => {
   app.setAppUserModelId('com.elfar.notes');
   // The program's file name changed with the new app name: if "open at login" was on for the
@@ -802,6 +846,8 @@ app.whenReady().then(() => {
   store.init(USER_DIR, { lang, onExternalChange: () => broadcast() });
   applyTheme();
   createMain();
+  // Screen tests (npm run smoke): the app runs hidden, a script clicks through it, then it quits.
+  if (process.env.ELFAR_SMOKE) return runSmoke(process.env.ELFAR_SMOKE);
   if (store.get().settings.widget.visible) createWidget();
   tray = new Tray(makeIcon(32));
   tray.setToolTip(APP_NAME);

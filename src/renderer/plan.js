@@ -37,7 +37,14 @@ function openPlan() {
   const groups = planCandidates();
   const cur = todayPlan();
   let picked = new Set(cur ? cur.ids : []);
-  if (!cur) for (const [, xs] of groups) for (const x of xs) if (picked.size < 3 && ['fromYesterday', 'overdue', 'stDueToday'].includes(groups.find(([, g]) => g.includes(x))[0])) picked.add(x.id);
+  // A fresh plan starts from a suggestion: the most pressing things that fit in your day.
+  const suggest = () => {
+    const cands = groups.flatMap(([, xs]) => xs);
+    const habitMins = habitsToday().reduce((n, h) => n + (h.duration && h.kind !== 'minutes' && hLog(h, todayStr()) !== 'done' ? h.duration : 0), 0);
+    const next = data.planNext && data.planNext.date === todayStr() ? data.planNext.ids : [];
+    return suggestPlan(cands, Math.max(60, dayCapacity() - habitMins), { fromYesterday: next });
+  };
+  if (!cur) suggest().forEach((id) => picked.add(id));
   const row = (x) => {
     const w = whenInfo(x);
     return `<label class="pl-row"><input type="checkbox" data-pick="${x.id}" ${picked.has(x.id) ? 'checked' : ''}>
@@ -48,7 +55,8 @@ function openPlan() {
   const bg = document.createElement('div');
   bg.className = 'modal-bg plan-bg';
   bg.innerHTML = `<div class="modal plan" role="dialog">
-    <div class="pl-head"><span class="pl-ico">${icon('today')}</span><div><h3>${t('planTitle')}</h3><p class="small muted">${t('planIntro').replace('{n}', PLAN_MAX)}</p></div></div>
+    <div class="pl-head"><span class="pl-ico">${icon('today')}</span><div><h3>${t('planTitle')}</h3><p class="small muted">${t('planIntro').replace('{n}', PLAN_MAX)}</p></div>
+      <button class="pl-suggest" id="plSuggest" title="${t('planSuggestTip')}">✨ ${t('planSuggest')}</button></div>
     <div class="pl-list">${groups.length ? groups.map(([k, xs], i) => `<details class="pl-group" ${i < 4 || k === 'fromYesterday' ? 'open' : ''}><summary>${t(k)} · ${xs.length}</summary>${xs.slice(0, 30).map(row).join('')}</details>`).join('') : `<div class="h-empty">${t('planNothing')}</div>`}</div>
     <div class="pl-count" id="plCount"></div><div id="plCap"></div>
     <label class="pl-auto small"><input type="checkbox" id="plAuto" ${data.settings.planAuto !== false ? 'checked' : ''}> ${t('planAuto')}</label>
@@ -73,6 +81,11 @@ function openPlan() {
   });
   bg.onclick = (e) => {
     if (e.target === bg || e.target.closest('#plSkip')) return close();
+    if (e.target.closest('#plSuggest')) {
+      picked = new Set(suggest());
+      bg.querySelectorAll('[data-pick]').forEach((c) => { c.checked = picked.has(c.dataset.pick); });
+      return count();
+    }
     if (e.target.closest('#plGo')) {
       // Keep the plan's order: what was there first, then the new picks by priority.
       const all = groups.flatMap(([, xs]) => xs).map((x) => x.id);

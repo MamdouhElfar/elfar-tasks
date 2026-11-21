@@ -61,6 +61,7 @@ function render() {
   $('wOpen').title = t('openApp');
   $('wHide').title = t('hide');
   $('wAdd').placeholder = '＋ ' + t('addTask');
+  $('wAdd').title = t('quickTip');
 
   renderStats();
   renderFocusStrip();
@@ -317,8 +318,11 @@ $('wHide').onclick = () => window.api.setWidgetVisible(false);
 $('wAdd').onkeydown = (e) => {
   if (e.key !== 'Enter' || !e.target.value.trim()) return;
   const f = filterInfo();
+  const p = parseQuick(e.target.value.trim());
+  const folder = p.folder && findFolderByName(p.folder);
   data.tasks.push({
-    id: uid(), areaId: f.areaId || null, title: e.target.value.trim(), start: todayStr(), due: f.today ? todayStr() : null,
+    id: uid(), areaId: f.areaId || (folder && folder.id) || null, title: p.title, start: todayStr(), due: p.due || (f.today ? todayStr() : null),
+    dueTime: p.dueTime || null, estimate: p.estimate || null, priority: p.priority || null,
     closure: null, starred: false, notes: '',
     pendingWith: f.personId ? [{ personId: f.personId, since: todayStr() }] : [], subtasks: [], log: [], created: Date.now(), updated: Date.now()
   });

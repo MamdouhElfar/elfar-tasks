@@ -21,6 +21,7 @@ function openComposer(preset = {}) {
 }
 
 function closeComposer() {
+  ui.tgNewBlock = null;
   $('composer').classList.remove('open');
   $('fab').classList.remove('open');
 }
@@ -33,7 +34,8 @@ function renderComposer() {
   $('composer').innerHTML = `
     <div class="c-top"><span class="c-name">${icon('note')} ${t('newTask')}</span>
       <span class="seg-joined c-mode"><button class="${full ? '' : 'on'}" data-cmode="quick">${t('quickMode')}</button><button class="${full ? 'on' : ''}" data-cmode="full">${t('fullMode')}</button></span></div>
-    <input type="text" class="c-title" id="cTitle" dir="auto" placeholder="${t('newTask')}…" value="${esc(composer.title)}" autocomplete="off">
+    <input type="text" class="c-title" id="cTitle" dir="auto" placeholder="${t('quickPh')}" title="${t('quickTip')}" value="${esc(composer.title)}" autocomplete="off">
+    <div class="qp" id="cParse"></div>
     <div class="err" id="cErr">${t('titleRequired')}</div>
     <div class="c-sec"><span class="c-sec-lbl">${icon('folder')} ${t('area')}</span>
       <select id="cArea" title="${t('area')}">${areaOptions(composer.areaId)}</select></div>
@@ -66,16 +68,23 @@ function refreshComposerRemind() {
 }
 
 function submitComposer() {
-  const title = $('cTitle').value.trim();
-  if (!title) { $('cErr').classList.add('show'); $('cTitle').focus(); return; }
+  const raw = $('cTitle').value.trim();
+  if (!raw) { $('cErr').classList.add('show'); $('cTitle').focus(); return; }
   const full = !!data.settings.composerFull;
-  addTask(title, { areaId: $('cArea').value || null, due: $('cDue').value || null, dueTime: ($('cDue').value && timeValue($('cDueTime'))) || null, priority: composer.priority,
+  // Words in the title fill whatever the fields below were left empty.
+  const p = parseQuick(raw);
+  const title = p.title;
+  const due = $('cDue').value || p.due || null;
+  const folder = !$('cArea').value && p.folder && findFolderByName(p.folder);
+  addTask(title, { areaId: $('cArea').value || (folder && folder.id) || null, due, dueTime: ($('cDue').value && timeValue($('cDueTime'))) || p.dueTime || null, priority: composer.priority || p.priority,
+    estimate: p.estimate, ...(p.person && !(full && $('cPerson').value.trim()) ? { person: p.person } : {}),
     repeat: parseRepeat($('cRepeat').value), remindBefore: $('cRemind').value === '' ? null : Number($('cRemind').value),
-    ...(full ? { start: $('cStart').value || null, person: $('cPerson').value.trim(), notes: $('cNotes').value.trim(),
+    ...(full ? { start: $('cStart').value || null, person: $('cPerson').value.trim() || p.person || '', notes: $('cNotes').value.trim(),
       subtasks: $('cSubs').value.split('\n').map((s) => s.trim()).filter(Boolean) } : {}) });
   // Stay open for the next one, keeping folder/date/priority — handy for adding a batch.
   composer.title = '';
   $('cTitle').value = '';
+  if ($('cParse')) $('cParse').innerHTML = '';
   if (full) { composer.notes = composer.subs = composer.person = ''; $('cNotes').value = $('cSubs').value = $('cPerson').value = ''; }
   $('cTitle').focus();
 }
@@ -125,3 +134,9 @@ function bindComposer() {
   });
 }
 
+
+// As you type: show what the words will set (date, time, length, priority, folder, person).
+document.addEventListener('input', (e) => {
+  if (e.target.id !== 'cTitle' || !$('cParse')) return;
+  $('cParse').innerHTML = quickChipsHtml(parseQuick(e.target.value), lang());
+});

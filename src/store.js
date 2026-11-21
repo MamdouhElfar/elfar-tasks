@@ -5,6 +5,7 @@
 //   changes made by another computer are picked up automatically.
 const fs = require('fs');
 const path = require('path');
+const { merge3 } = require('./renderer/logic.js');
 
 let appDir = null;      // local app folder (config + backups)
 let file = null;        // the data file in use
@@ -12,6 +13,10 @@ let data = null;
 let timer = null;
 let lastOwnWrite = 0;   // mtime of our own last write, to tell it apart from a sync
 let onExternal = null;
+// The copy that's on disk as far as we know (what both computers started from). When the file
+// changes under us, our changes and theirs are merged against it (see merge3 in logic.js).
+let syncBase = null;
+const cloneData = (d) => JSON.parse(JSON.stringify(d));
 
 const KEEP_BACKUPS = 30;
 
@@ -103,6 +108,7 @@ function readFile(f) { return JSON.parse(fs.readFileSync(f, 'utf8')); }
 function load(lang) {
   try {
     data = normalize(readFile(file), lang);
+    syncBase = cloneData(data);
   } catch (e) {
     if (fs.existsSync(file)) {
       // Corrupt file: keep a copy instead of overwriting it silently, then try the backup.
@@ -132,11 +138,21 @@ function writeNow() {
   clearTimeout(timer);
   timer = null;
   if (!file) return;
+  // Another computer wrote the file since we last read it: merge before writing over it.
+  try {
+    const st = fs.existsSync(file) && fs.statSync(file);
+    if (st && syncBase && Math.abs(st.mtimeMs - lastOwnWrite) > 5) {
+      const theirs = normalize(readFile(file), data.settings.lang);
+      data = normalize(merge3(syncBase, data, theirs), data.settings.lang);
+      if (onExternal) setTimeout(onExternal, 0);
+    }
+  } catch { /* half-synced file: write ours */ }
   const tmp = file + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf8');
   if (fs.existsSync(file)) fs.copyFileSync(file, file + '.bak');
   fs.renameSync(tmp, file);
   try { lastOwnWrite = fs.statSync(file).mtimeMs; } catch {}
+  syncBase = cloneData(data);
   dailyBackup();
 }
 
@@ -198,8 +214,13 @@ function watch() {
   fs.watchFile(file, { interval: 2000 }, (cur) => {
     if (!cur.mtimeMs || Math.abs(cur.mtimeMs - lastOwnWrite) < 5 || timer) return;
     try {
-      data = normalize(readFile(file), data.settings.lang);
+      const theirs = normalize(readFile(file), data.settings.lang);
+      const merged = normalize(syncBase ? merge3(syncBase, data, theirs) : theirs, data.settings.lang);
       lastOwnWrite = cur.mtimeMs;
+      syncBase = cloneData(theirs);
+      data = merged;
+      // We had changes they didn't: write the merged copy back so they get ours too.
+      if (JSON.stringify(merged) !== JSON.stringify(theirs)) scheduleWrite();
       if (onExternal) onExternal();
     } catch { /* half-synced file: wait for the next change */ }
   });
@@ -229,12 +250,17 @@ module.exports = {
   moveTo(dir, useExisting) {
     const target = path.join(dir, 'data.json');
     writeNow();
-    if (!(useExisting && fs.existsSync(target))) fs.copyFileSync(file, target);
+    if (useExisting === 'merge' && fs.existsSync(target)) {
+      // Both computers had data: keep everything from both.
+      const theirs = normalize(readFile(target), data.settings.lang);
+      fs.writeFileSync(target, JSON.stringify(normalize(merge3({}, data, theirs), data.settings.lang), null, 2), 'utf8');
+    } else if (!(useExisting && fs.existsSync(target))) fs.copyFileSync(file, target);
     fs.unwatchFile(file);
     file = target;
     writeConfig({ ...readConfig(), dataDir: dir });
     load(data.settings.lang);
     watch();
   },
-  hasDataIn(dir) { return fs.existsSync(path.join(dir, 'data.json')); }
+  hasDataIn(dir) { return fs.existsSync(path.join(dir, 'data.json')); },
+  stop() { if (file) fs.unwatchFile(file); clearTimeout(timer); timer = null; }
 };

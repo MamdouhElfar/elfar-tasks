@@ -18,6 +18,7 @@ function deferTask(x, day) {
   const snap = snapshot(), planSnap = JSON.stringify(data.plan || null);
   const before = x.due;
   if (deferTo(x, day)) { notePostpone(x, before); syncReminder(x); }
+  if (x.blockAt && x.blockAt.slice(0, 10) < day) x.blockAt = null;
   // It's no longer part of today's plan.
   if (data.plan && data.plan.date === todayStr()) data.plan.ids = data.plan.ids.filter((id) => id !== x.id);
   touch(x);

@@ -173,12 +173,172 @@
     return d;
   }
 
+
+  // ---------- quick add: understand a sentence ----------
+  // "Call Ahmed tomorrow 3pm for 30 min !1 #Work @Sara" / "اتصل بأحمد بكرة الساعة 3 ساعة"
+  // → title, due date, time, estimate, priority, folder name, person. Works in both languages.
+  const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩';
+  const WEEKDAYS = [
+    [0, 'الأحد|الاحد|الحد|sunday'], [1, 'الاتنين|الإثنين|الاثنين|الأتنين|monday'], [2, 'التلات|الثلاثاء|الثلاثا|التلاتاء|tuesday'],
+    [3, 'الأربع|الاربع|الأربعاء|الاربعاء|wednesday'], [4, 'الخميس|thursday'], [5, 'الجمعة|الجمعه|friday'], [6, 'السبت|saturday']
+  ];
+  function parseQuick(text, now = new Date()) {
+    let s = ' ' + String(text || '').replace(/[٠-٩]/g, (d) => AR_DIGITS.indexOf(d)) + ' ';
+    const out = { title: '', due: null, dueTime: null, estimate: null, priority: null, folder: null, person: null };
+    const td = todayStr(now);
+    const B = '(?<=^|[\\s،,.])', E = '(?=$|[\\s،,.])';
+    const take = (re, fn) => { const m = s.match(re); if (!m) return false; if (fn(m) === false) return false; s = s.replace(m[0], ' '); return true; };
+    // priority, folder, person
+    take(new RegExp(`${B}!([1-4])${E}`), (m) => { out.priority = 'q' + m[1]; });
+    take(/(?:^|\s)#([^\s#@!]+)/, (m) => { out.folder = m[1].replace(/_/g, ' '); });
+    take(/(?:^|\s)@([^\s\d#@!][^\s#@!]*)/, (m) => { out.person = m[1].replace(/_/g, ' '); });
+    // dates
+    const rel = [
+      ['(?:بعد بكرة|بعد بكره|بعد بكرا|the day after tomorrow|day after tomorrow|after tomorrow)', 2],
+      ['(?:النهارده|النهاردة|النهارد|اليوم|today|tonight)', 0],
+      ['(?:بكرة|بكره|بكرا|غدا|غداً|tomorrow|tmrw|tmr)', 1]
+    ];
+    for (const [w, n] of rel) if (take(new RegExp(`${B}${w}${E}`, 'i'), () => { out.due = hAdd(td, n); })) break;
+    if (!out.due) take(new RegExp(`${B}(?:الأسبوع الجاي|الاسبوع الجاي|الأسبوع اللي جاي|next week)${E}`, 'i'), () => {
+      const ws = (() => { const d = new Date(td + 'T00:00'); d.setDate(d.getDate() - ((d.getDay() - appWeekStart() + 7) % 7)); return todayStr(d); })();
+      out.due = hAdd(ws, 7);
+    });
+    if (!out.due) for (const [dow, names] of WEEKDAYS) {
+      if (take(new RegExp(`${B}(?:يوم |on |next )?(?:${names})${E}`, 'i'), () => {
+        let n = (dow - hDow(td) + 7) % 7; if (n === 0) n = 7; out.due = hAdd(td, n);
+      })) break;
+    }
+    if (!out.due) take(new RegExp(`${B}(?:في |on )?(\\d{1,2})[/\\-.](\\d{1,2})(?:[/\\-.](\\d{2,4}))?${E}`), (m) => {
+      const day = +m[1], mon = +m[2];
+      if (mon < 1 || mon > 12 || day < 1 || day > 31) return false;
+      let y = m[3] ? (+m[3] < 100 ? 2000 + +m[3] : +m[3]) : now.getFullYear();
+      let d = `${y}-${String(mon).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      if (!m[3] && d < td) d = `${y + 1}${d.slice(4)}`;
+      out.due = d;
+    });
+    // time: "الساعة 3", "3:30", "3م", "3pm", "at 3"
+    const MER = '(ص|م|صباحا|صباحاً|الصبح|مساء|مساءً|بالليل|الضهر|العصر|am|pm|a\\.m\\.|p\\.m\\.)';
+    const setTime = (h, mi, mer) => {
+      h = +h; mi = +(mi || 0);
+      if (h > 23 || mi > 59) return false;
+      const pm = mer && /^(م|مساء|مساءً|بالليل|العصر|pm|p\.m\.)$/i.test(mer);
+      const am = mer && /^(ص|صباحا|صباحاً|الصبح|am|a\.m\.)$/i.test(mer);
+      if (mer && /الضهر/.test(mer)) { if (h < 12) h += 12; if (h === 24) h = 12; }
+      else if (pm && h < 12) h += 12;
+      else if (am && h === 12) h = 0;
+      else if (!mer && h >= 1 && h <= 7) h += 12; // "at 3" during a working day means the afternoon
+      out.dueTime = `${String(h).padStart(2, '0')}:${String(mi).padStart(2, '0')}`;
+    };
+    take(new RegExp(`${B}(?:الساعة|الساعه)\\s*(\\d{1,2})(?::(\\d{2}))?\\s*${MER}?${E}`, 'i'), (m) => setTime(m[1], m[2], m[3])) ||
+      // English "at 3" only when it's clearly a time: "at 3pm", "at 3:30", or at the very end
+      take(new RegExp(`${B}at\\s*(\\d{1,2})(?::(\\d{2}))?\\s*${MER}?(?=\\s*$)`, 'i'), (m) => setTime(m[1], m[2], m[3])) ||
+      take(new RegExp(`${B}at\\s*(\\d{1,2})\\s*${MER}${E}`, 'i'), (m) => setTime(m[1], 0, m[2])) ||
+      take(new RegExp(`${B}at\\s*(\\d{1,2}):(\\d{2})${E}`, 'i'), (m) => setTime(m[1], m[2])) ||
+      take(new RegExp(`${B}(\\d{1,2}):(\\d{2})\\s*${MER}?${E}`, 'i'), (m) => setTime(m[1], m[2], m[3])) ||
+      take(new RegExp(`${B}(\\d{1,2})\\s*${MER}${E}`, 'i'), (m) => setTime(m[1], 0, m[2]));
+    // how long it takes
+    const durs = [
+      ['(?:ساعة ونص|ساعه ونص|ساعة و نص)', () => 90], ['(?:ساعتين ونص)', () => 150], ['(?:ساعتين)', () => 120],
+      ['(?:نص ساعة|نص ساعه|نصف ساعة|half an hour|half hour)', () => 30], ['(?:ربع ساعة|ربع ساعه|quarter of an hour)', () => 15],
+      ['(?:for\\s*)?(\\d+(?:\\.\\d+)?)\\s*(?:ساعات|ساعة|ساعه|h|hr|hrs|hour|hours)', (m) => Math.round(+m[1] * 60)],
+      ['(?:for\\s*)?(\\d+)\\s*(?:دقيقة|دقيقه|دقايق|دقائق|د|min|mins|minutes|minute|m)', (m) => +m[1]],
+      ['(?:for an hour|an hour|ساعة|ساعه)', () => 60]
+    ];
+    for (const [w, fn] of durs) if (take(new RegExp(`${B}${w}${E}`, 'i'), (m) => { out.estimate = fn(m); })) break;
+    out.title = s.replace(/\s+/g, ' ').trim().replace(/^(?:في|يوم|on|at|for|و)\s+|\s+(?:في|يوم|on|at|for|و)$/gi, '').trim();
+    if (!out.title) out.title = String(text || '').trim(); // never lose what was typed
+    return out;
+  }
+
+  // ---------- sync: merge two copies changed on two computers ----------
+  // base = the copy both started from; ours / theirs = the two edited copies.
+  // A record changed on one side only takes that side; changed on both, the newer one wins
+  // (habits keep the days logged on both). Deleted on one side and untouched on the other: deleted.
+  function merge3(base, ours, theirs) {
+    base = base || {};
+    const out = JSON.parse(JSON.stringify(theirs));
+    const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    for (const k of COLLECTIONS) {
+      const B = new Map((base[k] || []).map((r) => [r.id, r]));
+      const O = new Map((ours[k] || []).map((r) => [r.id, r]));
+      const T = new Map((theirs[k] || []).map((r) => [r.id, r]));
+      const ids = [...new Set([...(theirs[k] || []).map((r) => r.id), ...(ours[k] || []).map((r) => r.id)])];
+      const list = [];
+      for (const id of ids) {
+        const b = B.get(id), o = O.get(id), t = T.get(id);
+        if (o && t) {
+          if (eq(o, t) || eq(o, b)) list.push(t);
+          else if (eq(t, b)) list.push(o);
+          else if (k === 'habits') list.push({ ...t, ...o, log: { ...(t.log || {}), ...(o.log || {}) }, minutes: { ...(t.minutes || {}), ...(o.minutes || {}) } });
+          else list.push((o.updated || 0) >= (t.updated || 0) ? o : t);
+        } else if (o && !t) { if (!b || !eq(o, b)) list.push(o); }   // new here, or changed here after they deleted it
+        else if (t && !o) { if (!b || !eq(t, b)) list.push(t); }
+      }
+      out[k] = list;
+    }
+    out.settings = { ...(theirs.settings || {}) };
+    for (const [key, v] of Object.entries(ours.settings || {})) if (!eq(v, (base.settings || {})[key])) out.settings[key] = v;
+    for (const key of Object.keys(ours)) {
+      if (COLLECTIONS.includes(key) || key === 'settings') continue;
+      if (!eq(ours[key], base[key]) && (eq(theirs[key], base[key]) || key === 'focus')) out[key] = ours[key];
+    }
+    if (ours.focusLog || theirs.focusLog) {
+      const seen = new Set(); out.focusLog = [...(theirs.focusLog || []), ...(ours.focusLog || [])].filter((l) => { const k2 = l.at + l.taskId; return !seen.has(k2) && seen.add(k2); }).sort((a, b) => a.at.localeCompare(b.at)).slice(-1000);
+    }
+    return out;
+  }
+
+  // ---------- calendar: side by side when blocks overlap ----------
+  // events: [{ id, start, end }] in minutes → each gets { lane, lanes }.
+  function layoutBlocks(events) {
+    const ev = events.slice().sort((a, b) => a.start - b.start || b.end - a.end);
+    let cluster = [], clusterEnd = -1;
+    const flush = () => { const lanes = Math.max(1, ...cluster.map((e) => e.lane + 1)); cluster.forEach((e) => { e.lanes = lanes; }); cluster = []; };
+    for (const e of ev) {
+      if (e.start >= clusterEnd && cluster.length) flush();
+      const used = new Set(cluster.filter((c) => c.end > e.start).map((c) => c.lane));
+      let lane = 0; while (used.has(lane)) lane++;
+      e.lane = lane; cluster.push(e); clusterEnd = Math.max(clusterEnd, e.end);
+    }
+    if (cluster.length) flush();
+    return ev;
+  }
+
+  // ---------- the plan suggests itself ----------
+  // Most pressing first (moved from yesterday, late, due today, important & urgent, starred…),
+  // until the day is full (estimates; 30 min when unknown) or there are 5.
+  function suggestPlan(tasks, capMins, opts = {}) {
+    const td = opts.today || todayStr();
+    const next = new Set(opts.fromYesterday || []);
+    const score = (x) => {
+      const st = statusOf(x, td);
+      let s = 0;
+      if (next.has(x.id)) s += 90;
+      if (st === 'overdue') s += 100 + Math.min(30, daysBetween(x.due, td));
+      if (st === 'today') s += 80 + (x.dueTime ? 5 : 0);
+      s += { q1: 50, q2: 30, q3: 15, q4: 0 }[x.priority] || 10;
+      if (x.starred) s += 20;
+      if (x.due && st !== 'overdue' && st !== 'today') s += Math.max(0, 20 - daysBetween(td, x.due) * 4);
+      return s;
+    };
+    const pool = tasks.filter((x) => !x.closure && statusOf(x, td) !== 'scheduled').map((x) => ({ x, s: score(x) })).sort((a, b) => b.s - a.s);
+    const out = []; let mins = 0;
+    for (const { x } of pool) {
+      if (out.length >= (opts.max || 5)) break;
+      const m = minutesLeft(x) ?? 30;
+      if (out.length && mins + m > capMins) continue;
+      out.push(x.id); mins += m;
+    }
+    return out;
+  }
+
   return {
     todayStr, daysBetween, hAdd, hDow, shiftDate, uid, configure, appWeekStart,
     QUADS, QUAD_RANK, byPriorityThenDue, statusOf, isActive, minutesLeft, deferTo,
     hWeekStart, hLog, hMins, hDoneCount, hEnded, hLive, hActiveOn, hScheduled, hWeek, hTarget, hWeekVal, hPartial,
     habitsDueOn, habitStillDue, habitAddMinutes,
     arCount, fmtMins,
-    makePatch, patchEmpty, applyPatch
+    makePatch, patchEmpty, applyPatch,
+    parseQuick, merge3, layoutBlocks, suggestPlan
   };
 });

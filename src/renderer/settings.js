@@ -9,6 +9,8 @@ async function openSettings(section) {
   const [login, info, displays, folder, backups] = await Promise.all([
     window.api.loginItem(), window.api.appInfo(), window.api.displays(), window.api.dataFolder(), window.api.listBackups()
   ]);
+  const clouds = await window.api.cloudFolders();
+  const syncedBy = clouds.find((c) => folder.toLowerCase().startsWith(c.path.toLowerCase()));
   ui.appVersion = info.version;
   const filterOpts = [['focus', t('focus')], ['overdue', t('overdue')], ['week', t('hWeek')], ['others', t('hOthers')], ['pending', t('pending')], ['starred', t('starred')]]
     .concat(topAreas().map((a) => ['area:' + a.id, a.name]))
@@ -69,6 +71,12 @@ async function openSettings(section) {
       ))}
 
       ${sec('data', t('dataTitle'), `
+        ${card(`<div class="data-item sync-card">
+          <span class="di-ico ${syncedBy ? 'ok' : ''}">${icon('repeat')}</span>
+          <div class="set-txt"><b>${t('syncTitle')}</b><span>${syncedBy ? `✓ ${t('syncOn').replace('{c}', esc(syncedBy.name))}` : t('syncHow')}</span>
+            ${!syncedBy && clouds.length ? `<div class="sync-btns">${clouds.map((c) => `<button class="primary" data-usecloud="${esc(c.path)}">${t('syncUse').replace('{c}', esc(c.name))}</button>`).join('')}</div>` : ''}
+            ${!syncedBy && !clouds.length ? `<small class="muted">${t('syncNoCloud')}</small>` : ''}
+            <small class="muted">${t('syncSecond')}</small></div></div>`)}
         ${card(`<div class="data-item">
           <span class="di-ico">${icon('folder')}</span>
           <div class="set-txt"><b>${t('dataWhere')}</b><span>${t('syncHint')}</span>
@@ -148,6 +156,12 @@ async function openSettings(section) {
     if (id === 'sCheck') { window.api.checkUpdate(); $('sUpd').textContent = t('upChecking'); }
     if (id === 'sCheckNewer') { window.api.checkUpdate(); $('sUpd').textContent = t('upCheckingNewer'); }
     if (id === 'sInstall') window.api.installUpdate();
+    const uc = e.target.closest('[data-usecloud]');
+    if (uc) {
+      const dir = await window.api.useCloud(uc.dataset.usecloud);
+      if (dir) { adoptData(await window.api.getData()); renderAll(); openSettings('data'); showToast(t('syncDone')); }
+      return;
+    }
     if (id === 'sFolder') {
       const dir = await window.api.chooseDataFolder();
       if (dir) { adoptData(await window.api.getData()); renderAll(); openSettings('data'); }

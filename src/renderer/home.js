@@ -61,7 +61,7 @@ function renderHome() {
   const sec = (title, cls, xs, extra = '') => (xs.length ? `<div class="group-title ${cls}">${title} · ${xs.length}${extra}</div>${xs.map(rowHtml).join('')}` : '');
   const planDone = planned.filter((x) => x.closure).length;
   const work = (plan
-      ? `<div class="group-title plan-title">${icon('today')} ${t('planTitle')} <span class="plan-n">${planDone}/${planned.length}</span><button class="link" data-plan>${t('planEdit')}</button></div>${capacityHtml(plannedLoad(planned))}
+      ? `<div class="group-title plan-title">${icon('today')} ${t('planTitle')} <span class="plan-n">${planDone}/${planned.length}</span><button class="link" data-tghours>${icon('clock')} ${t('tgPlanHours')}</button><button class="link" data-plan>${t('planEdit')}</button></div>${capacityHtml(plannedLoad(planned))}
          ${planned.length ? planned.filter((x) => !x.closure).map(rowHtml).join('') + doneFold(planned.filter((x) => x.closure).map(rowHtml), 'plan') : `<div class="h-empty">${t('planEmpty')}</div>`}`
       : `<button class="plan-cta" data-plan><span class="pc-ico">${icon('today')}</span><span><b>${t('planCta')}</b><small>${t('planCtaSub')}</small></span></button>`) +
     (() => { const hs = habitsToday(); return hs.length ? `<div class="group-title habit-title">${icon('habits')} ${t('hbToday')} · ${hs.filter((h) => hLog(h, td) === 'done').length}/${hs.length}<button class="link" data-hopen>${t('hSeeAll')}</button></div>${hs.filter((h) => hLog(h, td) !== 'done').map(habitRowHtml).join('')}${doneFold(hs.filter((h) => hLog(h, td) === 'done').map(habitRowHtml), 'habits')}` : ''; })() +
@@ -149,7 +149,10 @@ function pickNow(plan, overdue, dueToday, open) {
   ui.nowSkip = ui.nowSkip || [];
   const ok = (x) => x && inScope(x) && isActive(x) && !ui.nowSkip.includes(x.id);
   const byTime = (a, b) => (a.dueTime || '99').localeCompare(b.dueTime || '99') || byPriorityThenDue(a, b);
+  const nowAt = nowLocal();
+  const inBlock = data.tasks.filter((x) => x.blockAt && x.blockAt.slice(0, 10) === todayStr() && x.blockAt <= nowAt && nowLocal(new Date(new Date(x.blockAt).getTime() + (x.blockMins || x.estimate || 30) * 60000)) > nowAt);
   const lists = [
+    [inBlock, 'nowBlock'],
     [plan ? plan.ids.map(taskById) : [], 'nowFromPlan'],
     [overdue.slice().sort(byPriorityThenDue), 'nowLate'],
     [dueToday.slice().sort(byTime), 'nowToday'],
@@ -178,6 +181,7 @@ function nowCardHtml({ x, why }) {
   </section>`;
 }
 document.addEventListener('click', (e) => {
+  if (e.target.closest && e.target.closest('[data-tghours]')) { data.settings.calView = 'day'; ui.calDay = todayStr(); ui.view = 'calendar'; ui.selected = null; save(); return refresh(); }
   const s = e.target.closest && e.target.closest('[data-nowskip]');
   if (!s) return;
   e.stopPropagation();
