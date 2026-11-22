@@ -115,4 +115,41 @@ document.addEventListener('click', (e) => {
   if (act === 'done' || what === 'done') thanks(go); else go();
 });
 
-window.api.onRemindList((s) => { state = s; render(); });
+// Not touched for 10 seconds? Walk away; the app brings it back in 10 minutes.
+// Hovering pauses the count, and any click means you're dealing with it.
+let idleTick = null, idleMs = 0, lastMove = 0, touched = false;
+const IDLE_MS = 10000;
+function armIdle() {
+  clearInterval(idleTick); idleMs = 0;
+  const x = state.items[0];
+  if (!x || touched || x.kind === 'ended' || x.kind === 'breakEnded') return;
+  idleTick = setInterval(() => {
+    if (touched || state.items[0] !== x) return clearInterval(idleTick);
+    if (Date.now() - lastMove < 800) return; // the cursor is on it: wait
+    idleMs += 250;
+    if (idleMs < IDLE_MS) return;
+    clearInterval(idleTick);
+    const rm = $('rm'); if (rm) rm.classList.add('leaving');
+    setTimeout(() => window.api.remindAction({ id: x.id, action: 'autohide' }), 450);
+  }, 250);
+}
+document.addEventListener('mousemove', () => { lastMove = Date.now(); });
+document.addEventListener('mousedown', () => { touched = true; clearInterval(idleTick); });
+
+// The mouse's eyes follow your cursor around the screen.
+window.api.onRemindCursor && window.api.onRemindCursor((p) => {
+  const svg = document.querySelector('.rm-mouse svg'), eyes = document.querySelector('.rm-eyes');
+  if (!svg || !eyes || !p) return;
+  const r = svg.getBoundingClientRect();
+  const ex = r.left + (65 / 140) * r.width, ey = r.top + (62 / 150) * r.height;
+  const dx = p.x - ex, dy = p.y - ey, d = Math.hypot(dx, dy) || 1;
+  const k = Math.min(1, d / 120);
+  eyes.style.transform = `translate(${(dx / d) * 2.6 * k}px, ${(dy / d) * 2.2 * k}px)`;
+});
+
+window.api.onRemindList((s) => {
+  const before = state.items[0] && state.items[0].id;
+  state = s; render();
+  if (!state.items[0] || state.items[0].id !== before) touched = false;
+  armIdle();
+});

@@ -445,7 +445,8 @@ function renderMatrix() {
 function areaOptions(selected) {
   let h = `<option value="">${t('inbox')}</option>`;
   const add = (a, depth) => {
-    h += `<option value="${a.id}" ${selected === a.id ? 'selected' : ''}>${'&nbsp;&nbsp;&nbsp;'.repeat(depth)}${esc(depth ? areaLabel(a.id) : a.name)}</option>`;
+    // Sub-folders show their own name, indented under the parent (not "Parent / Child" again).
+    h += `<option value="${a.id}" ${selected === a.id ? 'selected' : ''}>${depth ? '&nbsp;&nbsp;&nbsp;&nbsp;'.repeat(depth - 1) + '&nbsp;&nbsp;└&nbsp;' : ''}${esc(a.name)}</option>`;
     childrenOf(a.id).forEach((c) => add(c, depth + 1));
   };
   topAreas().forEach((a) => add(a, 0));
@@ -639,7 +640,8 @@ function bindSplitters() {
     });
   };
   drag($('sideSplit'), document.querySelector('.sidebar'), 'sideW', 170, () => 420);
-  drag($('listSplit'), document.querySelector('.detail'), 'detailW', 340, () => document.querySelector('.work').clientWidth - 280, true);
+  // The list keeps at least 460px so Today doesn't get squeezed; the task page keeps at least 380px.
+  drag($('listSplit'), document.querySelector('.detail'), 'detailW', 380, () => Math.max(380, document.querySelector('.work').clientWidth - 460), true);
 }
 function refreshLists() { renderTabs(); renderSidebar(); renderList(); }
 
@@ -961,7 +963,7 @@ function bind() {
     refreshLists();
   };
   $('personFilter').onchange = (e) => { ui.person = e.target.value || null; refreshLists(); };
-  $('settingsBtn').onclick = openSettings;
+  $('settingsBtn').onclick = () => openSettings('general'); // always start on General
   $('langBtn').onclick = () => { data.settings.lang = lang() === 'ar' ? 'en' : 'ar'; save(); renderAll(); };
   $('search').oninput = (e) => { ui.search = e.target.value; renderList(); };
   // The sort you pick is remembered.

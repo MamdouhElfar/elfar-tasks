@@ -264,8 +264,8 @@ function remindMouseSvg() {
     <circle cx="38" cy="40" r="10" fill="#f3a6b8"/><circle cx="92" cy="40" r="10" fill="#f3a6b8"/>
     <ellipse cx="65" cy="66" rx="31" ry="28" fill="#b9c2cc"/>
     <ellipse cx="65" cy="76" rx="16" ry="11" fill="#d6dce3"/>
-    <circle cx="54" cy="62" r="4" fill="#1f1e1c"/><circle cx="76" cy="62" r="4" fill="#1f1e1c"/>
-    <circle cx="55.4" cy="60.6" r="1.4" fill="#fff"/><circle cx="77.4" cy="60.6" r="1.4" fill="#fff"/>
+    <g class="rm-eyes"><circle cx="54" cy="62" r="4" fill="#1f1e1c"/><circle cx="76" cy="62" r="4" fill="#1f1e1c"/>
+    <circle cx="55.4" cy="60.6" r="1.4" fill="#fff"/><circle cx="77.4" cy="60.6" r="1.4" fill="#fff"/></g>
     <ellipse cx="65" cy="72" rx="4.4" ry="3.4" fill="#e8798f"/>
     <ellipse cx="65" cy="82" rx="5" ry="4" fill="#6b4a52"/>
     <path d="M58 75l-17-4M58 78.5l-17 2M72 75l17-4M72 78.5l17 2" stroke="#6b7380" stroke-width="1.4" stroke-linecap="round"/>

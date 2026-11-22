@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, screen, shell, Notification, globalShortcut, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, screen, shell, Notification, globalShortcut, nativeTheme, powerMonitor } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -417,8 +417,15 @@ function openRemindWin() {
   remindWin.setAlwaysOnTop(true, 'screen-saver');
   remindWin.loadFile(path.join(__dirname, 'renderer', 'remind.html'));
   remindWin.webContents.on('did-finish-load', () => { sendRemindList(); remindWin.showInactive(); });
-  remindWin.on('closed', () => { remindWin = null; });
+  remindWin.on('closed', () => { remindWin = null; clearInterval(remindEyes); remindEyes = null; });
+  clearInterval(remindEyes);
+  remindEyes = setInterval(() => {
+    if (!remindWin || remindWin.isDestroyed() || !remindWin.isVisible()) return;
+    const p = screen.getCursorScreenPoint(), b = remindWin.getBounds();
+    remindWin.webContents.send('remind:cursor', { x: p.x - b.x, y: p.y - b.y });
+  }, 80);
 }
+let remindEyes = null;
 // Is a habit due today and not done yet? (shared rule, see logic.js)
 const habitDueToday = (h, today) => logic.habitStillDue(h, today);
 
@@ -433,7 +440,28 @@ function closeTaskInApp(id) {
   const send = () => mainWin.webContents.send('task:close', id);
   if (!mainWin) { createMain(); mainWin.webContents.once('did-finish-load', send); } else send();
 }
+// A pop-up you didn't touch for 10 seconds walks away and comes back 10 minutes later (3 times at most),
+// unless it no longer matters by then (task closed, habit done).
+const REMIND_AGAIN_MS = 10 * 60000;
+function remindLater(item) {
+  if (String(item.id).startsWith('test-') || (item.again || 0) >= 3) return;
+  setTimeout(() => {
+    if (remindQueue.some((r) => r.id === item.id)) return;
+    const data = store.get(), today = localNow().slice(0, 10);
+    if (String(item.id).startsWith('habitr:')) { const h = (data.habits || []).find((x) => x.id === item.id.slice(7)); if (!h || !habitDueToday(h, today)) return; }
+    else if (String(item.id).startsWith('review:')) { if (item.id !== 'review:' + today) return; }
+    else { const t = data.tasks.find((x) => x.id === item.id); if (!t || t.closure) return; }
+    remindQueue.push({ ...item, again: (item.again || 0) + 1 });
+    openRemindWin();
+  }, REMIND_AGAIN_MS);
+}
 ipcMain.on('remind:action', (e, { id, action, minutes, what }) => {
+  if (action === 'autohide') {
+    const i = remindQueue.findIndex((r) => r.id === id);
+    if (i >= 0) remindLater(remindQueue.splice(i, 1)[0]);
+    if (remindQueue.length) sendRemindList(); else if (remindWin) remindWin.close();
+    return;
+  }
   // The end-of-focus pop-up: keep going, take a break, stop, or the task is done.
   if (String(id).startsWith('review:')) {
     const i = remindQueue.findIndex((r) => r.id === id);
@@ -867,5 +895,29 @@ app.whenReady().then(() => {
 });
 
 app.on('before-quit', () => { quitting = true; store.flush(); });
+
+// After the screen sleeps or the graphics driver restarts, see-through windows (the widget, the
+// reminder) can come back as black boxes. Rebuild them a moment after waking.
+let rebuildTimer = null;
+function rebuildOverlays() {
+  clearTimeout(rebuildTimer);
+  rebuildTimer = setTimeout(() => {
+    if (quitting) return;
+    if (widgetWin && !widgetWin.isDestroyed()) {
+      const old = widgetWin; old.removeAllListeners('closed'); widgetWin = null; stopHoverWatch(); old.destroy();
+      if (store.get().settings.widget.visible) createWidget();
+    }
+    if (remindWin && !remindWin.isDestroyed()) {
+      const old = remindWin; old.removeAllListeners('closed'); remindWin = null; old.destroy();
+      if (remindQueue.length) openRemindWin();
+    }
+    if (quickWin && !quickWin.isDestroyed()) { const old = quickWin; old.removeAllListeners('closed'); quickWin = null; old.destroy(); }
+  }, 1500);
+}
+app.whenReady().then(() => {
+  powerMonitor.on('resume', rebuildOverlays);
+  powerMonitor.on('unlock-screen', rebuildOverlays);
+});
+app.on('child-process-gone', (e, d) => { if (d.type === 'GPU') rebuildOverlays(); });
 app.on('will-quit', () => globalShortcut.unregisterAll());
 app.on('window-all-closed', () => { /* stay in tray */ });

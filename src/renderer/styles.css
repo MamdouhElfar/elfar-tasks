@@ -39,9 +39,9 @@ a { color: var(--accent); }
 .sidebar { flex: 0 0 var(--side-w, 230px); min-width: 170px; max-width: 420px; }
 .main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
 .work { flex: 1; display: flex; min-height: 0; min-width: 0; }
-.list-pane { flex: 1 1 0; min-width: 280px; }
+.list-pane { flex: 1 1 0; min-width: min(460px, 45%); }
 /* The task page slides open by growing its width from 0, pushing the list over smoothly. */
-.detail { flex: 0 0 0; min-width: 0; max-width: calc(100% - 280px); opacity: 0; overflow-x: hidden;
+.detail { flex: 0 0 0; min-width: 0; max-width: calc(100% - min(460px, 45%)); opacity: 0; overflow-x: hidden;
   transition: flex-basis var(--dur) var(--ease), opacity var(--dur) var(--ease); }
 .detail .inner { min-width: 340px; transform: translateX(var(--slide)); transition: transform var(--dur) var(--ease); }
 .work.has-detail .detail { flex-basis: var(--detail-w, 52%); opacity: 1; }

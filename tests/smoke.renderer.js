@@ -67,7 +67,7 @@
     check('habit card', !!document.querySelector('[data-habit="smokeH"]'));
     // the day sheet: log amounts and where you stopped
     const h = habitById('smokeH'); h.measures = [{ id: 'm1', name: 'Pages', unit: 'pages' }]; h.askStop = true; save(); refresh(); await w(50);
-    document.querySelector('[data-habit="smokeH"] [data-hday]').click(); await w(80);
+    document.querySelector(`[data-habit="smokeH"] [data-hday="${todayStr()}"]`).click(); await w(80);
     check('day sheet opens', !!document.querySelector('.modal.hd'));
     document.querySelector('[data-rval="0"]').value = '12';
     document.getElementById('hdStop').value = 'page 40';
@@ -80,17 +80,28 @@
     check('added item is for this day only', pu && pu.every === false && habitEntry(habitById('smokeH'), todayStr()).vals[pu.id] === 20);
     check('not shown on other days', !habitMeasuresFor(habitById('smokeH'), hAdd(todayStr(), -1)).some((m) => m.id === pu.id));
     // cancel changes nothing; removing it from the day works
-    document.querySelector('[data-habit="smokeH"] [data-hday]').click(); await w(80);
+    document.querySelector(`[data-habit="smokeH"] [data-hday="${todayStr()}"]`).click(); await w(80);
     check('day sheet shows the day item', document.querySelectorAll('.modal.hd [data-rval]').length === 2);
     document.querySelector('[data-rdel="1"]').click(); await w(20); document.querySelector('[data-hdx]').click(); await w(30);
     check('cancel keeps it', habitEntry(habitById('smokeH'), todayStr()).vals[pu.id] === 20);
-    document.querySelector('[data-habit="smokeH"] [data-hday]').click(); await w(80);
+    document.querySelector(`[data-habit="smokeH"] [data-hday="${todayStr()}"]`).click(); await w(80);
     document.querySelector('[data-rdel="1"]').click(); await w(20);
     check('removed row can be undone', !!document.querySelector('[data-rundo="1"]'));
     document.querySelector('[data-hdsave]').click(); await w(80);
     check('removed from the day and tidied away', !habitById('smokeH').measures.some((m) => m.id === pu.id));
     check('logging marks it done', hLog(habitById('smokeH'), todayStr()) === 'done');
     check('you were here (tomorrow)', habitLastStop(habitById('smokeH'), hAdd(todayStr(), 1))?.stop === 'page 40');
+  });
+  await step('settings button opens General', async () => {
+    ui.setSec = undefined; $('settingsBtn').click(); await w(150);
+    const gen = document.querySelector('[data-sec="general"]');
+    check('General is showing', gen && !gen.hidden);
+    closeModal(); await w(50);
+  });
+  await step('folder list shows sub-folders by their own name', async () => {
+    data.areas.push({ id: 'aSub', name: 'Sub', color: 'blue', parentId: 'a1' }); save();
+    check('no "Parent / Child" in the list', !areaOptions('').includes('Work / Sub') && areaOptions('').includes('Sub'));
+    data.areas = data.areas.filter((a) => a.id !== 'aSub'); save();
   });
   await step('dialogs open and close', async () => {
     for (const s of ['general', 'notifications', 'widget', 'data', 'updates', 'guide', 'about']) { await openSettings(s); await w(40); check(`settings ${s}`, !!document.querySelector(`[data-sec="${s}"]`)); }

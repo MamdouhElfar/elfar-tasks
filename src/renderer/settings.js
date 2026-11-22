@@ -4,7 +4,7 @@
 // Settings: sections on the side, each option with a one-line explanation of what it does.
 async function openSettings(section) {
   const s = data.settings, w = s.widget;
-  ui.setSec = section || ui.setSec || 'general';
+  ui.setSec = typeof section === 'string' ? section : (typeof ui.setSec === 'string' ? ui.setSec : 'general');
   if (ui.setSec === 'updates') window.api.checkUpdate();
   const [login, info, displays, folder, backups] = await Promise.all([
     window.api.loginItem(), window.api.appInfo(), window.api.displays(), window.api.dataFolder(), window.api.listBackups()

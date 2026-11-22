@@ -44,6 +44,7 @@ contextBridge.exposeInMainWorld('api', {
   onUpdateStatus: (cb) => ipcRenderer.on('update-status', (e, s) => cb(s)),
 
   onRemindList: (cb) => ipcRenderer.on('remind:list', (e, s) => cb(s)),
+  onRemindCursor: (cb) => ipcRenderer.on('remind:cursor', (e, p) => cb(p)),
   remindAction: (a) => ipcRenderer.send('remind:action', a),
   focus: (what, taskId, extra) => ipcRenderer.invoke('focus:action', what, taskId, extra),
   testReminder: () => ipcRenderer.send('remind:test'),

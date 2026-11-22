@@ -379,6 +379,22 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.19.2': {
+    ar: ['التذكير لو مدوستش عليه بيمشي لوحده بعد 10 ثواني، ويرجع تاني بعد 10 دقايق (لحد 3 مرات). ولو الماوس عليه بيستنى',
+      'التذكير بالعربي بقى زي الإنجليزي: الكارت على طرف الشاشة والفار جوه. وعينين الفار بتتابع الماوس وإنت بتحركه',
+      'لما الشاشة تطفى أو الجهاز ينام ويصحى، الويدجت والتذكير مبقوش بيظهروا مربعات سودا',
+      'الإعدادات بتفتح على "عام" على طول بدل صفحة فاضية',
+      'الفاصل اللي في النص بقى له حد، فصفحة التاسك مبقتش بتضغط القايمة',
+      'في اختيار الفولدر، الفولدر الفرعي بيظهر باسمه بس تحت الأساسي، من غير تكرار اسم الأساسي',
+      '"راجع يومك" بقت في صفحة النهارده بس'],
+    en: ['A reminder you don’t touch walks away after 10 seconds and comes back 10 minutes later (up to 3 times). It waits while your cursor is on it',
+      'The Arabic reminder looks like the English one: the card at the screen edge, the mouse inside. The mouse’s eyes follow your cursor',
+      'After the screen sleeps or the computer wakes up, the widget and reminder no longer show as black boxes',
+      'Settings opens on General right away instead of an empty page',
+      'The divider in the middle has a limit, so the task page no longer squeezes the list',
+      'In the folder picker, sub-folders show by their own name under the parent, without repeating it',
+      '"Review your day" is on Today only'],
+  },
   '1.19.1': {
     ar: ['اللي بتضيفه من صفحة اليوم في العادة بقى لليوم ده بس، ومبقاش بيظهر في كل الأيام. ولو استخدمته قبل كده بيظهرلك تحت "استخدمتها قبل كده" تضيفه بدوسة',
       'تقدر تغيّر اسم أي حاجة بتسجلها، أو وحدتها، أو تشيلها (وتتراجع قبل ما تحفظ)، أو تخليها "كل يوم" أو "اليوم ده بس"',
