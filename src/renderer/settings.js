@@ -42,7 +42,6 @@ async function openSettings(section) {
         row(t('dayHours'), t('dayHoursDesc'), `<span class="num-days"><input type="number" id="sDayHours" min="1" max="16" step="0.5" value="${s.dayHours || 6}"> ${t('hbHours')}</span>`) +
         row(t('weekStartLbl'), t('weekStartDesc'), `<div class="seg">${[6, 0, 1].map((d) => `<button data-wstart="${d}" class="${appWeekStart() === d ? 'on' : ''}">${new Date(2024, 0, 7 + d).toLocaleDateString(lang() === 'ar' ? 'ar-EG-u-nu-latn' : 'en-GB', { weekday: 'long' })}</button>`).join('')}</div>`) +
         row(t('theme'), t('themeDesc'), `<div class="seg">${['system', 'light', 'dark'].map((m) => `<button data-theme="${m}" class="${(s.theme || 'system') === m ? 'on' : ''}">${t('theme_' + m)}</button>`).join('')}</div>`) +
-        row(t('breakLen'), t('focusLenDesc'), `<div class="seg">${[5, 10].map((m) => `<button data-bmins="${m}" class="${(s.breakMins || 5) === m ? 'on' : ''}">${m}</button>`).join('')}</div>`) +
         row(`${t('textSize')} <span class="muted" id="sZoomVal">${zoom}%</span>`, t('textSizeDesc'), `<input type="range" id="sZoom" min="80" max="160" step="10" value="${zoom}">`)
       ) + card(`<div class="set-txt"><b>${t('shortcuts')}</b></div>
         <div class="keys">${shortcutList(info.quickKey).map(([k, d]) => `<div><kbd>${k}</kbd><span>${d}</span></div>`).join('')}</div>`))}

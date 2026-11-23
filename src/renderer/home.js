@@ -63,9 +63,9 @@ function renderHome() {
   const work = (plan
       ? `<div class="group-title plan-title">${icon('today')} ${t('planTitle')} <span class="plan-n">${planDone}/${planned.length}</span><button class="link" data-tghours>${icon('clock')} ${t('tgPlanHours')}</button><button class="link" data-plan>${t('planEdit')}</button></div>${capacityHtml(plannedLoad(planned))}
          ${planned.length ? planned.filter((x) => !x.closure).map(rowHtml).join('') + doneFold(planned.filter((x) => x.closure).map(rowHtml), 'plan') : `<div class="h-empty">${t('planEmpty')}</div>`}`
-      : `<button class="plan-cta" data-plan><span class="pc-ico">${icon('today')}</span><span><b>${t('planCta')}</b><small>${t('planCtaSub')}</small></span></button>`) +
+      : `<button class="plan-cta slim" data-plan><span class="pc-ico">${icon('today')}</span><span><b>${t('planCta')}</b><small>${t('planCtaSub')}</small></span><span class="pc-go">›</span></button>`) +
     (() => { const hs = habitsToday(); return hs.length ? `<div class="group-title habit-title">${icon('habits')} ${t('hbToday')} · ${hs.filter((h) => hLog(h, td) === 'done').length}/${hs.length}<button class="link" data-hopen>${t('hSeeAll')}</button></div>${hs.filter((h) => hLog(h, td) !== 'done').map(habitRowHtml).join('')}${doneFold(hs.filter((h) => hLog(h, td) === 'done').map(habitRowHtml), 'habits')}` : ''; })() +
-    sec(t('overdue'), 'danger', lateRest) + sec(t('stDueToday'), '', todayRest) + sec(t('starred'), '', starredRest) + sec(t('hDoNow'), '', doNow);
+    sec(t('overdue'), 'danger', lateRest) + sec(t('stDueToday'), '', todayRest) + sec(t('hImportant'), '', [...starredRest, ...doNow]);
 
   // Coming up, by day.
   const days = new Map();
@@ -109,7 +109,7 @@ function renderHome() {
   $('list').innerHTML = `<div class="home">
     <div class="h-hello">
       <div class="h-hi"><h2>${greet} 👋</h2><span class="muted">${longDate}</span>
-        <div class="h-chips">${chip('pending', overdue.length, t('overdue'), 'danger')}${chip('pending', dueToday.length, t('stDueToday'), 'warn')}${chip('others', withOthers.length, t('hOthers'), 'violet')}${chip('calendar', week.length, t('hWeek'), '')}${chip('closed', closedWeek.length, t('hClosedWeek'), 'ok')}${!overdue.length && !dueToday.length ? `<span class="h-sum">${t('hAllClear')}</span>` : ''}</div></div>
+        <p class="h-sum-line">${esc(summary)}</p></div>
       ${dayTotal ? `<div class="h-day-prog" title="${doneToday} / ${dayTotal}">
         <div class="h-ring" style="--p:${pct}"><b>${doneToday}<small>/${dayTotal}</small></b></div>
         <span>${t('hDoneToday')}</span></div>` : ''}

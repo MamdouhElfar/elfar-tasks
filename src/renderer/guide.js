@@ -25,7 +25,8 @@ const GUIDE_GROUPS = [
     ['report', 'report', { view: 'report', spot: '.tab[data-view="report"]' }, ['التقرير', 'اللي اتقفل، ومين معطّل حاجة، ووقت التركيز', 'تاب المراجعة'], ['Report', 'What got closed, who holds what, focus time', 'Review tab']]
   ]],
   ['tasks', ['تنظيم التاسكات', 'Organizing tasks'], [
-    ['matrix', 'matrix', { view: 'matrix', spot: '.tab[data-view="matrix"]' }, ['المصفوفة', 'رتّب بالأهمية والاستعجال من 1 لـ 4', 'تاب المصفوفة'], ['Matrix', 'Sort by importance and urgency, 1 to 4', 'Matrix tab']],
+    ['tasks', 'list', { view: 'pending', spot: '.tab[data-view="pending"]' }, ['التاسكات', 'كل تاسكاتك: قايمة أو مصفوفة أو تقويم', 'تاب التاسكات'], ['Tasks', 'All your tasks: as a list, a matrix or a calendar', 'Tasks tab']],
+    ['matrix', 'matrix', { view: 'matrix', spot: '.tview [data-tview="matrix"]' }, ['المصفوفة', 'رتّب بالأهمية والاستعجال من 1 لـ 4', 'التاسكات ← المصفوفة'], ['Matrix', 'Sort by importance and urgency, 1 to 4', 'Tasks › Matrix']],
     ['calendar', 'calendar', { view: 'calendar', spot: '.cal-views' }, ['التقويم بالساعات', 'شهر أو أسبوع أو يوم، وقسّم يومك على الساعات', 'تاب التقويم'], ['Calendar with hours', 'Month, week or day; put tasks on hours', 'Calendar tab']],
     ['folders', 'folder', { view: 'today', spot: '#areasNav' }, ['الفولدرات', 'فولدرات جوه فولدرات، وبتترتب بالسحب', 'الشريط الجانبي'], ['Folders', 'Folders in folders, reordered by dragging', 'Sidebar']],
     ['people', 'user', { task: '#detail .pending-box' }, ['مستني رد من', 'تابع التاسكات اللي عند حد تاني', 'صفحة التاسك'], ['Waiting on people', "Track tasks someone else has", 'Task page']],
@@ -106,7 +107,7 @@ function guideGo(id) {
   if (tg.task) {
     // Open a task page (the selected one, or the first open task) to show the spot on it.
     const x = taskById(ui.selected) || data.tasks.find((y) => isActive(y));
-    if (x) { ui.view = ui.view === 'today' ? 'pending' : ui.view; ui.selected = x.id; refresh(); }
+    if (x) { ui.view = ui.view === 'today' ? 'pending' : ui.view; ui.selected = x.id; ui.dShowAll = x.id; refresh(); } // show every field so the spot is there
     return setTimeout(() => coach(it, x ? tg.task : null), 120);
   }
   coach(it, null);

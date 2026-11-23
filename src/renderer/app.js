@@ -76,13 +76,19 @@ function suggestedPeople(x) {
 const VIEWS = [
   { id: 'today', lead: true, test: (x) => isOpen(x) && ((x.due && x.due <= todayStr()) || x.starred || inPlan(x)),
     cls: () => (data.tasks.some((x) => inScope(x) && statusOf(x) === 'overdue') ? 'danger' : '') },
-  { id: 'pending', test: isActive, cls: () => 'warn' },
+  // One Tasks tab, seen as a list, a matrix or a calendar (the switch sits at the top of the tab).
+  { id: 'pending', label: 'tasksTab', test: isActive, cls: () => 'warn', group: ['matrix', 'calendar'] },
   { id: 'closed', test: (x) => !!x.closure, noCount: true, hidden: true },
-  { id: 'matrix', test: isActive, noCount: true, board: true },
-  { id: 'calendar', test: () => true, noCount: true, board: true },
-  { id: 'report', label: 'review', test: () => true, noCount: true, board: true, also: 'closed' },
-  { id: 'habits', test: () => false, noCount: true, board: true }
+  { id: 'matrix', test: isActive, noCount: true, board: true, hidden: true },
+  { id: 'calendar', test: () => true, noCount: true, board: true, hidden: true },
+  { id: 'habits', test: () => false, noCount: true, board: true },
+  { id: 'report', label: 'review', test: () => true, noCount: true, board: true, also: 'closed' }
 ];
+const TASK_VIEWS = ['pending', 'matrix', 'calendar'];
+function tasksViewBar() {
+  const b = (v, ic, label) => `<button class="${ui.view === v ? 'on' : ''}" data-tview="${v}" title="${esc(label)}">${icon(ic)}<span>${esc(label)}</span></button>`;
+  return `<span class="seg-joined tview">${b('pending', 'list', t('tvList'))}${b('matrix', 'matrix', t('matrix'))}${b('calendar', 'calendar', t('calendar'))}</span>`;
+}
 
 function inScope(x, scope = ui.scope) {
   if (scope === 'all') return true;
@@ -143,7 +149,7 @@ function renderAll() {
 function renderTabs() {
   const tab = (v) => {
     const n = v.noCount ? 0 : data.tasks.filter((x) => inScope(x) && v.test(x) && (!ui.person || isPendingWith(x, ui.person))).length;
-    const on = ui.view === v.id || ui.view === v.also;
+    const on = ui.view === v.id || ui.view === v.also || (v.group || []).includes(ui.view);
     return `<button class="tab ${v.board ? 'board' : ''} ${v.lead ? 'lead' : ''} ${on ? 'active' : ''}" data-view="${v.id}" title="${esc(t(v.label || v.id))}">
       ${icon(v.id)}<span class="tab-label">${esc(t(v.label || v.id))}</span>${n ? `<span class="count ${v.cls ? v.cls() : ''}">${n}</span>` : ''}</button>`;
   };
@@ -151,7 +157,7 @@ function renderTabs() {
     <span class="tab-sep"></span>
     <div class="tab-group">${VIEWS.filter((v) => !v.board && !v.lead && !v.hidden).map(tab).join('')}</div>
     <span class="tab-sep"></span>
-    <div class="tab-group boards">${VIEWS.filter((v) => v.board).map(tab).join('')}</div>`;
+    <div class="tab-group boards">${VIEWS.filter((v) => v.board && !v.hidden).map(tab).join('')}</div>`;
   fitTabs();
   // Tools that don't apply to a view are hidden instead of sitting there doing nothing.
   const tools = { search: !['today', 'calendar', 'report', 'habits'].includes(ui.view), sort: !['today', 'matrix', 'calendar', 'report', 'habits'].includes(ui.view) };
@@ -281,8 +287,13 @@ function renderList() {
 
   if (ui.view === 'today') return renderHome();
   if (ui.view === 'habits') return renderHabits();
-  if (ui.view === 'calendar') return renderCalendar();
-  if (ui.view === 'matrix') return renderMatrix();
+  if (ui.view === 'calendar' || ui.view === 'matrix') {
+    if (ui.view === 'calendar') renderCalendar(); else renderMatrix();
+    // The calendar has its own toolbar: the switch joins it there instead of adding a row.
+    const cv = $('list').querySelector('.cal-views');
+    if (cv) return cv.parentElement.insertAdjacentHTML('beforeend', tasksViewBar());
+    return $('list').insertAdjacentHTML('afterbegin', `<div class="sub-bar tview-bar">${tasksViewBar()}</div>`);
+  }
   if (ui.view === 'report') return renderReport();
   const list = currentTasks();
   // Pending: all / on me / with others. Closed: the Review switch (report / closed).
@@ -317,7 +328,8 @@ function pendingSubBar() {
     later: mineAll.filter((x) => statusOf(x) === 'scheduled').length };
   const b = (k, label) => `<button class="${ui.pendingSub === k ? 'on' : ''}" data-psub="${k}">${label} <span class="n">${n[k]}</span></button>`;
   return `<div class="sub-bar"><span class="seg-joined">${b('all', t('all'))}${b('mine', t('mine'))}${b('others', t('withOthers'))}</span>
-    ${n.later || ui.pendingSub === 'later' ? `<span class="seg-joined later">${b('later', `${icon('calendar')} ${t('later')}`)}</span>` : ''}</div>
+    ${n.later || ui.pendingSub === 'later' ? `<span class="seg-joined later">${b('later', `${icon('calendar')} ${t('later')}`)}</span>` : ''}
+    <span class="tview-push"></span>${tasksViewBar()}</div>
     ${ui.pendingSub === 'later' ? `<p class="small muted sub-hint">${t('scheduledHint')}</p>` : ''}`;
 }
 
@@ -473,6 +485,15 @@ function renderDetail() {
   renderDetail.shown = x.id;
   work.classList.add('has-detail');
   const subs = x.subtasks || [];
+  // Only what this task uses is shown; everything else waits behind small "＋" buttons.
+  ui.dOpen = ui.dOpen || {};
+  const noteText = (x.notes || '').trim() || (Array.isArray(x.pages) && x.pages.some((p) => (p.html || '').replace(/<[^>]*>/g, '').trim()));
+  const has = { estimate: !!x.estimate || (x.focusMs || 0) >= 60000, remind: !!x.remindAt || x.remindBefore != null, repeat: !!x.repeat, prio: !!x.priority,
+    people: pendingOf(x).length > 0, files: (x.files || []).length > 0, notes: !!noteText };
+  const show = (k) => ui.dShowAll === x.id || has[k] || ui.dOpen[x.id + ':' + k];
+  const MORE = [['prio', 'matrix', t('priority')], ['remind', 'bell', t('reminder')], ['estimate', 'clock', t('estimate')], ['people', 'user', t('waiting')],
+    ['repeat', 'repeat', t('repeat')], ['notes', 'note', t('notes')], ['files', 'clip', t('files')]].filter(([k]) => !show(k) && !(k === 'estimate' && x.closure));
+  const moreHtml = MORE.length ? `<div class="d-more"><span class="small muted">${t('dAddMore')}</span>${MORE.map(([k, ic, l]) => `<button type="button" data-dmore="${k}">＋ ${icon(ic)} ${esc(l)}</button>`).join('')}</div>` : '';
   const span = statusOf(x) === 'scheduled' ? '' : x.start ? (x.closure ? `${t('tookDays')} ${daysWord(daysBetween(x.start, x.closure), lang())}` : `${t('openedFor')} ${daysWord(Math.max(0, daysBetween(x.start, todayStr())), lang())}`) : '';
   el.innerHTML = `<div class="inner">
     <div class="d-top">
@@ -495,17 +516,17 @@ function renderDetail() {
       <div class="d-field"><label>${icon('pending')} ${t('dueTimeShort')}</label>${timeBox('dDueTime', x.dueTime, `title="${t('dueTime')}"`)}</div>
       ${x.closure ? `<div class="d-field"><label>${icon('closed')} ${t('closure')}</label><input type="date" id="dClosure" value="${x.closure}"></div>` : ''}
     </div>
-    ${x.closure ? '' : estimateFieldHtml(x)}
-    ${reminderFieldHtml(x)}
     <div class="d-row">
       <div class="d-field grow"><label>${icon('folder')} ${t('area')}</label><select id="dArea">${areaOptions(x.areaId)}</select></div>
-      <div class="d-field grow"><label>${icon('repeat')} ${t('repeat')}</label><select id="dRepeat">${repeatOptions(x.repeat, x.due)}</select></div>
+      ${show('repeat') ? `<div class="d-field grow"><label>${icon('repeat')} ${t('repeat')}</label><select id="dRepeat">${repeatOptions(x.repeat, x.due)}</select></div>` : ''}
     </div>
-    <div class="d-field">
+    ${show('prio') ? `<div class="d-field">
       <label>${icon('matrix')} ${t('priority')}${x.priority ? ` · <a href="#" data-prio="">${t('clearPriority')}</a>` : ''}</label>
       ${prioPicker(x.priority, 'data-prio', prioNames(), t('noPrio'))}
-    </div>
-    <div class="d-field pending-box">
+    </div>` : ''}
+    ${show('remind') ? reminderFieldHtml(x) : ''}
+    ${x.closure || !show('estimate') ? '' : estimateFieldHtml(x)}
+    ${show('people') ? `<div class="d-field pending-box">
       <label>${icon('user')} ${t('waiting')}</label>
       <div class="chips">
         ${pendingOf(x).map((pw) => {
@@ -520,7 +541,8 @@ function renderDetail() {
         <input type="text" id="dAddPerson" dir="auto" list="peopleList" placeholder="${t('personPh')}" autocomplete="off">
         <datalist id="peopleList">${suggestedPeople(x).map((p) => `<option value="${esc(p.name)}"></option>`).join('')}</datalist>
       </div>
-    </div>
+    </div>` : ''}
+    ${moreHtml}
 
     <div class="d-sec"><h3>${icon('list')} ${t('subtasks')} <span class="muted small">${subs.filter((s) => s.done).length}/${subs.length}</span></h3>
       ${subs.map((s) => `<div class="sub ${s.done ? 'done' : ''}">
@@ -532,9 +554,8 @@ function renderDetail() {
 
     ${x.repeat ? `<div class="d-field next-note"><label>${icon('repeat')} ${t('nextNote')}</label>
       <textarea id="dNextNote" dir="auto" rows="2" placeholder="${t('nextNotePh')}">${esc(x.nextNote || '')}</textarea></div>` : ''}
-    ${attachmentsHtml(x)}
-
-    ${notesHtml(x)}
+    ${show('notes') ? notesHtml(x) : ''}
+    ${show('files') ? attachmentsHtml(x) : ''}
 
     <div class="d-sec"><h3>${icon('log')} ${t('log')}</h3>
       <div class="log-add">
@@ -888,7 +909,10 @@ function bind() {
     const v = e.target.closest('[data-view]'); if (!v) return;
     // Moving to another tab closes the open task page.
     if (ui.view === v.dataset.view) return;
-    ui.view = v.dataset.view; ui.selected = null; refresh(); animateIn($('list'));
+    // The Tasks tab opens the way you last looked at it (list, matrix or calendar).
+    const to = v.dataset.view === 'pending' && TASK_VIEWS.includes(data.settings.tasksView) ? data.settings.tasksView : v.dataset.view;
+    if (ui.view === to) return;
+    ui.view = to; ui.selected = null; refresh(); animateIn($('list'));
   };
   // Open/close a folder in place (no re-render) so it animates.
   const setFolder = (id, open) => {
@@ -947,6 +971,8 @@ function bind() {
       ui.calMonth = cal.dataset.cal === '0' ? null : todayStr(new Date(y, m - 1 + Number(cal.dataset.cal), 1)).slice(0, 7);
       return renderList();
     }
+    const tv = e.target.closest('[data-tview]');
+    if (tv) { if (ui.view !== tv.dataset.tview) { ui.view = tv.dataset.tview; data.settings.tasksView = ui.view; save(); refresh(); animateIn($('list')); } return; }
     const ps = e.target.closest('[data-psub]');
     if (ps) { ui.pendingSub = ps.dataset.psub; return renderList(); }
     const hv = e.target.closest('[data-go]');
@@ -977,6 +1003,15 @@ function bind() {
     const id = e.target.closest('button')?.id;
     if (id === 'dHide') { ui.selected = null; return refresh(); }
     if (id === 'dUnpin') { x.pinnedNote = null; touch(x); return refresh(); }
+    const more = e.target.closest('[data-dmore]');
+    if (more) {
+      const k = more.dataset.dmore;
+      ui.dOpen = ui.dOpen || {}; ui.dOpen[x.id + ':' + k] = true; renderDetail();
+      const go = { prio: '#detail [data-prio]', remind: '#dRemindSel', estimate: '#detail .est-pick button', people: '#dAddPerson', repeat: '#dRepeat', notes: '#notesSec', files: '#dFilesSec' }[k];
+      const el = document.querySelector(go);
+      if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); if (/^(INPUT|SELECT|BUTTON)$/.test(el.tagName)) el.focus(); el.closest('.d-field, .d-sec')?.classList.add('just-added'); }
+      return;
+    }
     if (id === 'dStar') { x.starred = !x.starred; touch(x); return refresh(); }
     if (id === 'dClose') { setClosed(x, true); return refresh(); }
     if (id === 'dReopen') { setClosed(x, false); return refresh(); }

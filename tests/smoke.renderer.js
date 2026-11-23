@@ -18,6 +18,22 @@
     check('review number tiles', document.querySelectorAll('#list .st-tile').length >= 3);
     check('review charts', document.querySelectorAll('#list .ch-card').length >= 2);
   });
+  await step('four tabs; Tasks switches list / matrix / calendar', async () => {
+    ui.view = 'pending'; refresh(); await w(60);
+    check('four tabs', document.querySelectorAll('#tabs .tab').length === 4);
+    document.querySelector('[data-tview="matrix"]').click(); await w(60);
+    check('matrix inside Tasks', ui.view === 'matrix' && document.querySelector('.tab[data-view="pending"]').classList.contains('active'));
+    document.querySelector('[data-tview="pending"]').click(); await w(60);
+    check('back to the list', ui.view === 'pending');
+  });
+  await step('a plain task page shows only what is used', async () => {
+    const x = data.tasks.find((y) => y.title === 'Report');
+    select(x.id); await w(120);
+    check('no repeat box until asked', !document.getElementById('dRepeat'));
+    document.querySelector('[data-dmore="repeat"]').click(); await w(60);
+    check('＋ Repeat opens it', !!document.getElementById('dRepeat'));
+    ui.selected = null; refresh();
+  });
   await step('calendar month / week / day', async () => {
     ui.view = 'calendar';
     for (const cv of ['month', 'week', 'day']) { data.settings.calView = cv; refresh(); await w(80); check(`calendar ${cv}`, $('list').innerHTML.length > 50); }

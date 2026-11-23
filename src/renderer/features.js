@@ -427,6 +427,16 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.21.0': {
+    ar: ['أبسط: 4 تابات بس، النهارده والتاسكات والعادات والمراجعة. تاب التاسكات فيه زرار تشوفها بيه قايمة أو مصفوفة أو تقويم، وبيفتكر آخر واحدة اخترتها',
+      'صفحة التاسك بتوريك بس الحاجات اللي مستخدمها. الباقي (تذكير، مدة، مستني مين، تكرار، ملاحظات، ملفات) زراير صغيرة "＋" تضيفها لما تحتاجها',
+      'صفحة النهارده أهدى: سطر واحد يلخص يومك بدل 5 أزرار، ودعوة الخطة بقت سطر صغير، و"مميزة" و"اعملها دلوقتي" بقوا قسم واحد "مهمة"',
+      'في سجل المتابعة، خانات الشخص والتاريخ بتظهر بس وإنت بتكتب'],
+    en: ['Simpler: just 4 tabs, Today, Tasks, Habits and Review. Tasks has a switch to see them as a list, a matrix or a calendar, and remembers your last pick',
+      'A task page shows only what that task uses. The rest (reminder, length, waiting on, repeat, notes, files) are small "＋" buttons you add when needed',
+      'Today is calmer: one line sums up your day instead of 5 buttons, the plan invite is one slim row, and "Starred" and "Do it now" are one "Important" section',
+      'In the follow-up log, the person and date boxes appear only while you write'],
+  },
   '1.20.0': {
     ar: ['المراجعة بقت توريك إنت فين من أول نظرة: أرقام الأسبوع وبتزيد ولا بتقل عن الأسبوع اللي فات، واللي خلص كل يوم، والتركيز كل يوم، وتاسكاتك المفتوحة متقسمة (متأخرة، النهارده، مستني حد…)، والتزامك بالعادات كل أسبوع',
       'العادات: فوق ملخص للأسبوع (دايرة الالتزام، وكل عادة وصلت لفين، وآخر 8 أسابيع)، وفي كل عادة رسم لآخر 8 أسابيع، ولو بتسجّل أرقام (صفحات، Push ups…) رسم لمجموعها كل أسبوع',

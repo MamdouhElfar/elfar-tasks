@@ -1930,3 +1930,30 @@ html[dir="rtl"] .modal.hd input:placeholder-shown, html[dir="rtl"] .modal.hd tex
 .hp-chips { display: flex; flex-wrap: wrap; gap: 4px; }
 .hp-chips button { font-size: var(--fs-xs); padding: 1px 8px; border-radius: 99px; }
 .hp-chips button.on { background: var(--accent-bg); color: var(--accent-text); border-color: transparent; }
+
+/* ---------- 1.21.0 simpler: one Tasks tab with a list / matrix / calendar switch ---------- */
+.tview-push { flex: 1; }
+.tview-bar { justify-content: flex-end; }
+.seg-joined.tview button { display: inline-flex; align-items: center; gap: 5px; }
+.seg-joined.tview .ico { width: 14px; height: 14px; }
+
+/* task page: only what's used; the rest behind small ＋ buttons */
+.d-more { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 2px 0 14px; }
+.d-more button { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-s); padding: 3px 10px; border-radius: 99px; border: 1px dashed var(--border-2); background: transparent; color: var(--text-2); }
+.d-more button:hover { border-style: solid; border-color: var(--accent); color: var(--accent-text); }
+.d-more .ico { width: 13px; height: 13px; }
+.just-added { animation: justAdded 1.2s var(--ease); border-radius: 10px; }
+@keyframes justAdded { 0% { box-shadow: 0 0 0 3px var(--accent-bg); } 100% { box-shadow: 0 0 0 0 transparent; } }
+/* follow-up log: the owner / date boxes only appear while you write */
+.log-add:not(:focus-within) .log-meta { display: none; }
+
+/* Today: one calm line instead of five chips; the plan invite is one slim row */
+.h-sum-line { margin: 6px 0 0; color: var(--text-2); font-size: var(--fs-m); }
+.plan-cta.slim { padding: 8px 12px; display: flex; align-items: center; gap: 10px; }
+.plan-cta.slim > span:nth-child(2) { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; flex: 1; }
+.plan-cta.slim small { margin: 0; }
+.plan-cta.slim .pc-go { color: var(--text-3); font-size: 18px; }
+html[dir=rtl] .plan-cta.slim .pc-go { transform: scaleX(-1); }
+.plan-cta.slim b, .plan-cta.slim small { display: inline; }
+.cal-head > .tview { position: absolute; inset-inline-end: 0; }
+.cal-head:has(> .tview) .cal-today { position: static; }
