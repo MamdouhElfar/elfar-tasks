@@ -124,11 +124,59 @@ function renderHabits() {
   $('list').innerHTML = `<div class="habits">
     <div class="hbp-head"><div><h2>${t('habits')}</h2><p class="small muted">${t('hbIntro')}</p></div>
       <button class="primary" data-hnew>＋ ${t('hbNew')}</button></div>
+    ${live.length ? hSummaryHtml(live) : ''}
     ${live.length ? `<div class="hb-grid">${live.map(habitCardHtml).join('')}</div>` : `<div class="hb-empty">
       <div class="hb-empty-mouse">${mouseLogo('', 'happy')}</div><b>${t('hbEmpty')}</b><p class="small muted">${t('hbEmptySub')}</p>
       <div class="hb-examples">${examples.map(([e, n, k], i) => `<button data-hex="${k}" data-hname="${esc(n)}" data-hemoji="${e}" data-hpre="${['study', 'gym', 'read'][i]}">${e} ${esc(n)}</button>`).join('')}</div></div>`}
     ${old.length ? `<details class="hb-old"><summary>${t('hbOld')} · ${old.length}</summary><div class="hb-grid">${old.map(habitCardHtml).join('')}</div></details>` : ''}
   </div>`;
+}
+
+// The top of the Habits tab: this week for all habits at a glance, the last weeks, and each habit's bar.
+function hSummaryHtml(live) {
+  const td = todayStr();
+  const wsNow = hAdd(td, -((new Date(td + 'T00:00').getDay() - appWeekStart() + 7) % 7));
+  const weeks = [...Array(8)].map((_, i) => hAdd(wsNow, -7 * (7 - i)));
+  const sc = weeks.map((ws) => habitsWeekScore(live, ws, td));
+  const first = sc.findIndex((v) => v !== null);
+  const now = sc[7], prev = sc[6];
+  const delta = now !== null && prev !== null && prev !== undefined ? Math.round((now - prev) * 100) : null;
+  const rows = live.map((h) => { const v = habitWeekScore(h, hWeekStart(h, td), td); return `<div class="hs-row" data-tip="${esc(h.name)}: ${v === null ? '—' : Math.round(v * 100) + '%'}">
+      <span class="hs-name"><span>${esc(h.emoji || '🔁')}</span><bdi>${esc(h.name)}</bdi></span>
+      <span class="hs-bar" style="--hc:${areaColor(h)}"><i style="width:${v === null ? 0 : Math.round(v * 100)}%"></i></span><b>${v === null ? '—' : Math.round(v * 100) + '%'}</b></div>`; }).join('');
+  return `<div class="hb-sum">
+    <div class="hs-now">${ringChart(now, { size: 88, color: 'var(--c-teal)', label: t('hbSumTitle') })}<div class="hs-txt"><b>${t('hbSumTitle')}</b>
+      ${delta !== null ? `<span class="st-delta ${delta > 0 ? 'good' : delta < 0 ? 'bad' : ''}">${delta === 0 ? '＝' : delta > 0 ? '▲ ' + delta + '%' : '▼ ' + Math.abs(delta) + '%'} <em>${t('wkVsLast')}</em></span>` : ''}</div></div>
+    <div class="hs-list">${rows}</div>
+    ${first >= 0 && first < 7 ? `<div class="hs-weeks"><h4>${t('hbSumWeeks')}</h4>${colChart({ items: weeks.slice(first).map((ws, i) => ({ value: (sc[first + i] || 0) * 100, cur: i + first === 7, label: shortDay(ws), tip: `${fmtDate(ws, lang())} → ${fmtDate(hAdd(ws, 6), lang())}: ${sc[first + i] === null ? '—' : Math.round(sc[first + i] * 100) + '%'}` })), fmt: (v) => Math.round(v) + '%', color: 'var(--c-teal)', height: 80 })}</div>` : ''}
+  </div>`;
+}
+
+// On each habit's card: the last 8 weeks, and the amounts you log (pages, push ups…) week by week.
+function hProgressHtml(h) {
+  const td = todayStr(), cur = hWeekStart(h, td), first = hWeekStart(h, h.start);
+  const weeks = [...Array(8)].map((_, i) => hAdd(cur, -7 * (7 - i))).filter((ws) => ws >= first);
+  const color = areaColor(h);
+  const range = (ws) => `${fmtDate(ws, lang())} → ${fmtDate(hAdd(ws, 6), lang())}`;
+  let main = '';
+  if (weeks.length >= 2) {
+    main = h.kind === 'times'
+      ? colChart({ items: weeks.map((ws) => { const v = hWeek(h, ws, td).done; return { value: v, cur: ws === cur, label: shortDay(ws), tip: `${range(ws)}: ${v} / ${h.perWeek}` }; }), color, height: 64, target: h.perWeek, targetLabel: `${t('hbProgTarget')} ${h.perWeek}` })
+      : colChart({ items: weeks.map((ws) => { const v = habitWeekScore(h, ws, td); return { value: v === null ? 0 : v * 100, cur: ws === cur, label: shortDay(ws), tip: `${range(ws)}: ${v === null ? '—' : Math.round(v * 100) + '%'}` }; }), fmt: (v) => Math.round(v) + '%', color, height: 64 });
+  }
+  // Amounts you log: one measure at a time, the one with data first.
+  ui.hbMeasure = ui.hbMeasure || {};
+  const from = weeks[0] || cur;
+  const used = (h.measures || []).filter((m) => Object.entries(h.entries || {}).some(([d, e]) => d >= from && e.vals && e.vals[m.id] > 0));
+  let meas = '';
+  if (used.length) {
+    const m = used.find((x) => x.id === ui.hbMeasure[h.id]) || used[0];
+    const ws8 = weeks.length ? weeks : [cur];
+    meas = `<div class="hp-m">${used.length > 1 ? `<div class="hp-chips">${used.map((x) => `<button class="${x.id === m.id ? 'on' : ''}" data-hmeas="${h.id}:${x.id}" dir="auto">${esc(x.name)}</button>`).join('')}</div>` : `<small class="muted" dir="auto">${esc(m.name)}</small>`}
+      ${colChart({ items: ws8.map((ws) => { const v = habitTotals(h, ws, hAdd(ws, 6))[m.id] || 0; return { value: v, cur: ws === cur, label: shortDay(ws), tip: `${range(ws)}: ${fmtVal(m, v)}` }; }), fmt: (v) => chFmtN(v), color, height: 56 })}</div>`;
+  }
+  if (!main && !meas) return '';
+  return `<div class="hb-prog"><div class="hp-h">${icon('report')} ${t('hbProg8')}${main && h.kind !== 'times' ? ` · ${t('hbProgKept')}` : ''}</div>${main}${meas}</div>`;
 }
 
 function habitCardHtml(h) {
@@ -174,6 +222,7 @@ function habitCardHtml(h) {
       <span>${h.kind === 'minutes' ? `${icon('clock')} <b>${hMinsLabel(st.total)}</b>` : `${icon('closed')} <b>${st.total}</b> ${t('hbTimes')}`}${h.end && h.end.type === 'count' ? ` / ${h.end.count}` : ''}</span>
     </div>
     ${h.kind === 'minutes' ? hWeekBars(h) : hWeekStrip(h)}
+    ${h.kind === 'minutes' ? '' : hProgressHtml(h)}
     ${hHistory(h)}
   </section>`;
 }
@@ -457,6 +506,7 @@ document.addEventListener('click', (e) => {
   if ((b = q('[data-hfocus]'))) { e.stopPropagation(); const h = habitById(b.dataset.hfocus); if (h) hStartFocus(h, b.dataset.hrest || hPartial(h, todayStr())); return; }
   if ((b = q('[data-hadd]'))) return hAddTime(habitById(b.dataset.hadd));
   if ((b = q('[data-hopen]'))) { ui.view = 'habits'; ui.selected = null; refresh(); return; }
+  if ((b = q('[data-hmeas]'))) { const [id, mid] = b.dataset.hmeas.split(':'); ui.hbMeasure = ui.hbMeasure || {}; ui.hbMeasure[id] = mid; return renderList(); }
   if ((b = q('[data-hmon]'))) { const [id, mon] = b.dataset.hmon.split(':'); ui.hbMonth = ui.hbMonth || {}; ui.hbMonth[id] = mon; ui.hbOpen = ui.hbOpen || {}; ui.hbOpen[id] = true; return renderList(); }
   // Fix a past day on the tracker: nothing → done → day off → nothing.
   if ((b = q('[data-hday]'))) {

@@ -148,6 +148,31 @@
     h.measures = (h.measures || []).filter((m) => m.every !== false || hasVal(h, m.id));
     return h;
   }
+  // How well a habit was kept in the week starting ws: 0–1, or null if it wasn't running then.
+  //  days: share of its scheduled days done so far (partly done counts for its share; days off and
+  //  today-not-yet-marked don't count). times / minutes: how close the week got to the target.
+  function habitWeekScore(h, ws, td = todayStr()) {
+    const we = hAdd(ws, 6);
+    if (ws > td || we < h.start || (h.end && h.end.type === 'date' && h.end.date && ws > h.end.date)) return null;
+    if (h.kind === 'days') {
+      let tot = 0, got = 0;
+      for (let i = 0; i < 7; i++) {
+        const d = hAdd(ws, i);
+        if (d > td || !hScheduled(h, d)) continue;
+        const l = hLog(h, d), part = hPartial(h, d);
+        if (l === 'skip' || (d === td && !l && !part)) continue;
+        tot++; got += l === 'done' ? 1 : part;
+      }
+      return tot ? got / tot : null;
+    }
+    const target = hTarget(h);
+    return target ? Math.min(1, hWeekVal(h, hWeek(h, ws, td)) / target) : null;
+  }
+  // All habits together for that week (the average of the ones that were running).
+  function habitsWeekScore(list, ws, td = todayStr()) {
+    const sc = list.filter((h) => !h.archived).map((h) => habitWeekScore(h, hWeekStart(h, ws), td)).filter((v) => v !== null);
+    return sc.length ? sc.reduce((a, b) => a + b, 0) / sc.length : null;
+  }
   // How much of each measure between two days (e.g. this week's pages and push ups).
   function habitTotals(h, from, to) {
     const out = {};
@@ -394,6 +419,7 @@
     hWeekStart, hLog, hMins, hDoneCount, hEnded, hLive, hActiveOn, hScheduled, hWeek, hTarget, hWeekVal, hPartial,
     habitsDueOn, habitStillDue, habitAddMinutes, habitSetEntry, habitEntry, habitLastStop, habitTotals,
     habitMeasuresFor, habitUsedBefore, habitTidyMeasures,
+    habitWeekScore, habitsWeekScore,
     arCount, fmtMins,
     makePatch, patchEmpty, applyPatch,
     parseQuick, merge3, layoutBlocks, suggestPlan

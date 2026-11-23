@@ -229,3 +229,16 @@ test('sync keeps habit items added on both computers', () => {
   const out = L.merge3(base, ours, theirs);
   assert.deepEqual(out.habits[0].measures.map((m) => m.id).sort(), ['a', 'b', 'c']);
 });
+
+test('habit week score for the charts', () => {
+  const td = '2026-11-25'; // a Wednesday
+  L.configure({ weekStart: () => 6 }); // weeks start on Saturday: 21 → 27 Nov
+  const study = { kind: 'days', days: [0, 2, 4], start: '2026-11-01', duration: 60, end: { type: 'never' },
+    log: { '2026-11-22': 'done' }, minutes: { '2026-11-24': 30 } }; // Sun done, Tue half, Thu not yet
+  assert.equal(L.habitWeekScore(study, '2026-11-21', td), 0.75);
+  const gym = { kind: 'times', perWeek: 4, start: '2026-11-01', end: { type: 'never' }, log: { '2026-11-21': 'done' } };
+  assert.equal(L.habitWeekScore(gym, '2026-11-21', td), 0.25);
+  assert.equal(L.habitWeekScore(gym, '2026-12-05', td), null);       // a week that hasn't come
+  assert.equal(L.habitsWeekScore([study, gym], '2026-11-21', td), 0.5);
+  L.configure({ weekStart: () => null });
+});

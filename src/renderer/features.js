@@ -314,6 +314,60 @@ function weekStart() {
   d.setDate(d.getDate() - back); return todayStr(d);
 }
 
+// The top of the Review page: where you are at a glance (numbers with their trend, then charts).
+function reportChartsHtml(from, tasks, open) {
+  const td = todayStr();
+  const len = daysBetween(from, td) + 1;
+  const pFrom = hAdd(from, -len), pTo = hAdd(td, -len);
+  const inR = (d, a, b) => d && d >= a && d <= b;
+  const focusOf = (a, b) => (data.focusLog || []).filter((l) => inR(l.at.slice(0, 10), a, b) && (ui.scope === 'all' || inScope(taskById(l.taskId) || { areaId: l.areaId })));
+  const closedIn = (a, b) => tasks.filter((x) => inR(x.closure, a, b)).length;
+  const mins = (a, b) => Math.round(focusOf(a, b).reduce((n, l) => n + l.ms, 0) / 60000);
+  const days14 = [...Array(14)].map((_, i) => hAdd(td, i - 13));
+  const doneDay = days14.map((d) => closedIn(d, d));
+  const focusDay = days14.map((d) => mins(d, d));
+  const vs = from === weekStart() ? t('rvVsLastWeek') : t('rvVsBefore');
+  const done = closedIn(from, td), donePrev = closedIn(pFrom, pTo);
+  const fm = mins(from, td), fmPrev = mins(pFrom, pTo);
+  // Habits: this week against last week.
+  const hl = habitsList().filter((h) => !h.archived);
+  const wsNow = hAdd(td, -((new Date(td + 'T00:00').getDay() - appWeekStart() + 7) % 7));
+  const hNow = hl.length ? habitsWeekScore(hl, wsNow, td) : null;
+  const hPrev = hl.length ? habitsWeekScore(hl, hAdd(wsNow, -7), td) : null;
+  // Open tasks, each counted once, the most pressing reason first.
+  const cat = { overdue: 0, today: 0, waiting: 0, later: 0, nodate: 0 };
+  for (const x of open) {
+    const st = statusOf(x);
+    if (st === 'overdue') cat.overdue++;
+    else if (st === 'today') cat.today++;
+    else if (pendingOf(x).length) cat.waiting++;
+    else if (x.due || st === 'scheduled') cat.later++;
+    else cat.nodate++;
+  }
+  const dayItems = (vals, fmt) => days14.map((d, i) => ({ value: vals[i], cur: d === td, label: i % 2 === 1 || d === td ? String(Number(d.slice(8))) : '', tip: `${fmtDate(d, lang())}: ${fmt(vals[i])}` }));
+  const weeks = [...Array(8)].map((_, i) => hAdd(wsNow, -7 * (7 - i)));
+  const hWeeks = weeks.map((ws) => habitsWeekScore(hl, ws, td));
+  const firstH = hWeeks.findIndex((v) => v !== null);
+  return `<div class="st-tiles">
+      ${statTile({ label: t('rClosed'), value: done, delta: done - donePrev, vs, spark: doneDay.slice(-7) })}
+      ${statTile({ label: t('rFocus'), value: fm ? focusTimeLabel(fm) : '0', delta: fm - fmPrev, deltaFmt: (d) => focusTimeLabel(Math.abs(d)), vs, spark: focusDay.slice(-7), sparkColor: 'var(--c-purple)' })}
+      ${hl.length ? statTile({ label: t('stHabits'), value: hNow === null ? '—' : Math.round(hNow * 100) + '%', delta: hNow !== null && hPrev !== null ? Math.round((hNow - hPrev) * 100) : null, deltaFmt: (d) => Math.abs(d) + '%', vs: t('wkVsLast') }) : ''}
+      ${statTile({ label: t('openNow'), value: open.length, sub: cat.overdue ? `<span class="st-warn">⚠ ${cat.overdue} ${t('overdue')}</span>` : '' })}
+    </div>
+    <div class="ch-grid">
+      <div class="ch-card"><h4>${t('chDonePerDay')}</h4>${colChart({ items: dayItems(doneDay, chFmtN), empty: t('chNoDone') })}</div>
+      <div class="ch-card"><h4>${t('chFocusPerDay')}</h4>${colChart({ items: dayItems(focusDay, (m) => focusTimeLabel(m)), fmt: (m) => focusTimeLabel(m), color: 'var(--c-purple)', empty: t('chNoFocus') })}</div>
+      ${open.length ? `<div class="ch-card"><h4>${t('chOpenNow')}</h4>${segBar([
+        { label: t('overdue'), value: cat.overdue, color: 'var(--danger)' },
+        { label: t('nowToday'), value: cat.today, color: 'var(--c-amber)' },
+        { label: t('chWaiting'), value: cat.waiting, color: 'var(--c-purple)' },
+        { label: t('chLater'), value: cat.later, color: 'var(--accent)' },
+        { label: t('chNoDate'), value: cat.nodate, color: 'var(--c-gray)' }])}</div>` : ''}
+      ${hl.length && firstH >= 0 ? `<div class="ch-card ch-habits"><h4>${t('chHabitsWeeks')}</h4><div class="ch-hrow">${ringChart(hNow, { color: 'var(--c-teal)', label: t('hbThisWeek') })}
+        ${colChart({ items: weeks.slice(firstH).map((ws, i) => ({ value: (hWeeks[firstH + i] || 0) * 100, cur: ws === wsNow, label: shortDay(ws), tip: `${fmtDate(ws, lang())} → ${fmtDate(hAdd(ws, 6), lang())}: ${hWeeks[firstH + i] === null ? '—' : Math.round(hWeeks[firstH + i] * 100) + '%'}` })), fmt: (v) => Math.round(v) + '%', color: 'var(--c-teal)', height: 90 })}</div></div>` : ''}
+    </div>`;
+}
+
 function renderReport() {
   const from = ui.reportFrom || weekStart();
   const inScopeAll = data.tasks.filter((x) => inScope(x));
@@ -343,13 +397,7 @@ function renderReport() {
       <button id="rCopy">${icon('copy')} ${t('copyReport')}</button>
       <button id="rCsv">${icon('download')} ${t('exportCsv')}</button>
     </div>
-    <div class="r-stats">
-      <div><b>${closed.length}</b><span>${t('rClosed')} <small>${t('sinceDate')} ${fmtDate(from, lang())}</small></span></div>
-      <div><b>${added.length}</b><span>${t('rAdded')} <small>${t('sinceDate')} ${fmtDate(from, lang())}</small></span></div>
-      <div><b>${open.length}</b><span>${t('openNow')}</span></div>
-      <div class="${overdue.length ? 'bad' : ''}"><b>${overdue.length}</b><span>${t('overdue')}</span></div>
-      ${focusTotal ? `<div><b class="r-focus">${focusTimeLabel(Math.round(focusTotal / 60000))}</b><span>${t('rFocus')} <small>${t('sinceDate')} ${fmtDate(from, lang())}</small></span></div>` : ''}
-    </div>
+    ${reportChartsHtml(from, inScopeAll, open)}
     ${Object.keys(focusByArea).length > 1 ? `<div class="r-sec"><h4>${t('rFocusByArea')}</h4>${Object.entries(focusByArea).sort((a, b) => b[1] - a[1]).map(([a, ms]) => `<div class="r-bar"><span dir="auto">${esc(a)}</span><span class="r-track"><i class="focus" style="width:${(ms / Math.max(...Object.values(focusByArea))) * 100}%"></i><b>${focusTimeLabel(Math.round(ms / 60000))}</b></span></div>`).join('')}</div>` : ''}
     ${Object.keys(byArea).length ? `<div class="r-sec"><h4>${t('rByArea')}</h4>${Object.entries(byArea).sort((a, b) => b[1] - a[1]).map(([a, n]) => `<div class="r-bar"><span dir="auto">${esc(a)}</span><span class="r-track"><i style="width:${(n / Math.max(...Object.values(byArea))) * 100}%"></i><b>${n}</b></span></div>`).join('')}</div>` : ''}
     <div class="r-sec"><h4>${t('rStuck')} (${days}+ ${t('days')})</h4>${stuck.length ? stuck.map((s) => row(s.x, `${icon('user')} <bdi>${esc(s.p.name)}</bdi> · ${daysWord(s.d, lang())}`)).join('') : `<div class="muted small">—</div>`}</div>
@@ -379,6 +427,16 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.20.0': {
+    ar: ['المراجعة بقت توريك إنت فين من أول نظرة: أرقام الأسبوع وبتزيد ولا بتقل عن الأسبوع اللي فات، واللي خلص كل يوم، والتركيز كل يوم، وتاسكاتك المفتوحة متقسمة (متأخرة، النهارده، مستني حد…)، والتزامك بالعادات كل أسبوع',
+      'العادات: فوق ملخص للأسبوع (دايرة الالتزام، وكل عادة وصلت لفين، وآخر 8 أسابيع)، وفي كل عادة رسم لآخر 8 أسابيع، ولو بتسجّل أرقام (صفحات، Push ups…) رسم لمجموعها كل أسبوع',
+      'وقّف الماوس على أي عمود يقولك الرقم بالظبط',
+      'شلنا "مسار التاسك" من سجل المتابعة'],
+    en: ['Review shows where you are at a glance: this week’s numbers and whether they’re up or down from last week, what got done each day, focus each day, your open tasks split up (late, today, waiting on someone…), and habits kept each week',
+      'Habits: a summary on top (this week’s ring, how far each habit got, the last 8 weeks), and on each habit a chart of its last 8 weeks, plus weekly totals of what you log (pages, push ups…)',
+      'Hover any column to see its exact number',
+      'The task timeline is gone from the follow-up log'],
+  },
   '1.19.2': {
     ar: ['التذكير لو مدوستش عليه بيمشي لوحده بعد 10 ثواني، ويرجع تاني بعد 10 دقايق (لحد 3 مرات). ولو الماوس عليه بيستنى',
       'التذكير بالعربي بقى زي الإنجليزي: الكارت على طرف الشاشة والفار جوه. وعينين الفار بتتابع الماوس وإنت بتحركه',

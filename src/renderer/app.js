@@ -537,7 +537,6 @@ function renderDetail() {
     ${notesHtml(x)}
 
     <div class="d-sec"><h3>${icon('log')} ${t('log')}</h3>
-      ${timelineHtml(x)}
       <div class="log-add">
         <input type="text" id="dAddLog" dir="auto" placeholder="＋ ${t('addLog')}">
         <div class="log-meta">
@@ -710,7 +709,7 @@ function addPending(x, name) {
   $('dAddPerson').focus();
 }
 
-// ---------------- follow-up log + timeline ----------------
+// ---------------- follow-up log ----------------
 // Sort key for log entries; old entries only had a date.
 const logAt = (l) => l.at || (l.date ? l.date + 'T00:00' : '');
 
@@ -736,35 +735,6 @@ function addLogEntry(x) {
     (x.log = x.log || []).push({ id: uid(), at, date: at.slice(0, 10), text });
   }
   touch(x); refresh(); $('dAddLog').focus();
-}
-
-// Who held the task, when, and for how long — built from handoff entries.
-function timelineHtml(x) {
-  const hand = (x.log || []).filter((l) => l.handoff).sort((a, b) => logAt(a).localeCompare(logAt(b)));
-  if (!hand.length) return '';
-  const end = x.closure ? new Date(x.closure + 'T23:59') : new Date();
-  const startAt = x.start ? x.start + 'T00:00' : logAt(hand[0]);
-  const segs = [];
-  if (startAt < logAt(hand[0])) segs.push({ ids: [], from: startAt });
-  hand.forEach((l) => segs.push({ ids: (l.holders || []).filter((id) => personById(id)), from: logAt(l) }));
-  segs.forEach((sg, i) => { sg.to = i + 1 < segs.length ? segs[i + 1].from : null; sg.ms = (sg.to ? new Date(sg.to) : end) - new Date(sg.from); });
-  const live = segs.filter((sg) => sg.ms > 0);
-  if (!live.length) return '';
-  const longest = live.reduce((a, b) => (b.ms > a.ms ? b : a));
-  const name = (sg) => (sg.ids.length ? sg.ids.map((id) => personById(id).name).join('، ') : t('me'));
-  const color = (sg) => (sg.ids.length ? `var(--c-${COLORS[[...sg.ids[0]].reduce((h, c) => h + c.charCodeAt(0), 0) % 6]})` : 'var(--c-gray)');
-  const when = (at) => `${fmtDate(at.slice(0, 10), lang())} ${fmtTime(at, lang())}`;
-  return `<div class="timeline">
-    <div class="tl-title">${t('timeline')}</div>
-    <div class="tl-bar">${live.map((sg) => `<span style="flex-grow:${sg.ms};background:${color(sg)}" title="${esc(name(sg))} · ${fmtDur(sg.ms, lang())}"></span>`).join('')}</div>
-    ${live.map((sg) => `<div class="tl-row ${sg === longest && live.length > 1 ? 'longest' : ''}">
-      <span class="dot" style="background:${color(sg)}"></span>
-      <b dir="auto">${esc(name(sg))}</b>
-      <span class="tl-dur">${fmtDur(sg.ms, lang())}</span>
-      <span class="muted small">${when(sg.from)} → ${sg.to ? when(sg.to) : (x.closure ? fmtDate(x.closure, lang()) : t('still'))}</span>
-      ${sg === longest && live.length > 1 ? `<span class="pill overdue">${t('longest')}</span>` : ''}
-    </div>`).join('')}
-  </div>`;
 }
 
 // Changing the reminder time re-arms it (the main process notifies once per time).

@@ -13,6 +13,11 @@
       check(`tab ${v} has content`, $('list').innerHTML.length > 50);
     }
   });
+  await step('charts on Review and Habits', async () => {
+    ui.view = 'report'; refresh(); await w(80);
+    check('review number tiles', document.querySelectorAll('#list .st-tile').length >= 3);
+    check('review charts', document.querySelectorAll('#list .ch-card').length >= 2);
+  });
   await step('calendar month / week / day', async () => {
     ui.view = 'calendar';
     for (const cv of ['month', 'week', 'day']) { data.settings.calView = cv; refresh(); await w(80); check(`calendar ${cv}`, $('list').innerHTML.length > 50); }
@@ -65,6 +70,7 @@
     data.habits.push({ id: 'smokeH', name: 'Smoke habit', emoji: '', color: 'blue', kind: 'days', days: [0, 1, 2, 3, 4, 5, 6], start: todayStr(), end: { type: 'never' }, log: {}, minutes: {}, duration: 30 });
     save(); ui.view = 'habits'; refresh(); await w(80);
     check('habit card', !!document.querySelector('[data-habit="smokeH"]'));
+    check('habits summary', !!document.querySelector('#list .hb-sum'));
     // the day sheet: log amounts and where you stopped
     const h = habitById('smokeH'); h.measures = [{ id: 'm1', name: 'Pages', unit: 'pages' }]; h.askStop = true; save(); refresh(); await w(50);
     document.querySelector(`[data-habit="smokeH"] [data-hday="${todayStr()}"]`).click(); await w(80);
