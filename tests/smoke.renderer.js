@@ -135,6 +135,28 @@
     check('no "Parent / Child" in the list', !areaOptions('').includes('Work / Sub') && areaOptions('').includes('Sub'));
     data.areas = data.areas.filter((a) => a.id !== 'aSub'); save();
   });
+  await step('day log: write, see the day fill itself, search it', async () => {
+    ui.view = 'daylog'; refresh(); await w(80);
+    check('day log page', !!document.getElementById('dlText'));
+    document.getElementById('dlText').value = 'أسامة طلب الـ Risk register';
+    document.getElementById('dlAdd').click(); await w(60);
+    check('note saved', (data.journal || []).some((e) => e.text.includes('Risk register')));
+    check('note on the page', document.querySelector('#list .dl-it.note') !== null);
+    check('review tab stays active', document.querySelector('.tab[data-view="report"]').classList.contains('active'));
+    openPalette(); await w(60);
+    const q = document.getElementById('pQ'); q.value = 'اسامه'; q.dispatchEvent(new Event('input')); await w(60);
+    check('search finds the note with another spelling', [...document.querySelectorAll('#pList .p-item')].some((x) => x.textContent.includes('Risk register')));
+    q.value = 'Smoke call'; q.dispatchEvent(new Event('input')); await w(60);
+    check('search finds tasks', [...document.querySelectorAll('#pList .p-item')].some((x) => x.textContent.includes('Smoke call')));
+    closeModal(); await w(200);
+  });
+  await step('habit charts: bars, line, pie', async () => {
+    ui.view = 'habits'; ui.hbView = 'charts'; refresh(); await w(80);
+    check('charts view', !!document.querySelector('#list .hc-page'));
+    for (const ty of ['line', 'pie', 'bars']) { data.settings.hbChart.type = ty; refresh(); await w(40); check(`chart ${ty}`, !!document.querySelector('#list .hc-main')); }
+    ui.hbView = 'list'; refresh(); await w(40);
+    check('no charts on habit cards', !document.querySelector('#list .hb-card .hb-prog'));
+  });
   await step('dialogs open and close', async () => {
     for (const s of ['general', 'notifications', 'widget', 'data', 'updates', 'guide', 'about']) { await openSettings(s); await w(40); check(`settings ${s}`, !!document.querySelector(`[data-sec="${s}"]`)); }
     closeModal();

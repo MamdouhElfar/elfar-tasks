@@ -11,7 +11,7 @@ const tomorrowStr = () => { const d = new Date(); d.setDate(d.getDate() + 1); re
 // Review tab: switch between the report and the closed list. ("Review your day" lives on Today only.)
 function reviewSubBar() {
   const b = (v, label) => `<button class="${ui.view === v ? 'on' : ''}" data-rview="${v}">${label}</button>`;
-  return `<div class="sub-bar review-bar"><span class="seg-joined">${b('report', `${icon('report')} ${t('report')}`)}${b('closed', `${icon('closed')} ${t('closed')}`)}</span>
+  return `<div class="sub-bar review-bar"><span class="seg-joined">${b('report', `${icon('report')} ${t('report')}`)}${b('daylog', `${icon('log')} ${t('dayLog')}`)}${b('closed', `${icon('closed')} ${t('closed')}`)}</span>
     <button class="link" data-weekreview>${icon('calendar')} ${t('wkBtn')}</button></div>`;
 }
 

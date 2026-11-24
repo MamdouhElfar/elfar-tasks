@@ -82,7 +82,8 @@ const VIEWS = [
   { id: 'matrix', test: isActive, noCount: true, board: true, hidden: true },
   { id: 'calendar', test: () => true, noCount: true, board: true, hidden: true },
   { id: 'habits', test: () => false, noCount: true, board: true },
-  { id: 'report', label: 'review', test: () => true, noCount: true, board: true, also: 'closed' }
+  { id: 'report', label: 'review', test: () => true, noCount: true, board: true, also: ['closed', 'daylog'] },
+  { id: 'daylog', test: () => false, noCount: true, board: true, hidden: true }
 ];
 const TASK_VIEWS = ['pending', 'matrix', 'calendar'];
 function tasksViewBar() {
@@ -134,6 +135,7 @@ function renderAll() {
   $('addPersonBtn').title = t('addPerson');
   $('addAreaBtn').title = t('addArea');
   $('settingsLbl').textContent = t('settings');
+  $('searchAllLbl').textContent = t('searchBtn');
   $('langBtn').innerHTML = `${icon('globe')}<span>${lang() === 'ar' ? 'English' : 'عربي'}</span>`;
   $('langBtn').title = t('langSwitch');
   $('search').placeholder = t('search');
@@ -149,7 +151,7 @@ function renderAll() {
 function renderTabs() {
   const tab = (v) => {
     const n = v.noCount ? 0 : data.tasks.filter((x) => inScope(x) && v.test(x) && (!ui.person || isPendingWith(x, ui.person))).length;
-    const on = ui.view === v.id || ui.view === v.also || (v.group || []).includes(ui.view);
+    const on = ui.view === v.id || (v.also || []).includes(ui.view) || (v.group || []).includes(ui.view);
     return `<button class="tab ${v.board ? 'board' : ''} ${v.lead ? 'lead' : ''} ${on ? 'active' : ''}" data-view="${v.id}" title="${esc(t(v.label || v.id))}">
       ${icon(v.id)}<span class="tab-label">${esc(t(v.label || v.id))}</span>${n ? `<span class="count ${v.cls ? v.cls() : ''}">${n}</span>` : ''}</button>`;
   };
@@ -160,8 +162,8 @@ function renderTabs() {
     <div class="tab-group boards">${VIEWS.filter((v) => v.board && !v.hidden).map(tab).join('')}</div>`;
   fitTabs();
   // Tools that don't apply to a view are hidden instead of sitting there doing nothing.
-  const tools = { search: !['today', 'calendar', 'report', 'habits'].includes(ui.view), sort: !['today', 'matrix', 'calendar', 'report', 'habits'].includes(ui.view) };
-  $('personFilter').hidden = ui.view === 'habits'; // on Today it jumps to what that person holds
+  const tools = { search: !['today', 'calendar', 'report', 'habits', 'daylog'].includes(ui.view), sort: !['today', 'matrix', 'calendar', 'report', 'habits', 'daylog'].includes(ui.view) };
+  $('personFilter').hidden = ['habits', 'daylog'].includes(ui.view);
   const bare = ['habits', 'today'].includes(ui.view) && ui.scope === 'all';
   $('listTitle').hidden = bare;
   document.querySelector('.list-head').classList.toggle('is-bare', bare);
@@ -301,6 +303,7 @@ function renderList() {
     return $('list').insertAdjacentHTML('afterbegin', `<div class="sub-bar tview-bar">${tasksViewBar()}</div>`);
   }
   if (ui.view === 'report') return renderReport();
+  if (ui.view === 'daylog') return renderDayLog();
   const list = currentTasks();
   // Pending: all / on me / with others. Closed: the Review switch (report / closed).
   const subBar = ui.view === 'pending' ? pendingSubBar() : ui.view === 'closed' ? reviewSubBar() : '';
@@ -986,6 +989,7 @@ function bind() {
     refreshLists();
   };
   $('settingsBtn').onclick = () => openSettings('general'); // always start on General
+  $('searchAllBtn').onclick = () => openPalette();
   $('langBtn').onclick = () => { data.settings.lang = lang() === 'ar' ? 'en' : 'ar'; save(); renderAll(); };
   $('search').oninput = (e) => { ui.search = e.target.value; renderList(); };
   // The sort you pick is remembered.

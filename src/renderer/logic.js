@@ -183,6 +183,23 @@
     return out;
   }
 
+  // ---------- search ----------
+  // Arabic-aware: أ إ آ ا are one letter, ة/ه, ى/ي, no tashkeel or tatweel, case-insensitive,
+  // and Arabic-Indic digits match Latin ones. Every word you type must appear (any order).
+  function normText(s) {
+    return String(s || '').toLowerCase()
+      .replace(/[ً-ْٰـ]/g, '')
+      .replace(/[أإآٱ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي')
+      .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+      .replace(/\s+/g, ' ');
+  }
+  function matchText(hay, q) {
+    const words = normText(q).trim().split(' ').filter(Boolean);
+    if (!words.length) return false;
+    const h = normText(hay);
+    return words.every((w) => h.includes(w));
+  }
+
   // ---------- words ----------
   // Arabic counts: 1 يوم, 2 يومين, 3–10 أيام, 11+ يوم.
   function arCount(n, one, two, few, many) {
@@ -204,7 +221,7 @@
   // records that changed, were deleted or moved, plus changed settings, and the app applies
   // them on top of ITS current copy. So two windows editing different things never undo
   // each other, and a window never overwrites what the app itself just wrote.
-  const COLLECTIONS = ['tasks', 'habits', 'areas', 'people'];
+  const COLLECTIONS = ['tasks', 'habits', 'areas', 'people', 'journal'];
   const APP_OWNED = ['focus', 'focusLog', 'version'];
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   function makePatch(base, cur) {
@@ -420,7 +437,7 @@
     habitsDueOn, habitStillDue, habitAddMinutes, habitSetEntry, habitEntry, habitLastStop, habitTotals,
     habitMeasuresFor, habitUsedBefore, habitTidyMeasures,
     habitWeekScore, habitsWeekScore,
-    arCount, fmtMins,
+    arCount, fmtMins, normText, matchText,
     makePatch, patchEmpty, applyPatch,
     parseQuick, merge3, layoutBlocks, suggestPlan
   };

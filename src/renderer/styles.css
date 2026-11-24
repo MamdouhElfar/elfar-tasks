@@ -1967,3 +1967,61 @@ html[dir=rtl] .plan-cta.slim .pc-go { transform: scaleX(-1); }
 .group-title .pg-edit { margin-inline-start: 6px; padding: 0 4px; color: var(--text-3); opacity: 0; }
 .group-title:hover .pg-edit { opacity: 1; }
 .sec-title[hidden], #peopleNav[hidden] { display: none !important; }
+
+/* ---------- 1.22.0 day log + search everything ---------- */
+.nav-item.search-all { width: 100%; border: 1px solid var(--border); background: var(--panel); color: var(--text-3); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.nav-item.search-all:hover { color: var(--text); border-color: var(--border-2); }
+.nav-item.search-all span:nth-child(2) { flex: 1; text-align: start; }
+.nav-item.search-all kbd { font-size: 10px; color: var(--text-3); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; font-family: inherit; }
+.p-sec { font-size: var(--fs-xs); color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; padding: 8px 10px 2px; }
+.dl { padding: 2px 2px 30px; max-width: 820px; }
+.dl-add { display: flex; gap: 6px; }
+.dl-add #dlText { flex: 1; min-width: 0; font-size: var(--fs-b); padding: 8px 12px; }
+.dl-add #dlDate { width: 140px; }
+.dl-hint { margin: 6px 2px 14px; }
+.dl-day { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; margin-bottom: 10px; }
+.dl-day.flash { animation: justAdded 1.6s var(--ease); }
+.dl-day h4 { margin: 0 0 6px; font-size: var(--fs-m); }
+.dl-day h4 small { color: var(--text-3); font-weight: 400; margin-inline-start: 6px; }
+.dl-it { display: grid; grid-template-columns: 62px 1fr auto; gap: 8px; align-items: baseline; padding: 4px 0; font-size: var(--fs-m); border-top: 1px dashed var(--border); }
+.dl-it:first-of-type { border-top: none; }
+.dl-time { font-size: var(--fs-xs); color: var(--text-3); }
+.dl-txt { min-width: 0; word-break: break-word; }
+.dl-it.note .dl-txt { font-weight: 500; }
+.dl-it.closed, .dl-it.focus, .dl-it.habit, .dl-it.task { color: var(--text-2); }
+.dl-chip { border: none; background: var(--hover); border-radius: 6px; padding: 1px 7px; font-size: var(--fs-s); color: var(--text-2); display: inline-flex; align-items: center; gap: 4px; max-width: 100%; }
+.dl-chip .ico { width: 12px; height: 12px; }
+.dl-chip:hover { background: var(--accent-bg); color: var(--accent-text); }
+.dl-acts { opacity: 0; display: flex; gap: 2px; }
+.dl-it:hover .dl-acts { opacity: 1; }
+.dl-edit { width: 100%; }
+.dl-empty { padding: 2px 0 4px; }
+.dl-more { display: block; margin: 6px auto; }
+/* line + pie */
+.ch-line { width: 100%; }
+.cl-plot { position: relative; height: var(--ch-h); border-bottom: 1px solid var(--border); margin-top: 16px; }
+.cl-plot svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.cl-path { fill: none; stroke: var(--ch-c); stroke-width: 2px; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
+.cl-area { fill: var(--ch-c); opacity: .1; }
+.cl-dot { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--ch-c); box-shadow: 0 0 0 2px var(--panel); transform: translate(-50%, -50%); pointer-events: none; }
+.cl-dot.cur { width: 10px; height: 10px; }
+.cl-v { transform: translateX(-50%); }
+.cl-hit { position: absolute; inset: 0; display: flex; }
+.cl-hit span { flex: 1; }
+.cl-hit span:hover { background: var(--hover); }
+.ch-pie-wrap { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; padding: 6px 0; }
+.ch-pie { width: var(--size); height: var(--size); border-radius: 50%; position: relative; display: grid; place-items: center; flex: none; }
+.ch-pie::before { content: ''; position: absolute; inset: 22%; border-radius: 50%; background: var(--panel); }
+.ch-pie b { position: relative; font-size: 18px; text-align: center; line-height: 1.2; }
+.ch-legend.col { flex-direction: column; gap: 6px; }
+.ch-legend em { font-style: normal; color: var(--text-3); }
+
+/* Habits › Charts */
+.hbp-head { align-items: center; gap: 10px; }
+.hbp-head > div:first-child { flex: 1; }
+.hc-page { display: flex; flex-direction: column; gap: 10px; }
+.hc-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.hc-tools select { max-width: 220px; }
+.hc-tiles { margin-bottom: 0; }
+.hc-main { padding: 14px 16px 12px; }
+.hc-main h4 { margin-bottom: 4px; }

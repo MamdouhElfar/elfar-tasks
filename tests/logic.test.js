@@ -242,3 +242,11 @@ test('habit week score for the charts', () => {
   assert.equal(L.habitsWeekScore([study, gym], '2026-11-21', td), 0.5);
   L.configure({ weekStart: () => null });
 });
+
+test('search understands Arabic spelling', () => {
+  assert.ok(L.matchText('اتصلت بأسامة بخصوص التقرير', 'اسامه'));
+  assert.ok(L.matchText('Risk register من أيمن', 'ايمن risk'));
+  assert.ok(L.matchText('صفحة ٤٥', '45'));
+  assert.ok(!L.matchText('Weekly meeting', 'report'));
+  assert.ok(!L.matchText('anything', '   '));
+});

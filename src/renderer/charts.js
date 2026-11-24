@@ -69,3 +69,41 @@ function statTile({ label, value, sub = '', delta = null, deltaGood = true, delt
   document.addEventListener('mousemove', show);
   document.addEventListener('mouseleave', () => { if (tip) tip.hidden = true; });
 })();
+
+// A line over time: same items as colChart. The line keeps 2px at any width; dots stay round.
+function lineChart({ items, fmt = chFmtN, color = 'var(--accent)', height = 170, empty = '' }) {
+  if (!items.some((i) => i.value > 0) && empty) return `<div class="ch-empty small muted">${empty}</div>`;
+  const n = items.length, max = Math.max(1, ...items.map((i) => i.value || 0));
+  // In Arabic time runs right to left, like the column charts and the day labels under them.
+  const rtl = document.documentElement.dir === 'rtl';
+  const X = (i) => { const x = ((i + 0.5) / n) * 100; return rtl ? 100 - x : x; }, Y = (v) => 100 - ((v || 0) / max) * 88;
+  const pts = items.map((it, i) => `${X(i) * 10},${Y(it.value) * 10}`).join(' ');
+  const top = items.reduce((b, i, k) => (i.value > (items[b] ? items[b].value : -1) ? k : b), 0);
+  const dots = n <= 45;
+  return `<div class="ch-line" style="--ch-h:${height}px;--ch-c:${color}">
+    <div class="cl-plot">
+      <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
+        <polygon points="${X(0) * 10},1000 ${pts} ${X(n - 1) * 10},1000" class="cl-area"/>
+        <polyline points="${pts}" class="cl-path"/></svg>
+      ${dots ? items.map((it, i) => (it.value > 0 || it.cur) ? `<i class="cl-dot ${it.cur ? 'cur' : ''}" style="left:${X(i)}%;top:${Y(it.value)}%"></i>` : '').join('') : ''}
+      ${[top, n - 1].filter((k, j, a) => a.indexOf(k) === j && items[k] && items[k].value > 0).map((k) => `<b class="ch-v cl-v" style="left:${X(k)}%;top:calc(${Y(items[k].value)}% - 18px)">${fmt(items[k].value)}</b>`).join('')}
+      <div class="cl-hit">${items.map((it) => `<span data-tip="${esc(it.tip || `${it.label}: ${fmt(it.value || 0)}`)}"></span>`).join('')}</div>
+    </div>
+    <div class="ch-x">${items.map((i) => `<small class="${i.cur ? 'cur' : ''}">${i.label || ''}</small>`).join('')}</div>
+  </div>`;
+}
+
+// A pie (donut) of parts of a whole, with a legend that gives every part its number and share.
+function pieChart(parts, { fmt = chFmtN, size = 170, center = '' } = {}) {
+  const live = parts.filter((p) => p.value > 0);
+  const total = live.reduce((a, p) => a + p.value, 0);
+  if (!total) return '';
+  let acc = 0;
+  const gap = live.length > 1 ? 0.5 : 0; // a thin surface-coloured gap between slices
+  const stops = live.map((p) => {
+    const a = acc, b = acc + (p.value / total) * 100; acc = b;
+    return `${p.color} ${a + gap}% ${b - gap}%, var(--panel) ${b - gap}% ${b}%`;
+  }).join(', ');
+  return `<div class="ch-pie-wrap"><div class="ch-pie" style="--size:${size}px;background:conic-gradient(${stops})" data-tip="${esc(live.map((p) => `${p.label}: ${fmt(p.value)} (${Math.round((p.value / total) * 100)}%)`).join('\n'))}"><b>${center}</b></div>
+    <div class="ch-legend col">${parts.map((p) => `<span class="${p.value ? '' : 'zero'}"><i style="background:${p.color}"></i><bdi>${esc(p.label)}</bdi> <b>${fmt(p.value)}</b> <em>${total ? Math.round((p.value / total) * 100) : 0}%</em></span>`).join('')}</div></div>`;
+}

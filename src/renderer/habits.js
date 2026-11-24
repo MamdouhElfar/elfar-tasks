@@ -123,12 +123,81 @@ function renderHabits() {
   const examples = [['📚', t('hbExStudy'), 'days'], ['🏋️', t('hbExGym'), 'times'], ['📖', t('hbExRead'), 'minutes']];
   $('list').innerHTML = `<div class="habits">
     <div class="hbp-head"><div><h2>${t('habits')}</h2><p class="small muted">${t('hbIntro')}</p></div>
+      ${live.length ? `<span class="seg-joined tview hb-views"><button class="${ui.hbView !== 'charts' ? 'on' : ''}" data-hbview="list">${icon('habits')}<span>${t('habits')}</span></button><button class="${ui.hbView === 'charts' ? 'on' : ''}" data-hbview="charts">${icon('report')}<span>${t('hcCharts')}</span></button></span>` : ''}
       <button class="primary" data-hnew>＋ ${t('hbNew')}</button></div>
+    ${live.length && ui.hbView === 'charts' ? hChartsHtml(live) : `
     ${live.length ? hSummaryHtml(live) : ''}
     ${live.length ? `<div class="hb-grid">${live.map(habitCardHtml).join('')}</div>` : `<div class="hb-empty">
       <div class="hb-empty-mouse">${mouseLogo('', 'happy')}</div><b>${t('hbEmpty')}</b><p class="small muted">${t('hbEmptySub')}</p>
       <div class="hb-examples">${examples.map(([e, n, k], i) => `<button data-hex="${k}" data-hname="${esc(n)}" data-hemoji="${e}" data-hpre="${['study', 'gym', 'read'][i]}">${e} ${esc(n)}</button>`).join('')}</div></div>`}
-    ${old.length ? `<details class="hb-old"><summary>${t('hbOld')} · ${old.length}</summary><div class="hb-grid">${old.map(habitCardHtml).join('')}</div></details>` : ''}
+    ${old.length ? `<details class="hb-old"><summary>${t('hbOld')} · ${old.length}</summary><div class="hb-grid">${old.map(habitCardHtml).join('')}</div></details>` : ''}`}
+  </div>`;
+}
+
+// ---------- Habits › Charts: day by day, as bars, a line or a pie ----------
+// Pick a habit (or all), a period, what to show (done, minutes, or anything you log) and the chart.
+function hChartsHtml(live) {
+  const td = todayStr();
+  const c = data.settings.hbChart = { habit: 'all', days: 30, metric: 'done', type: 'bars', ...(data.settings.hbChart || {}) };
+  const h = c.habit === 'all' ? null : live.find((x) => x.id === c.habit);
+  if (!h) c.habit = 'all';
+  const metrics = [['done', t('hcDone')], ['minutes', t('hcMinutes')]];
+  if (h) for (const m of h.measures || []) if (Object.values(h.entries || {}).some((e) => e.vals && e.vals[m.id] > 0)) metrics.push(['m:' + m.id, m.name]);
+  if (!metrics.some(([k]) => k === c.metric)) c.metric = 'done';
+  const days = [...Array(c.days)].map((_, i) => hAdd(td, i - c.days + 1));
+  const list = h ? [h] : live;
+  const m = c.metric.startsWith('m:') && h ? (h.measures || []).find((x) => 'm:' + x.id === c.metric) : null;
+  const dayVal = (x, d) => c.metric === 'done' ? (hLog(x, d) === 'done' ? 1 : hPartial(x, d) || 0) : c.metric === 'minutes' ? hMins(x, d) : ((habitEntry(x, d) || {}).vals || {})[m.id] || 0;
+  const vals = days.map((d) => list.reduce((a, x) => a + (hActiveOn(x, d) ? dayVal(x, d) : 0), 0));
+  const fmt = c.metric === 'minutes' ? (v) => hMinsLabel(v) : (v) => chFmtN(v);
+  const unit = c.metric === 'minutes' ? '' : m ? ` ${unitLabel(m.unit)}` : '';
+  const loc = hLoc();
+  const every = c.days <= 14 ? 1 : c.days <= 31 ? 5 : 15;
+  const dueOn = (d) => list.filter((x) => hActiveOn(x, d) && (x.kind !== 'days' || hScheduled(x, d))).length;
+  const items = days.map((d, i) => ({ value: vals[i], cur: d === td, label: (c.days - 1 - i) % every === 0 ? String(Number(d.slice(8))) : '',
+    tip: `${new Date(d + 'T00:00').toLocaleDateString(loc, { weekday: 'short', day: 'numeric', month: 'short' })}: ${fmt(vals[i])}${unit}${c.metric === 'done' && !h ? ` / ${dueOn(d)}` : ''}` }));
+  const color = h ? areaColor(h) : 'var(--c-teal)';
+  // Pie: what the days were (done, partly, missed, day off), or how the amounts split.
+  let pie = '';
+  if (c.type === 'pie') {
+    if (c.metric === 'done') {
+      const cnt = { done: 0, partial: 0, missed: 0, skip: 0 };
+      for (const x of list) for (const d of days) { const st = hDayState(x, d); if (st in cnt) cnt[st]++; }
+      const judged = cnt.done + cnt.partial + cnt.missed;
+      pie = pieChart([{ label: t('hbSt_done'), value: cnt.done, color: 'var(--c-teal)' }, { label: t('hbSt_partial'), value: cnt.partial, color: 'var(--c-amber)' },
+        { label: t('hbSt_missed'), value: cnt.missed, color: 'var(--danger)' }, { label: t('hbSt_skip'), value: cnt.skip, color: 'var(--c-gray)' }],
+        { center: `${judged ? Math.round(((cnt.done + cnt.partial * 0.5) / judged) * 100) : 0}%` });
+    } else if (!h) {
+      pie = pieChart(live.map((x) => ({ label: `${x.emoji || ''} ${x.name}`.trim(), value: days.reduce((a, d) => a + hMins(x, d), 0), color: areaColor(x) })), { fmt: (v) => hMinsLabel(v) });
+    } else {
+      // One habit's amounts by weekday: which days you do the most.
+      const order = [...Array(7)].map((_, i) => ((h.weekStart ?? appWeekStart()) + i) % 7);
+      const tones = ['var(--c-blue)', 'var(--c-teal)', 'var(--c-purple)', 'var(--c-amber)', 'var(--c-coral)', 'var(--c-pink)', 'var(--c-green)'];
+      pie = pieChart(order.map((dw, i) => ({ label: hDayName(dw, 'long'), value: days.filter((d) => hDow(d) === dw).reduce((a, d) => a + dayVal(h, d), 0), color: tones[i] })), { fmt });
+    }
+  }
+  const total = vals.reduce((a, b) => a + b, 0);
+  const active = vals.filter((v) => v > 0).length;
+  const best = vals.indexOf(Math.max(...vals));
+  const seg = (key, opts) => `<span class="seg-joined">${opts.map(([v, l]) => `<button class="${String(c[key]) === String(v) ? 'on' : ''}" data-hchart="${key}:${v}">${l}</button>`).join('')}</span>`;
+  const chart = c.type === 'pie' ? (pie || `<div class="ch-empty small muted">${t('hcEmpty')}</div>`)
+    : c.type === 'line' ? lineChart({ items, fmt, color, height: 200, empty: t('hcEmpty') })
+    : colChart({ items, fmt, color, height: 200, empty: t('hcEmpty') });
+  const periodName = t({ 7: 'hc7', 30: 'hc30', 90: 'hc90' }[c.days]);
+  return `<div class="hc-page">
+    <div class="hc-tools">
+      <select id="hcHabit"><option value="all">${t('hcAll')}</option>${live.map((x) => `<option value="${x.id}" ${c.habit === x.id ? 'selected' : ''}>${esc((x.emoji ? x.emoji + ' ' : '') + x.name)}</option>`).join('')}</select>
+      <select id="hcMetric">${metrics.map(([k, l]) => `<option value="${k}" ${c.metric === k ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>
+      ${seg('days', [[7, t('hc7')], [30, t('hc30')], [90, t('hc90')]])}
+      <span class="tview-push"></span>
+      ${seg('type', [['bars', `${icon('report')} ${t('hcBars')}`], ['line', `${t('hcLine')}`], ['pie', `${t('hcPie')}`]])}
+    </div>
+    <div class="st-tiles hc-tiles">
+      ${statTile({ label: c.metric === 'done' ? t('hcTimesDone') : t('hcTotal'), value: fmt(total) + unit })}
+      ${statTile({ label: t('hcDaysWith'), value: `${active} / ${c.days}` })}
+      ${statTile({ label: t('hcBest'), value: vals[best] > 0 ? fmt(vals[best]) + unit : '—', sub: vals[best] > 0 ? new Date(days[best] + 'T00:00').toLocaleDateString(loc, { weekday: 'long', day: 'numeric', month: 'short' }) : '' })}
+    </div>
+    <div class="ch-card hc-main"><h4>${esc(h ? `${h.emoji || ''} ${h.name}`.trim() : t('hcAll'))} · ${esc(metrics.find(([k]) => k === c.metric)[1])} · ${periodName}</h4>${chart}</div>
   </div>`;
 }
 
@@ -148,7 +217,6 @@ function hSummaryHtml(live) {
     <div class="hs-now">${ringChart(now, { size: 88, color: 'var(--c-teal)', label: t('hbSumTitle') })}<div class="hs-txt"><b>${t('hbSumTitle')}</b>
       ${delta !== null ? `<span class="st-delta ${delta > 0 ? 'good' : delta < 0 ? 'bad' : ''}">${delta === 0 ? '＝' : delta > 0 ? '▲ ' + delta + '%' : '▼ ' + Math.abs(delta) + '%'} <em>${t('wkVsLast')}</em></span>` : ''}</div></div>
     <div class="hs-list">${rows}</div>
-    ${first >= 0 && first < 7 ? `<div class="hs-weeks"><h4>${t('hbSumWeeks')}</h4>${colChart({ items: weeks.slice(first).map((ws, i) => ({ value: (sc[first + i] || 0) * 100, cur: i + first === 7, label: shortDay(ws), tip: `${fmtDate(ws, lang())} → ${fmtDate(hAdd(ws, 6), lang())}: ${sc[first + i] === null ? '—' : Math.round(sc[first + i] * 100) + '%'}` })), fmt: (v) => Math.round(v) + '%', color: 'var(--c-teal)', height: 80 })}</div>` : ''}
   </div>`;
 }
 
@@ -222,7 +290,6 @@ function habitCardHtml(h) {
       <span>${h.kind === 'minutes' ? `${icon('clock')} <b>${hMinsLabel(st.total)}</b>` : `${icon('closed')} <b>${st.total}</b> ${t('hbTimes')}`}${h.end && h.end.type === 'count' ? ` / ${h.end.count}` : ''}</span>
     </div>
     ${h.kind === 'minutes' ? hWeekBars(h) : hWeekStrip(h)}
-    ${h.kind === 'minutes' ? '' : hProgressHtml(h)}
     ${hHistory(h)}
   </section>`;
 }
@@ -506,6 +573,8 @@ document.addEventListener('click', (e) => {
   if ((b = q('[data-hfocus]'))) { e.stopPropagation(); const h = habitById(b.dataset.hfocus); if (h) hStartFocus(h, b.dataset.hrest || hPartial(h, todayStr())); return; }
   if ((b = q('[data-hadd]'))) return hAddTime(habitById(b.dataset.hadd));
   if ((b = q('[data-hopen]'))) { ui.view = 'habits'; ui.selected = null; refresh(); return; }
+  if ((b = q('[data-hbview]'))) { ui.hbView = b.dataset.hbview; return renderList(); }
+  if ((b = q('[data-hchart]'))) { const [k, v] = b.dataset.hchart.split(':'); data.settings.hbChart = { ...(data.settings.hbChart || {}), [k]: k === 'days' ? Number(v) : v }; save(); return renderList(); }
   if ((b = q('[data-hmeas]'))) { const [id, mid] = b.dataset.hmeas.split(':'); ui.hbMeasure = ui.hbMeasure || {}; ui.hbMeasure[id] = mid; return renderList(); }
   if ((b = q('[data-hmon]'))) { const [id, mon] = b.dataset.hmon.split(':'); ui.hbMonth = ui.hbMonth || {}; ui.hbMonth[id] = mon; ui.hbOpen = ui.hbOpen || {}; ui.hbOpen[id] = true; return renderList(); }
   // Fix a past day on the tracker: nothing → done → day off → nothing.
@@ -519,3 +588,11 @@ document.addEventListener('toggle', (e) => {
   const d = e.target;
   if (d.matches && d.matches('[data-hhist]')) { ui.hbOpen = ui.hbOpen || {}; ui.hbOpen[d.dataset.hhist] = d.open; }
 }, true);
+
+// Habits › Charts: the habit and what-to-show pickers.
+document.addEventListener('change', (e) => {
+  if (e.target.id !== 'hcHabit' && e.target.id !== 'hcMetric') return;
+  const c = data.settings.hbChart = { ...(data.settings.hbChart || {}) };
+  if (e.target.id === 'hcHabit') { c.habit = e.target.value; c.metric = 'done'; } else c.metric = e.target.value;
+  save(); renderList();
+});

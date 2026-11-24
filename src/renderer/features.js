@@ -158,45 +158,6 @@ function bindAttachments() {
   });
 }
 
-// ---------------- Ctrl+K: search everything ----------------
-function openPalette() {
-  $('modalRoot').innerHTML = `<div class="modal-bg palette-bg" id="mBg"><div class="modal palette">
-    <input type="text" id="pQ" dir="auto" placeholder="${t('searchAll')}" autocomplete="off">
-    <div class="p-list" id="pList"></div>
-    <div class="small muted p-hint">↑ ↓ · Enter · Esc</div></div></div>`;
-  let idx = 0, results = [];
-  const run = () => {
-    const q = $('pQ').value.trim().toLowerCase();
-    const hay = (x) => [x.title, x.notes, ...peopleNames(x), ...(x.subtasks || []).map((s) => s.title), ...(x.log || []).map((l) => l.text), areaLabel(x.areaId)].join('\n').toLowerCase();
-    results = (q ? data.tasks.filter((x) => hay(x).includes(q)) : data.tasks.filter(isOpen))
-      .sort((a, b) => (!!a.closure - !!b.closure) || byPriorityThenDue(a, b)).slice(0, 30);
-    idx = Math.min(idx, Math.max(0, results.length - 1));
-    $('pList').innerHTML = results.length ? results.map((x, i) => `<div class="p-item ${i === idx ? 'on' : ''} ${quadClass(x)}" data-pi="${i}">
-        <span dir="auto" class="p-title">${x.closure ? '✓ ' : ''}${esc(x.title)}</span>
-        <span class="muted small">${esc(areaLabel(x.areaId))}${x.due ? ' · ' + fmtDate(x.due, lang()) : ''}</span></div>`).join('')
-      : `<div class="empty">${t('emptyList')}</div>`;
-    $('pList').querySelector('.on')?.scrollIntoView({ block: 'nearest' });
-  };
-  const go = (x) => {
-    if (!x) return;
-    closeModal();
-    ui.scope = 'all'; ui.person = null; ui.view = isOpen(x) ? 'pending' : 'closed'; ui.selected = x.id;
-    refresh();
-  };
-  $('pQ').oninput = () => { idx = 0; run(); };
-  $('pQ').onkeydown = (e) => {
-    if (e.key === 'ArrowDown') { e.preventDefault(); idx = Math.min(results.length - 1, idx + 1); run(); }
-    if (e.key === 'ArrowUp') { e.preventDefault(); idx = Math.max(0, idx - 1); run(); }
-    if (e.key === 'Enter') go(results[idx]);
-  };
-  $('mBg').onclick = (e) => {
-    if (e.target.id === 'mBg') return closeModal();
-    const it = e.target.closest('[data-pi]'); if (it) go(results[+it.dataset.pi]);
-  };
-  run();
-  $('pQ').focus();
-}
-
 // ---------------- keyboard: list navigation + zoom ----------------
 function bindKeyboard() {
   document.addEventListener('keydown', (e) => {
@@ -427,6 +388,14 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.22.0': {
+    ar: ['سجل الأيام (المراجعة ← سجل الأيام): اكتب اللي حصل في سطر، وكل يوم بيتملى لوحده كمان باللي كتبته على التاسكات، واللي خلص، والعادات، والتركيز',
+      'دوّر في كل حاجة: زرار "دوّر في كل حاجة" فوق على الجنب أو Ctrl+K. بيدوّر في التاسكات وملاحظاتها ومتابعاتها، وسجل الأيام، وملاحظات العادات. وبيفهم العربي: "اسامه" تلاقي "أسامة"',
+      'الرسومات اتشالت من كروت العادات وبقى ليها مكان لوحدها: العادات ← رسومات. اختار العادة، والمدة (أسبوع، شهر، 3 شهور)، وتشوف إيه (اتعملت، الدقايق، أو أي حاجة بتسجلها)، والشكل: أعمدة أو خط أو دايرة'],
+    en: ['Day log (Review › Day log): write what happened in one line. Each day also fills itself with what you wrote on tasks, what got done, habits and focus',
+      'Search everything: the "Search everything" button at the top of the sidebar, or Ctrl+K. It looks through tasks with their notes and follow-ups, the day log and habit notes, and understands Arabic spelling',
+      'Charts left the habit cards for a place of their own: Habits › Charts. Pick the habit, the period (week, month, 3 months), what to show (done, minutes, or anything you log) and the chart: bars, line or pie'],
+  },
   '1.21.1': {
     ar: ['"مستني مين" اتشالت من صفحة النهارده عشان كانت واخدة مكان. هتلاقيها في التاسكات ← مع غيري، أو من فلتر الأشخاص فوق',
       'الأشخاص اتشالوا من القايمة اللي على الجنب. فلتر الأشخاص فوق بيوري اللي معاهم تاسكات الأول (وعددها)، واللي مفيش معاهم حاجة في جزء لوحدهم، و"إدارة الأشخاص…" تضيف أو تعدّل أو تمسح'],

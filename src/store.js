@@ -76,6 +76,7 @@ function normalize(d, lang = 'ar') {
   d.tasks = Array.isArray(d.tasks) ? d.tasks : [];
   d.people = Array.isArray(d.people) ? d.people : [];
   d.habits = Array.isArray(d.habits) ? d.habits : [];
+  d.journal = Array.isArray(d.journal) ? d.journal : []; // the day log: [{ id, at, text }]
   migrateWaitingOn(d);
   return d;
 }
