@@ -161,7 +161,7 @@ function renderTabs() {
   fitTabs();
   // Tools that don't apply to a view are hidden instead of sitting there doing nothing.
   const tools = { search: !['today', 'calendar', 'report', 'habits'].includes(ui.view), sort: !['today', 'matrix', 'calendar', 'report', 'habits'].includes(ui.view) };
-  $('personFilter').hidden = ['habits', 'today'].includes(ui.view);
+  $('personFilter').hidden = ui.view === 'habits'; // on Today it jumps to what that person holds
   const bare = ['habits', 'today'].includes(ui.view) && ui.scope === 'all';
   $('listTitle').hidden = bare;
   document.querySelector('.list-head').classList.toggle('is-bare', bare);
@@ -280,9 +280,15 @@ function renderList() {
   $('listTitle').innerHTML = (a ? `<span class="dot" style="background:${areaColor(a)}"></span>` : icon(ui.scope === 'inbox' ? 'inbox' : 'all')) +
     `<span>${esc(scopeName)}</span>`;
 
-  $('personFilter').innerHTML = `<option value="">${t('allPeople')}</option>` +
-    data.people.slice().sort((a, b) => a.name.localeCompare(b.name))
-      .map((p) => `<option value="${p.id}" ${ui.person === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+  // People live here now (not in the sidebar): who has your tasks first, with how many;
+  // people with nothing open sit in their own group; "Manage people" adds, renames or deletes.
+  const holding = (pid) => data.tasks.filter((x) => isOpen(x) && isPendingWith(x, pid)).length;
+  const ppl = data.people.map((p) => ({ p, n: holding(p.id) })).sort((a, b) => b.n - a.n || a.p.name.localeCompare(b.p.name));
+  const opt = ({ p, n }) => `<option value="${p.id}" ${ui.person === p.id ? 'selected' : ''}>${esc(p.name)}${n ? ` (${n})` : ''}</option>`;
+  const idle = ppl.filter((o) => !o.n);
+  $('personFilter').innerHTML = `<option value="">${t('allPeople')}</option>` + ppl.filter((o) => o.n).map(opt).join('') +
+    (idle.length ? `<optgroup label="${esc(t('pfIdle'))}">${idle.map(opt).join('')}</optgroup>` : '') +
+    `<option value="__manage">✎ ${esc(t('pfManage'))}</option>`;
   $('personFilter').classList.toggle('active', !!ui.person);
 
   if (ui.view === 'today') return renderHome();
@@ -313,7 +319,7 @@ function renderList() {
     }
     $('list').innerHTML = [...groups.entries()]
       .sort((a, b) => b[1].length - a[1].length)
-      .map(([pid, xs]) => `<div class="group-title" data-person-group="${pid}">${icon('user')} <b dir="auto">${esc(personById(pid).name)}</b> · ${xs.length}</div>${xs.map(rowHtml).join('')}`)
+      .map(([pid, xs]) => `<div class="group-title" data-person-group="${pid}">${icon('user')} <b dir="auto">${esc(personById(pid).name)}</b> · ${xs.length}<button class="icon pg-edit" data-edit-person="${pid}" title="${t('editPerson')}">✎</button></div>${xs.map(rowHtml).join('')}`)
       .join('');
     $('list').innerHTML = subBar + $('list').innerHTML;
     return;
@@ -859,6 +865,22 @@ function openAreaModal(area, parentId) {
   $('mName').onkeydown = (e) => { if (e.key === 'Enter') $('mSave').click(); };
 }
 
+// Everyone in one small list: who holds how many of your tasks; click a name to edit, or add someone.
+function openPeopleManager() {
+  const holding = (pid) => data.tasks.filter((x) => isOpen(x) && isPendingWith(x, pid)).length;
+  const ppl = data.people.map((p) => ({ p, n: holding(p.id) })).sort((a, b) => b.n - a.n || a.p.name.localeCompare(b.p.name));
+  $('modalRoot').innerHTML = `<div class="modal-bg" id="mBg"><div class="modal people-mgr">
+    <h3>${icon('user')} ${t('people')}</h3>
+    <div class="pm-list">${ppl.length ? ppl.map(({ p, n }) => `<button class="pm-row" data-pm="${p.id}"><span dir="auto">${esc(p.name)}</span>
+      <span class="muted small">${n ? `${n} ${t('pmOpen')}` : t('pmNone')}</span><span class="pm-ed">✎</span></button>`).join('') : `<p class="small muted">${t('pmEmpty')}</p>`}</div>
+    <div class="actions"><button id="pmAdd">＋ ${t('addPerson')}</button><span style="flex:1"></span><button class="primary" id="mCancel">${t('done')}</button></div></div></div>`;
+  $('mBg').onclick = (e) => {
+    if (e.target.id === 'mBg' || e.target.id === 'mCancel') return closeModal();
+    if (e.target.closest('#pmAdd')) return openPersonModal(null);
+    const r = e.target.closest('[data-pm]'); if (r) return openPersonModal(personById(r.dataset.pm));
+  };
+}
+
 function openPersonModal(person) {
   const isNew = !person;
   const p = person || { id: uid(), name: '', areaIds: [] };
@@ -956,7 +978,13 @@ function bind() {
     return refresh();
     refreshLists();
   };
-  $('personFilter').onchange = (e) => { ui.person = e.target.value || null; refreshLists(); };
+  $('personFilter').onchange = (e) => {
+    if (e.target.value === '__manage') { e.target.value = ui.person || ''; return openPeopleManager(); }
+    ui.person = e.target.value || null;
+    // Picking someone from Today shows what they hold, under Tasks › With others.
+    if (ui.person && !TASK_VIEWS.includes(ui.view)) { ui.view = 'pending'; ui.pendingSub = 'others'; ui.selected = null; return refresh(); }
+    refreshLists();
+  };
   $('settingsBtn').onclick = () => openSettings('general'); // always start on General
   $('langBtn').onclick = () => { data.settings.lang = lang() === 'ar' ? 'en' : 'ar'; save(); renderAll(); };
   $('search').oninput = (e) => { ui.search = e.target.value; renderList(); };
@@ -971,6 +999,8 @@ function bind() {
       ui.calMonth = cal.dataset.cal === '0' ? null : todayStr(new Date(y, m - 1 + Number(cal.dataset.cal), 1)).slice(0, 7);
       return renderList();
     }
+    const ep = e.target.closest('[data-edit-person]');
+    if (ep) return openPersonModal(personById(ep.dataset.editPerson));
     const tv = e.target.closest('[data-tview]');
     if (tv) { if (ui.view !== tv.dataset.tview) { ui.view = tv.dataset.tview; data.settings.tasksView = ui.view; save(); refresh(); animateIn($('list')); } return; }
     const ps = e.target.closest('[data-psub]');

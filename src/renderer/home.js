@@ -124,7 +124,6 @@ function renderHome() {
       <div class="h-col">
         ${reminders.length ? panel(t('hReminders'), 'bell', reminders.map((x) =>
           `<div class="h-row" data-task="${x.id}"><span class="h-time ${x.remindAt <= nowLocal() ? 'past' : ''}">${fmtTime(x.remindAt, lang())}</span><span class="h-title" dir="auto">${esc(x.title)}</span></div>`).join('')) : ''}
-        ${people.size ? panel(t('hWaiting'), 'waiting', `<div class="h-people">${waiting}</div>`, 'others') : ''}
         ${panel(t('hComing'), 'calendar', coming || empty(t('hNothing')), 'calendar')}
       </div>
     </div>

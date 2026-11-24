@@ -26,6 +26,16 @@
     document.querySelector('[data-tview="pending"]').click(); await w(60);
     check('back to the list', ui.view === 'pending');
   });
+  await step('people: in the filter, not the sidebar or Today', async () => {
+    ui.view = 'today'; refresh(); await w(60);
+    check('no Waiting on panel on Today', !document.querySelector('#list .h-people'));
+    check('no people in the sidebar', getComputedStyle(document.getElementById('peopleTitle').parentElement).display === 'none');
+    ui.view = 'pending'; refresh(); await w(60);
+    check('people filter lists Sara with her count', [...document.querySelectorAll('#personFilter option')].some((o) => /Sara \(1\)/.test(o.textContent)));
+    openPeopleManager(); await w(60);
+    check('people manager', document.querySelectorAll('.pm-row').length >= 1);
+    closeModal(); await w(200);
+  });
   await step('a plain task page shows only what is used', async () => {
     const x = data.tasks.find((y) => y.title === 'Report');
     select(x.id); await w(120);

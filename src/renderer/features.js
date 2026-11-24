@@ -427,6 +427,12 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.21.1': {
+    ar: ['"مستني مين" اتشالت من صفحة النهارده عشان كانت واخدة مكان. هتلاقيها في التاسكات ← مع غيري، أو من فلتر الأشخاص فوق',
+      'الأشخاص اتشالوا من القايمة اللي على الجنب. فلتر الأشخاص فوق بيوري اللي معاهم تاسكات الأول (وعددها)، واللي مفيش معاهم حاجة في جزء لوحدهم، و"إدارة الأشخاص…" تضيف أو تعدّل أو تمسح'],
+    en: ['"Waiting on" is off Today, where it took up room. Find it in Tasks › With others, or with the people filter at the top',
+      'People are out of the sidebar. The people filter at the top lists who holds your tasks first (with how many), people with nothing open in their own group, and "Manage people…" to add, rename or delete'],
+  },
   '1.21.0': {
     ar: ['أبسط: 4 تابات بس، النهارده والتاسكات والعادات والمراجعة. تاب التاسكات فيه زرار تشوفها بيه قايمة أو مصفوفة أو تقويم، وبيفتكر آخر واحدة اخترتها',
       'صفحة التاسك بتوريك بس الحاجات اللي مستخدمها. الباقي (تذكير، مدة، مستني مين، تكرار، ملاحظات، ملفات) زراير صغيرة "＋" تضيفها لما تحتاجها',

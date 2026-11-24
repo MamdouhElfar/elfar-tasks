@@ -1957,3 +1957,13 @@ html[dir=rtl] .plan-cta.slim .pc-go { transform: scaleX(-1); }
 .plan-cta.slim b, .plan-cta.slim small { display: inline; }
 .cal-head > .tview { position: absolute; inset-inline-end: 0; }
 .cal-head:has(> .tview) .cal-today { position: static; }
+
+/* people: a small manager instead of a sidebar list */
+.people-mgr { width: min(420px, calc(100vw - 32px)); }
+.pm-list { display: flex; flex-direction: column; gap: 2px; max-height: 50vh; overflow-y: auto; margin: 6px 0 4px; }
+.pm-row { display: grid; grid-template-columns: 1fr auto 20px; align-items: center; gap: 10px; text-align: start; border: none; background: transparent; padding: 8px 10px; border-radius: 8px; }
+.pm-row:hover { background: var(--hover); }
+.pm-ed { color: var(--text-3); }
+.group-title .pg-edit { margin-inline-start: 6px; padding: 0 4px; color: var(--text-3); opacity: 0; }
+.group-title:hover .pg-edit { opacity: 1; }
+.sec-title[hidden], #peopleNav[hidden] { display: none !important; }
