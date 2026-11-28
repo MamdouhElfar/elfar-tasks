@@ -117,6 +117,8 @@ function renderHome() {
         <span>${t('hDoneToday')}</span></div>` : ''}
       <div class="h-btns"><button class="h-review" data-review title="${t('reviewTip')}">${icon('moon')} ${t('reviewBtn')}</button></div>
     </div>
+    ${homeSwitchHtml(mine)}
+    ${ui.homeView === 'topics' ? homeTopicsHtml(mine) : `
     ${weekBannerHtml()}${weekGoalsHtml()}
     <div class="h-cols today-cols">
       <div class="h-col t-work">
@@ -128,7 +130,7 @@ function renderHome() {
           `<div class="h-row" data-task="${x.id}"><span class="h-time ${x.remindAt <= nowLocal() ? 'past' : ''}">${fmtTime(x.remindAt, lang())}</span><span class="h-title" dir="auto">${esc(x.title)}</span></div>`).join('')) : ''}
         ${panel(t('hComing'), 'calendar', coming || empty(t('hNothing')), 'calendar')}
       </div>
-    </div>
+    </div>`}
   </div>`;
 }
 
@@ -203,3 +205,30 @@ function homeGo(go) {
   refresh();
   animateIn($('list'));
 }
+
+// ---------- Today › Open items ----------
+// A switch at the top of Today: your day, or every open item at a glance (the ones that need a look first).
+function homeSwitchHtml(mine) {
+  const open = mine.filter((x) => x.topic && !x.closure);
+  const stale = open.filter((x) => topicStale(x)).length;
+  if (!open.length && ui.homeView !== 'topics') return `<div class="h-switch"><span class="seg-joined tview"><button class="on" data-hview="today">${icon('today')}<span>${t('today')}</span></button><button class="tp-seg" data-hview="topics">${icon('log')}<span>${t('tpTab')}</span></button></span></div>`;
+  return `<div class="h-switch"><span class="seg-joined tview">
+    <button class="${ui.homeView === 'topics' ? '' : 'on'}" data-hview="today">${icon('today')}<span>${t('today')}</span></button>
+    <button class="tp-seg ${ui.homeView === 'topics' ? 'on' : ''}" data-hview="topics">${icon('log')}<span>${t('tpTab')}</span><span class="n">${open.length}</span>${stale ? `<i class="tp-dot" title="${esc(t('tpNeedsLook'))}">${stale}</i>` : ''}</button></span></div>`;
+}
+function homeTopicsHtml(mine) {
+  const open = mine.filter((x) => x.topic && !x.closure).sort((a, b) => (topicLast(a) || '').localeCompare(topicLast(b) || ''));
+  const stale = open.filter((x) => topicStale(x)), rest = open.filter((x) => !topicStale(x));
+  return `<div class="h-topics">
+    <p class="small muted">${t('tpHint')}</p>
+    ${stale.length ? `<div class="group-title topic-title">${t('tpNeedsLook')} · ${stale.length}</div>${stale.map(rowHtml).join('')}` : ''}
+    ${rest.length ? `<div class="group-title">${t('tpAllOpen')} · ${rest.length}</div>${rest.map(rowHtml).join('')}` : ''}
+    ${open.length ? '' : `<div class="h-empty">${t('tpNone')}</div>`}
+    <button class="tp-new" data-tpnew>＋ ${t('tpNew')}</button>
+  </div>`;
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest && e.target.closest('[data-hview], [data-tpnew]'); if (!b) return;
+  if (b.dataset.hview) { if (ui.homeView !== b.dataset.hview) { ui.homeView = b.dataset.hview; renderList(); animateIn(document.querySelector('.h-topics, .today-cols')); } return; }
+  openComposer({ topic: true });
+});

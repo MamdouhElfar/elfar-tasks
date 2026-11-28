@@ -269,7 +269,7 @@ function rowHtml(x) {
   const remindDay = x.remindAt && x.remindAt.slice(0, 10);
   const next = isOpen(x) && subs.find((s) => !s.done);
   const focusOn = data.focus && data.focus.taskId === x.id;
-  return `<div class="task-row ${quadClass(x)} ${x.closure ? 'closed' : ''} ${ui.selected === x.id ? 'sel' : ''}" data-task="${x.id}" draggable="true">
+  return `<div class="task-row ${quadClass(x)} ${x.topic && !x.closure ? 'is-topic' : ''} ${x.closure ? 'closed' : ''} ${ui.selected === x.id ? 'sel' : ''}" data-task="${x.id}" draggable="true">
     <button class="check ${x.closure ? 'on' : ''}" data-check="${x.id}" title="${x.closure ? t('reopen') : t('closeToday')}">✓</button>
     <div class="t-main">
       <div class="t-title" dir="auto">${focusOn ? '<span class="in-focus" title="' + t('fWorkingOn') + '">◉</span> ' : ''}${x.starred ? '<span class="star">★</span> ' : ''}${esc(x.title) || '<span class="muted">' + t('title') + '</span>'}</div>

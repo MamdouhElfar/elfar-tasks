@@ -2050,3 +2050,24 @@ html[dir=rtl] .plan-cta.slim .pc-go { transform: scaleX(-1); }
 .c-tp-hint { margin: 6px 0 0; }
 .group-title.topic-title { color: var(--c-amber); }
 .d-grid[hidden] { display: none !important; }
+
+/* ---------- 1.23.2 open items stand out ---------- */
+/* Today: Today / Open items switch */
+.h-switch { margin: 0 0 12px; }
+.h-switch .seg-joined button { padding: 6px 14px; font-size: var(--fs-m); }
+.h-switch .n { margin-inline-start: 6px; font-size: var(--fs-xs); opacity: .8; }
+.tp-dot { font-style: normal; margin-inline-start: 6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--c-amber); color: #fff; font-size: 11px; font-weight: 700; display: inline-grid; place-items: center; }
+.seg-joined .tp-seg { color: var(--c-teal); font-weight: 600; }
+.seg-joined .tp-seg.on { background: var(--c-teal); color: #fff; }
+.h-topics { max-width: 860px; }
+.h-topics > p { margin: 0 2px 10px; }
+.tp-new { margin-top: 10px; border: 1px dashed color-mix(in srgb, var(--c-teal) 55%, var(--border-2)); color: var(--c-teal); background: transparent; border-radius: 10px; padding: 8px 14px; font-weight: 600; }
+.tp-new:hover { background: color-mix(in srgb, var(--c-teal) 8%, var(--panel)); }
+/* Tasks: the Open items button is its own teal pill, not one more grey filter */
+.sub-bar .seg-joined.topics { border-color: color-mix(in srgb, var(--c-teal) 45%, var(--border-2)); background: color-mix(in srgb, var(--c-teal) 9%, var(--panel)); }
+.sub-bar .seg-joined.topics button { color: var(--c-teal); font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
+.sub-bar .seg-joined.topics button .ico { width: 14px; height: 14px; }
+.sub-bar .seg-joined.topics button.on { background: var(--c-teal); color: #fff; }
+.sub-bar .seg-joined.topics button .n { color: inherit; opacity: .85; }
+/* open item rows: a teal edge instead of the priority colour */
+.task-row.is-topic::before { content: ''; position: absolute; inset-block: 6px; inset-inline-start: 0; width: 3px; border-radius: 3px; background: var(--c-teal) !important; }

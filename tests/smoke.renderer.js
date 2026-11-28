@@ -59,6 +59,9 @@
     tp.start = hAdd(todayStr(), -20); touch(tp);
     ui.view = 'today'; refresh(); await w(60);
     check('stale open item shows on Today', !!document.querySelector(`#list [data-task="${tp.id}"]`));
+    document.querySelector('[data-hview="topics"]').click(); await w(60);
+    check('Today › Open items lists it', !!document.querySelector(`#list .h-topics [data-task="${tp.id}"]`));
+    document.querySelector('[data-hview="today"]').click(); await w(40);
     select(tp.id); await w(100);
     check('open item page', !!document.querySelector('#detail .tp-box'));
     document.getElementById('dAddLog').value = 'they replied'; addLogEntry(tp); await w(60);

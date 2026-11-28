@@ -390,6 +390,12 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.23.2': {
+    ar: ['في صفحة النهارده فوق زرار "النهارده / مواضيع مفتوحة": تشوف كل مواضيعك في مكان واحد، اللي محتاجة تبص عليها الأول، وجنبها عددها ونقطة برتقالي باللي محتاج',
+      'المواضيع المفتوحة بقت باينة: زرارها في التاسكات لونه مختلف، وكل موضوع على يمينه خط أخضر بدل لون الأولوية'],
+    en: ['Today has a "Today / Open items" switch at the top: all your open items in one place, the ones that need a look first, with their count and an orange dot for those waiting',
+      'Open items stand out: their button in Tasks has its own colour, and each one has a teal edge instead of the priority colour'],
+  },
   '1.23.1': {
     ar: ['الموضوع المفتوح مبقاش بيظهر في خطة النهارده لو كان التاسك متختار في الخطة قبل ما تحوّله'],
     en: ['An open item no longer shows in today’s plan when the task had been picked for the plan before you turned it into one'],
