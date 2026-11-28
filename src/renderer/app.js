@@ -1090,7 +1090,8 @@ function bind() {
     const more = e.target.closest('[data-dmore]');
     if (more && more.dataset.dmore === 'topic') {
       // Turn a task into an open item: no due date, no repeat; it moves to Tasks › Open items.
-      x.topic = true; x.due = null; x.dueTime = null; x.repeat = null; x.remindBefore = null; x.checkEvery = x.checkEvery || 14;
+      x.topic = true; x.due = null; x.dueTime = null; x.repeat = null; x.remindBefore = null; x.blockAt = null; x.checkEvery = x.checkEvery || 14;
+      if (data.plan && Array.isArray(data.plan.ids)) data.plan.ids = data.plan.ids.filter((id) => id !== x.id);
       syncReminder(x); touch(x); ui.view = 'pending'; ui.pendingSub = 'topics'; refresh(); showToast(t('tpMadeToast'));
       return;
     }

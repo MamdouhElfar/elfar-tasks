@@ -4,7 +4,14 @@
 // is offered first in tomorrow's plan (data.planNext).
 
 const PLAN_MAX = 5;
-function todayPlan() { const p = data.plan; return p && p.date === todayStr() ? p : null; }
+// Today's plan. Open items never belong in it (they have no day to be done on), so any that got
+// in (a task picked for today, then turned into an open item) are dropped.
+function todayPlan() {
+  const p = data.plan;
+  if (!p || p.date !== todayStr()) return null;
+  if (p.ids.some((id) => taskById(id)?.topic)) p.ids = p.ids.filter((id) => !taskById(id)?.topic);
+  return p;
+}
 function inPlan(x) { const p = todayPlan(); return !!p && p.ids.includes(x.id); }
 const tomorrowStr = () => { const d = new Date(); d.setDate(d.getDate() + 1); return todayStr(d); };
 

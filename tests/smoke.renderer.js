@@ -63,6 +63,14 @@
     check('open item page', !!document.querySelector('#detail .tp-box'));
     document.getElementById('dAddLog').value = 'they replied'; addLogEntry(tp); await w(60);
     check('an update clears needs-a-look', !topicStale(tp));
+    // A task picked for today's plan, then turned into an open item, leaves the plan and Today.
+    addTask('Smoke plan to topic', { due: todayStr() }); const pt = data.tasks.find((y) => y.title === 'Smoke plan to topic');
+    data.plan = { date: todayStr(), ids: [pt.id] }; select(pt.id); await w(100);
+    document.querySelector('[data-dmore="topic"]').click(); await w(60);
+    ui.view = 'today'; ui.selected = null; refresh(); await w(60);
+    check('open item left the plan', !todayPlan() || !todayPlan().ids.includes(pt.id));
+    check('open item not on Today', !document.querySelector(`#list [data-task="${pt.id}"]`));
+    data.plan = null; save();
     ui.selected = null; ui.pendingSub = 'all'; refresh();
   });
   await step('a plain task page shows only what is used', async () => {
