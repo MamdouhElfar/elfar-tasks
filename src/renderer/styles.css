@@ -2033,3 +2033,20 @@ html[dir=rtl] .plan-cta.slim .pc-go { transform: scaleX(-1); }
 .le-when { display: flex; gap: 6px; }
 .le-acts { display: flex; gap: 6px; justify-content: flex-end; }
 #leText { width: 100%; }
+
+/* ---------- 1.23.0 open items ---------- */
+.pill.topic { background: color-mix(in srgb, var(--c-teal) 14%, var(--panel)); color: var(--c-teal); display: inline-flex; align-items: center; gap: 4px; }
+.pill.topic .ico { width: 12px; height: 12px; }
+.when.topic { display: inline-flex; align-items: center; gap: 3px; color: var(--text-2); }
+.when.topic .ico { width: 12px; height: 12px; }
+.when.topic.stale { color: var(--c-amber); font-weight: 600; }
+.tp-box { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin: 4px 0 12px; display: flex; flex-direction: column; gap: 8px; background: var(--panel); }
+.tp-box.stale { border-color: color-mix(in srgb, var(--c-amber) 50%, var(--border)); }
+.tp-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tp-check { display: flex; align-items: center; gap: 6px; color: var(--text-2); }
+.tp-check .ico { width: 13px; height: 13px; }
+.c-kind button { display: inline-flex; align-items: center; gap: 5px; }
+.c-kind .ico { width: 13px; height: 13px; }
+.c-tp-hint { margin: 6px 0 0; }
+.group-title.topic-title { color: var(--c-amber); }
+.d-grid[hidden] { display: none !important; }

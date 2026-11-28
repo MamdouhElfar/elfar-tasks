@@ -296,10 +296,11 @@ function reportChartsHtml(from, tasks, open) {
   const hNow = hl.length ? habitsWeekScore(hl, wsNow, td) : null;
   const hPrev = hl.length ? habitsWeekScore(hl, hAdd(wsNow, -7), td) : null;
   // Open tasks, each counted once, the most pressing reason first.
-  const cat = { overdue: 0, today: 0, waiting: 0, later: 0, nodate: 0 };
+  const cat = { overdue: 0, today: 0, waiting: 0, later: 0, nodate: 0, topics: 0 };
   for (const x of open) {
     const st = statusOf(x);
-    if (st === 'overdue') cat.overdue++;
+    if (x.topic) cat.topics++;
+    else if (st === 'overdue') cat.overdue++;
     else if (st === 'today') cat.today++;
     else if (pendingOf(x).length) cat.waiting++;
     else if (x.due || st === 'scheduled') cat.later++;
@@ -323,7 +324,8 @@ function reportChartsHtml(from, tasks, open) {
         { label: t('nowToday'), value: cat.today, color: 'var(--c-amber)' },
         { label: t('chWaiting'), value: cat.waiting, color: 'var(--c-purple)' },
         { label: t('chLater'), value: cat.later, color: 'var(--accent)' },
-        { label: t('chNoDate'), value: cat.nodate, color: 'var(--c-gray)' }])}</div>` : ''}
+        { label: t('chNoDate'), value: cat.nodate, color: 'var(--c-gray)' },
+        { label: t('tpTab'), value: cat.topics, color: 'var(--c-teal)' }])}</div>` : ''}
       ${hl.length && firstH >= 0 ? `<div class="ch-card ch-habits"><h4>${t('chHabitsWeeks')}</h4><div class="ch-hrow">${ringChart(hNow, { color: 'var(--c-teal)', label: t('hbThisWeek') })}
         ${colChart({ items: weeks.slice(firstH).map((ws, i) => ({ value: (hWeeks[firstH + i] || 0) * 100, cur: ws === wsNow, label: shortDay(ws), tip: `${fmtDate(ws, lang())} → ${fmtDate(hAdd(ws, 6), lang())}: ${hWeeks[firstH + i] === null ? '—' : Math.round(hWeeks[firstH + i] * 100) + '%'}` })), fmt: (v) => Math.round(v) + '%', color: 'var(--c-teal)', height: 90 })}</div></div>` : ''}
     </div>`;
@@ -388,6 +390,14 @@ function tasksCsv(tasks) {
 
 // ---------------- what's new + updates ----------------
 const CHANGELOG = {
+  '1.23.0': {
+    ar: ['المواضيع المفتوحة: للحاجات اللي مش تاسك هيخلص بكرة، لكن موضوع شغّال بيتحدّث كل فترة (توقيع، تعاقد، مشكلة في موقع). مالوش ميعاد، ومبيبقاش متأخر، وبيتقاس بآخر تحديث',
+      'اعمله من زرار ＋ (اختار "موضوع مفتوح")، أو حوّل أي تاسك من صفحتها (＋ خليها موضوع مفتوح). وهتلاقيهم كلهم في التاسكات ← مواضيع مفتوحة، والأقدم في التحديث أولهم',
+      'اكتب كل تحديث في سجل المتابعة. ولو اخترت "فكّرني أبص عليه"، الموضوع بيظهر في النهارده لو عدّت المدة من غير تحديث، ويختفي أول ما تكتب الجديد'],
+    en: ['Open items: for things that aren’t a task to finish tomorrow but an ongoing topic that gets updates now and then (a signing, a contract, a site problem). No due date, never late; measured by its last update',
+      'Create one from the ＋ button (pick "Open item"), or turn any task into one from its page (＋ Make it an open item). Find them all in Tasks › Open items, the longest without an update first',
+      'Write each update in the follow-up log. With "Remind me to check", it shows on Today when that long passes without an update, and leaves as soon as you write what’s new'],
+  },
   '1.22.1': {
     ar: ['تقدر تعدّل أي سطر في سجل المتابعة: الكلام واليوم والساعة (✎ جنب السطر)',
       'شلنا الملاحظات والصفحات من التاسكات، و"هتاخد قد إيه" من التاسك والخطة. التاسكات اللي كان فيها ملاحظات قبل كده لسه بتظهرلك ملاحظاتها'],

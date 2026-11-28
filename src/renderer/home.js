@@ -65,7 +65,9 @@ function renderHome() {
          ${planned.length ? planned.filter((x) => !x.closure).map(rowHtml).join('') + doneFold(planned.filter((x) => x.closure).map(rowHtml), 'plan') : `<div class="h-empty">${t('planEmpty')}</div>`}`
       : `<button class="plan-cta slim" data-plan><span class="pc-ico">${icon('today')}</span><span><b>${t('planCta')}</b><small>${t('planCtaSub')}</small></span><span class="pc-go">›</span></button>`) +
     (() => { const hs = habitsToday(); return hs.length ? `<div class="group-title habit-title">${icon('habits')} ${t('hbToday')} · ${hs.filter((h) => hLog(h, td) === 'done').length}/${hs.length}<button class="link" data-hopen>${t('hSeeAll')}</button></div>${hs.filter((h) => hLog(h, td) !== 'done').map(habitRowHtml).join('')}${doneFold(hs.filter((h) => hLog(h, td) === 'done').map(habitRowHtml), 'habits')}` : ''; })() +
-    sec(t('overdue'), 'danger', lateRest) + sec(t('stDueToday'), '', todayRest) + sec(t('hImportant'), '', [...starredRest, ...doNow]);
+    sec(t('overdue'), 'danger', lateRest) + sec(t('stDueToday'), '', todayRest) +
+    sec(t('tpNeedsLook'), 'topic-title', mine.filter((x) => topicStale(x, td)).sort((a, b) => (topicLast(a) || '').localeCompare(topicLast(b) || ''))) +
+    sec(t('hImportant'), '', [...starredRest, ...doNow]);
 
   // Coming up, by day.
   const days = new Map();

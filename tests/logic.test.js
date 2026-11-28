@@ -250,3 +250,14 @@ test('search understands Arabic spelling', () => {
   assert.ok(!L.matchText('Weekly meeting', 'report'));
   assert.ok(!L.matchText('anything', '   '));
 });
+
+test('open items: last update and needs a look', () => {
+  const x = { topic: true, start: '2026-11-01', checkEvery: 14, log: [{ date: '2026-11-10', at: '2026-11-10T09:00', text: 'met them' }] };
+  assert.equal(L.topicLast(x), '2026-11-10');
+  assert.equal(L.topicStale(x, '2026-11-20'), false);
+  assert.equal(L.topicStale(x, '2026-11-24'), true);           // 14 days without an update
+  assert.equal(L.isActive(x), false);                           // never on Today / plan / matrix as work
+  x.log.push({ date: '2026-11-23', text: 'they replied' });
+  assert.equal(L.topicStale(x, '2026-11-24'), false);           // an update resets it
+  assert.equal(L.topicStale({ ...x, checkEvery: null }, '2027-01-01'), false);
+});

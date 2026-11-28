@@ -48,7 +48,17 @@
     if (t.due && t.due === td) return 'today';
     return 'pending';
   }
-  const isActive = (x) => !x.closure && statusOf(x) !== 'scheduled';
+  // Open items (x.topic) have no due date and live under Tasks › Open items, so they are never "active"
+  // work: they stay out of Today, the plan, the matrix and the counts.
+  const isActive = (x) => !x.closure && !x.topic && statusOf(x) !== 'scheduled';
+  // An open item is measured by when it last moved: its newest follow-up (or when it started).
+  function topicLast(x) {
+    let last = x.start ? x.start + 'T00:00' : '';
+    for (const l of x.log || []) { const a = l.at || (l.date ? l.date + 'T00:00' : ''); if (a > last) last = a; }
+    return last ? last.slice(0, 10) : null;
+  }
+  // "Remind me to check every N days": stale once N days pass without an update.
+  const topicStale = (x, td = todayStr()) => !!(x.topic && !x.closure && x.checkEvery && topicLast(x) && daysBetween(topicLast(x), td) >= x.checkEvery);
   // Minutes of work left on a task: its estimate minus the time already focused on it.
   const minutesLeft = (x) => (x.estimate ? Math.max(0, Math.round(x.estimate - (x.focusMs || 0) / 60000)) : null);
 
@@ -432,7 +442,7 @@
 
   return {
     todayStr, daysBetween, hAdd, hDow, shiftDate, uid, configure, appWeekStart,
-    QUADS, QUAD_RANK, byPriorityThenDue, statusOf, isActive, minutesLeft, deferTo,
+    QUADS, QUAD_RANK, byPriorityThenDue, statusOf, isActive, topicLast, topicStale, minutesLeft, deferTo,
     hWeekStart, hLog, hMins, hDoneCount, hEnded, hLive, hActiveOn, hScheduled, hWeek, hTarget, hWeekVal, hPartial,
     habitsDueOn, habitStillDue, habitAddMinutes, habitSetEntry, habitEntry, habitLastStop, habitTotals,
     habitMeasuresFor, habitUsedBefore, habitTidyMeasures,

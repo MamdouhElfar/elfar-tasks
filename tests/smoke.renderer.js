@@ -47,6 +47,24 @@
     check('no notes box on a plain task', !document.querySelector('#detail .notes-sec') && !document.querySelector('[data-dmore="notes"]'));
     ui.selected = null; refresh();
   });
+  await step('open items', async () => {
+    ui.view = 'pending'; ui.pendingSub = 'all'; refresh(); openComposer(); await w(60);
+    document.querySelector('[data-ckind="topic"]').click(); await w(40);
+    $('cTitle').value = 'Smoke topic'; submitComposer(); closeComposer(); await w(60);
+    const tp = data.tasks.find((y) => y.title === 'Smoke topic');
+    check('open item created without a due date', tp && tp.topic && !tp.due && tp.checkEvery === 14);
+    check('not in All', !currentTasks().some((y) => y.id === tp.id));
+    ui.pendingSub = 'topics'; refresh(); await w(40);
+    check('in Open items', currentTasks().some((y) => y.id === tp.id));
+    tp.start = hAdd(todayStr(), -20); touch(tp);
+    ui.view = 'today'; refresh(); await w(60);
+    check('stale open item shows on Today', !!document.querySelector(`#list [data-task="${tp.id}"]`));
+    select(tp.id); await w(100);
+    check('open item page', !!document.querySelector('#detail .tp-box'));
+    document.getElementById('dAddLog').value = 'they replied'; addLogEntry(tp); await w(60);
+    check('an update clears needs-a-look', !topicStale(tp));
+    ui.selected = null; ui.pendingSub = 'all'; refresh();
+  });
   await step('a plain task page shows only what is used', async () => {
     const x = data.tasks.find((y) => y.title === 'Report');
     select(x.id); await w(120);

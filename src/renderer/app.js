@@ -74,7 +74,7 @@ function suggestedPeople(x) {
 // Five tabs: Today (your day, with the plan) · All open tasks · Matrix · Calendar · Review.
 // "Closed" lives inside Review, next to the report.
 const VIEWS = [
-  { id: 'today', lead: true, test: (x) => isOpen(x) && ((x.due && x.due <= todayStr()) || x.starred || inPlan(x)),
+  { id: 'today', lead: true, test: (x) => isOpen(x) && (x.topic ? topicStale(x) : ((x.due && x.due <= todayStr()) || x.starred || inPlan(x))),
     cls: () => (data.tasks.some((x) => inScope(x) && statusOf(x) === 'overdue') ? 'danger' : '') },
   // One Tasks tab, seen as a list, a matrix or a calendar (the switch sits at the top of the tab).
   { id: 'pending', label: 'tasksTab', test: isActive, cls: () => 'warn', group: ['matrix', 'calendar'] },
@@ -100,6 +100,12 @@ function inScope(x, scope = ui.scope) {
 function currentTasks() {
   const v = VIEWS.find((v) => v.id === ui.view);
   let list = data.tasks.filter((x) => inScope(x) && v.test(x) && (!ui.person || isPendingWith(x, ui.person)));
+  if (ui.view === 'pending' && ui.pendingSub === 'topics') {
+    list = data.tasks.filter((x) => inScope(x) && x.topic && !x.closure && (!ui.person || isPendingWith(x, ui.person)));
+    const q0 = ui.search.trim();
+    if (q0) list = list.filter((x) => matchText([x.title, ...peopleNames(x), ...(x.log || []).map((l) => l.text)].join('\n'), q0));
+    return list.sort((a, b) => (topicLast(a) || '').localeCompare(topicLast(b) || ''));
+  }
   if (ui.view === 'pending' && ui.pendingSub === 'later') list = data.tasks.filter((x) => inScope(x) && statusOf(x) === 'scheduled' && (!ui.person || isPendingWith(x, ui.person)));
   else if (ui.view === 'pending' && ui.pendingSub !== 'all') list = list.filter((x) => (pendingOf(x).length > 0) === (ui.pendingSub === 'others'));
   const q = ui.search.trim().toLowerCase();
@@ -237,6 +243,7 @@ function renderSidebar() {
 }
 
 function statusPill(x) {
+  if (x.topic && !x.closure) return `<span class="pill topic">${icon('log')} ${t('tpOne')}</span>`;
   const s = statusOf(x);
   if (s === 'scheduled') return `<span class="pill scheduled">${icon('calendar')} ${t('stScheduled')} ${fmtDate(x.start, lang())}</span>`;
   const key = { pending: 'stPending', overdue: 'stOverdue', closed: 'stClosed', today: 'stDueToday' }[s];
@@ -267,7 +274,7 @@ function rowHtml(x) {
     <div class="t-main">
       <div class="t-title" dir="auto">${focusOn ? '<span class="in-focus" title="' + t('fWorkingOn') + '">◉</span> ' : ''}${x.starred ? '<span class="star">★</span> ' : ''}${esc(x.title) || '<span class="muted">' + t('title') + '</span>'}</div>
       ${next ? `<div class="t-next" title="${t('nextStep')}"><span class="arrow">↳</span> <span dir="auto">${esc(next.title)}</span></div>` : ''}
-      <div class="t-meta">${prioNum(x)}${whenChip(x, ui.view === 'today')}${x.remindAt && isOpen(x) ? `<span class="pill remind ${x.remindAt <= nowLocal() ? 'past' : ''}">${icon('bell')} ${remindDay === todayStr() ? '' : fmtDate(remindDay, lang()) + ' '}${fmtTime(x.remindAt, lang())}</span>` : ''}${x.repeat && isOpen(x) ? `<span class="pill repeat" title="${esc(repeatLabel(x.repeat))}">${icon('repeat')}</span>` : ''}${(x.files || []).length ? `<span class="pill area">${icon('clip')} ${x.files.length}</span>` : ''}
+      <div class="t-meta">${prioNum(x)}${x.topic && !x.closure ? topicChip(x) : whenChip(x, ui.view === 'today')}${x.remindAt && isOpen(x) ? `<span class="pill remind ${x.remindAt <= nowLocal() ? 'past' : ''}">${icon('bell')} ${remindDay === todayStr() ? '' : fmtDate(remindDay, lang()) + ' '}${fmtTime(x.remindAt, lang())}</span>` : ''}${x.repeat && isOpen(x) ? `<span class="pill repeat" title="${esc(repeatLabel(x.repeat))}">${icon('repeat')}</span>` : ''}${(x.files || []).length ? `<span class="pill area">${icon('clip')} ${x.files.length}</span>` : ''}
         ${subs.length ? `<span class="progress"><span class="bar"><i style="width:${(done / subs.length) * 100}%"></i></span>${done}/${subs.length}</span>` : ''}
         ${isOpen(x) && (x.postponed || 0) >= 2 ? `<span class="postponed" title="${t('postponedTip')}">↻ ${lang() === 'ar' ? 'اتأجلت ' + timesWord(x.postponed, 'ar') : 'put off ' + timesWord(x.postponed, 'en')}</span>` : ''}
         ${isOpen(x) ? pendingOf(x).map((pw) => `<span class="pill person" title="${t('since')} ${fmtDate(pw.since, lang())}">${icon('user')} <bdi>${esc(personById(pw.personId).name)}</bdi> · ${sinceWord(pw.since)}</span>`).join('') : ''}
@@ -334,12 +341,14 @@ function pendingSubBar() {
   const mineAll = data.tasks.filter((x) => inScope(x) && (!ui.person || isPendingWith(x, ui.person)));
   const open = mineAll.filter(isActive);
   const n = { all: open.length, mine: open.filter((x) => !pendingOf(x).length).length, others: open.filter((x) => pendingOf(x).length).length,
-    later: mineAll.filter((x) => statusOf(x) === 'scheduled').length };
+    later: mineAll.filter((x) => statusOf(x) === 'scheduled').length, topics: mineAll.filter((x) => x.topic && !x.closure).length };
   const b = (k, label) => `<button class="${ui.pendingSub === k ? 'on' : ''}" data-psub="${k}">${label} <span class="n">${n[k]}</span></button>`;
   return `<div class="sub-bar"><span class="seg-joined">${b('all', t('all'))}${b('mine', t('mine'))}${b('others', t('withOthers'))}</span>
     ${n.later || ui.pendingSub === 'later' ? `<span class="seg-joined later">${b('later', `${icon('calendar')} ${t('later')}`)}</span>` : ''}
+    <span class="seg-joined topics">${b('topics', `${icon('log')} ${t('tpTab')}`)}</span>
     <span class="tview-push"></span>${tasksViewBar()}</div>
-    ${ui.pendingSub === 'later' ? `<p class="small muted sub-hint">${t('scheduledHint')}</p>` : ''}`;
+    ${ui.pendingSub === 'later' ? `<p class="small muted sub-hint">${t('scheduledHint')}</p>` : ''}
+    ${ui.pendingSub === 'topics' ? `<p class="small muted sub-hint">${t('tpHint')}</p>` : ''}`;
 }
 
 function renderCalendar() {
@@ -501,7 +510,7 @@ function renderDetail() {
     people: pendingOf(x).length > 0, files: (x.files || []).length > 0, notes: !!noteText };
   const show = (k) => ui.dShowAll === x.id || has[k] || ui.dOpen[x.id + ':' + k];
   const MORE = [['prio', 'matrix', t('priority')], ['remind', 'bell', t('reminder')], ['people', 'user', t('waiting')],
-    ['repeat', 'repeat', t('repeat')], ['files', 'clip', t('files')]].filter(([k]) => !show(k) && !(k === 'estimate' && x.closure));
+    ['repeat', 'repeat', t('repeat')], ['files', 'clip', t('files')], ['topic', 'log', t('tpMake')]].filter(([k]) => !show(k) && !(k === 'repeat' && x.topic) && !(k === 'topic' && (x.topic || x.closure)));
   const moreHtml = MORE.length ? `<div class="d-more"><span class="small muted">${t('dAddMore')}</span>${MORE.map(([k, ic, l]) => `<button type="button" data-dmore="${k}">＋ ${icon(ic)} ${esc(l)}</button>`).join('')}</div>` : '';
   const span = statusOf(x) === 'scheduled' ? '' : x.start ? (x.closure ? `${t('tookDays')} ${daysWord(daysBetween(x.start, x.closure), lang())}` : `${t('openedFor')} ${daysWord(Math.max(0, daysBetween(x.start, todayStr())), lang())}`) : '';
   el.innerHTML = `<div class="inner">
@@ -509,7 +518,7 @@ function renderDetail() {
       ${statusPill(x)} <span class="small muted">${span}${x.focusMs >= 60000 ? ` · ⏱ ${focusTimeLabel(focusMinsOf(x))}` : ''}</span>
       <span class="spacer"></span>
       <div class="d-acts">
-        ${x.closure ? '' : `<button class="d-defer" data-defer="${x.id}" title="${t('dfTip')}">${icon('calendar')} ${t('dfShort')}</button>`}
+        ${x.closure || x.topic ? '' : `<button class="d-defer" data-defer="${x.id}" title="${t('dfTip')}">${icon('calendar')} ${t('dfShort')}</button>`}
         ${x.closure ? '' : data.focus && data.focus.taskId === x.id && data.focus.mode === 'work' ? `<button class="focus-btn on" data-focus="${x.id}">◉ ${t('fWorkingOn')}…</button>` : `<button class="focus-btn" data-focus="${x.id}" title="${t('fStartTip')}">▶ ${t('fStart')}</button>`}
         ${x.closure ? `<button id="dReopen">${t('reopen')}</button>` : `<button class="primary" id="dClose">✓ ${t('closeToday')}</button>`}
         <button class="d-act ${x.starred ? 'on' : ''}" id="dStar" title="${t('star')}">${x.starred ? '★' : '☆'}</button>
@@ -519,7 +528,8 @@ function renderDetail() {
     </div>
     <textarea class="d-title" id="dTitle" dir="auto" rows="1" placeholder="${t('title')}">${esc(x.title)}</textarea>
     ${x.pinnedNote ? `<div class="pinned-note"><span>📌</span><span dir="auto">${linkify(x.pinnedNote)}</span><button class="icon" id="dUnpin" title="${t('done')}">✓</button></div>` : ''}
-    <div class="d-grid">
+    ${x.topic && !x.closure ? topicBoxHtml(x) : ''}
+    <div class="d-grid" ${x.topic && !x.closure ? 'hidden' : ''}>
       <div class="d-field"><label>${icon('today')} ${t('start')}</label><input type="date" id="dStart" value="${x.start || ''}"></div>
       <div class="d-field"><label>${icon('calendar')} ${t('due')}</label><input type="date" id="dDue" value="${x.due || ''}"></div>
       <div class="d-field"><label>${icon('pending')} ${t('dueTimeShort')}</label>${timeBox('dDueTime', x.dueTime, `title="${t('dueTime')}"`)}</div>
@@ -567,7 +577,7 @@ function renderDetail() {
 
     <div class="d-sec"><h3>${icon('log')} ${t('log')}</h3>
       <div class="log-add">
-        <input type="text" id="dAddLog" dir="auto" placeholder="＋ ${t('addLog')}">
+        <input type="text" id="dAddLog" dir="auto" placeholder="＋ ${x.topic ? t('tpLogPh') : t('addLog')}">
         <div class="log-meta">
           <input type="text" id="dLogPerson" dir="auto" list="allPeopleList" placeholder="${t('logOwner')}" autocomplete="off">
           <input type="date" id="dLogDate" title="${t('logAt')}">${timeBox('dLogTime', '', `title="${t('logAt')}"`)}
@@ -700,6 +710,7 @@ function addTask(title, opts = {}) {
   };
   // Full mode of the add card: start date, notes, subtasks and who it's with.
   if (opts.start) x.start = opts.start;
+  if (opts.topic) { x.topic = true; x.checkEvery = opts.checkEvery || null; x.due = null; x.dueTime = null; x.repeat = null; x.remindBefore = null; }
   if (opts.notes) { x.notes = opts.notes; x.pages = [{ id: uid(), title: '', html: textToNoteHtml(opts.notes) }]; }
   if (opts.subtasks) x.subtasks = opts.subtasks.map((s) => ({ id: uid(), title: s, done: false }));
   if (opts.person) {
@@ -768,6 +779,25 @@ function addLogEntry(x) {
     (x.log = x.log || []).push({ id: uid(), at, date: at.slice(0, 10), text });
   }
   touch(x); refresh(); $('dAddLog').focus();
+}
+
+// ---------- open items ----------
+function topicAgo(x) {
+  const last = topicLast(x); if (!last) return '';
+  const n = Math.max(0, daysBetween(last, todayStr()));
+  return n === 0 ? t('tpToday') : t('tpAgo').replace('{n}', daysWord(n, lang()));
+}
+function topicChip(x) {
+  return `<span class="when topic ${topicStale(x) ? 'stale' : ''}" title="${esc(t('tpLastTip'))}">${icon('log')} ${topicAgo(x)}</span>`;
+}
+function topicBoxHtml(x) {
+  const opts = [[0, t('tpNever')], [7, t('tpEvery7')], [14, t('tpEvery14')], [30, t('tpEvery30')]];
+  return `<div class="tp-box ${topicStale(x) ? 'stale' : ''}">
+    <div class="tp-line"><span class="pill topic">${icon('log')} ${t('tpOne')}</span>
+      <span class="small muted">${x.start ? `${t('since')} ${fmtDate(x.start, lang())} · ` : ''}${topicAgo(x)}</span>
+      <span style="flex:1"></span><button class="link small" data-tp-off>${t('tpMakeTask')}</button></div>
+    <label class="tp-check small">${icon('bell')} ${t('tpCheck')} <select id="dCheckEvery">${opts.map(([v, l]) => `<option value="${v}" ${(x.checkEvery || 0) === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+  </div>`;
 }
 
 function saveLogEdit(x, id) {
@@ -1058,6 +1088,13 @@ function bind() {
     if (id === 'dHide') { ui.selected = null; return refresh(); }
     if (id === 'dUnpin') { x.pinnedNote = null; touch(x); return refresh(); }
     const more = e.target.closest('[data-dmore]');
+    if (more && more.dataset.dmore === 'topic') {
+      // Turn a task into an open item: no due date, no repeat; it moves to Tasks › Open items.
+      x.topic = true; x.due = null; x.dueTime = null; x.repeat = null; x.remindBefore = null; x.checkEvery = x.checkEvery || 14;
+      syncReminder(x); touch(x); ui.view = 'pending'; ui.pendingSub = 'topics'; refresh(); showToast(t('tpMadeToast'));
+      return;
+    }
+    if (e.target.closest('[data-tp-off]')) { x.topic = false; delete x.checkEvery; touch(x); ui.pendingSub = 'all'; return refresh(); }
     if (more) {
       const k = more.dataset.dmore;
       ui.dOpen = ui.dOpen || {}; ui.dOpen[x.id + ':' + k] = true; renderDetail();
@@ -1156,6 +1193,7 @@ function bind() {
     }
     else if (el.id === 'dArea') x.areaId = el.value || null;
     else if (el.id === 'dRepeat') { x.repeat = parseRepeat(el.value); delete x.spawned; }
+    else if (el.id === 'dCheckEvery') x.checkEvery = Number(el.value) || null;
     else if (el.id === 'dDueTime') { x.dueTime = timeValue(el) || null; syncReminder(x); }
     else if (el.id === 'dRemindSel') {
       delete x.reminded;

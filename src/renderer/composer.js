@@ -14,6 +14,7 @@ function openComposer(preset = {}) {
   composer.remindBefore = '';
   composer.dueTime = null;
   composer.start = null; composer.notes = ''; composer.subs = ''; composer.person = '';
+  composer.topic = !!preset.topic || (ui.view === 'pending' && ui.pendingSub === 'topics'); composer.checkEvery = 14;
   renderComposer();
   $('composer').classList.add('open');
   $('fab').classList.add('open');
@@ -32,14 +33,17 @@ function renderComposer() {
   const full = !!data.settings.composerFull;
   $('composer').classList.toggle('full', full);
   $('composer').innerHTML = `
-    <div class="c-top"><span class="c-name">${icon('note')} ${t('newTask')}</span>
+    <div class="c-top"><span class="seg-joined c-kind"><button class="${composer.topic ? '' : 'on'}" data-ckind="task">${icon('list')} ${t('newTask')}</button><button class="${composer.topic ? 'on' : ''}" data-ckind="topic" title="${esc(t('tpHint'))}">${icon('log')} ${t('tpOne')}</button></span>
       <span class="seg-joined c-mode"><button class="${full ? '' : 'on'}" data-cmode="quick">${t('quickMode')}</button><button class="${full ? 'on' : ''}" data-cmode="full">${t('fullMode')}</button></span></div>
-    <input type="text" class="c-title" id="cTitle" dir="auto" placeholder="${t('quickPh')}" title="${t('quickTip')}" value="${esc(composer.title)}" autocomplete="off">
+    <input type="text" class="c-title" id="cTitle" dir="auto" placeholder="${composer.topic ? t('tpPh') : t('quickPh')}" title="${composer.topic ? '' : t('quickTip')}" value="${esc(composer.title)}" autocomplete="off">
     <div class="qp" id="cParse"></div>
     <div class="err" id="cErr">${t('titleRequired')}</div>
     <div class="c-sec"><span class="c-sec-lbl">${icon('folder')} ${t('area')}</span>
       <select id="cArea" title="${t('area')}">${areaOptions(composer.areaId)}</select></div>
-    <div class="c-sec"><span class="c-sec-lbl">${icon('calendar')} ${t('due')}</span>
+    ${composer.topic ? `<div class="c-sec"><span class="c-sec-lbl">${icon('bell')} ${t('tpCheck')}</span>
+      <select id="cCheckEvery">${[[0, t('tpNever')], [7, t('tpEvery7')], [14, t('tpEvery14')], [30, t('tpEvery30')]].map(([v, l]) => `<option value="${v}" ${composer.checkEvery === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      <p class="small muted c-tp-hint">${t('tpHint')}</p></div>` : ''}
+    <div class="c-sec" ${composer.topic ? 'hidden' : ''}><span class="c-sec-lbl">${icon('calendar')} ${t('due')}</span>
       <div class="c-row"><input type="date" id="cDue" title="${t('due')}" value="${composer.due || ''}">${timeBox('cDueTime', composer.dueTime, `title="${t('dueTime')}"`)}</div>
       <div class="c-row"><select id="cRepeat" title="${t('repeat')}">${repeatOptions(composer.repeat ? parseRepeat(composer.repeat) : null, composer.due)}</select>
         <select id="cRemind" title="${composer.due ? t('reminder') : t('remindNeedsDue')}" ${composer.due ? '' : 'disabled'}>${composerRemindOptions()}</select></div></div>
@@ -75,6 +79,12 @@ function submitComposer() {
   const title = p.title;
   const due = $('cDue').value || p.due || null;
   const folder = !$('cArea').value && p.folder && findFolderByName(p.folder);
+  if (composer.topic) {
+    addTask(title, { areaId: $('cArea').value || (folder && folder.id) || null, topic: true, checkEvery: Number($('cCheckEvery').value) || null, priority: composer.priority || p.priority,
+      ...(full ? { person: $('cPerson').value.trim() || p.person || '', subtasks: $('cSubs').value.split('\n').map((s) => s.trim()).filter(Boolean) } : p.person ? { person: p.person } : {}) });
+    composer.title = ''; $('cTitle').value = ''; if ($('cParse')) $('cParse').innerHTML = ''; $('cTitle').focus();
+    return;
+  }
   addTask(title, { areaId: $('cArea').value || (folder && folder.id) || null, due, dueTime: ($('cDue').value && timeValue($('cDueTime'))) || p.dueTime || null, priority: composer.priority || p.priority,
     estimate: p.estimate, ...(p.person && !(full && $('cPerson').value.trim()) ? { person: p.person } : {}),
     repeat: parseRepeat($('cRepeat').value), remindBefore: $('cRemind').value === '' ? null : Number($('cRemind').value),
@@ -139,3 +149,11 @@ document.addEventListener('input', (e) => {
   if (e.target.id !== 'cTitle' || !$('cParse')) return;
   $('cParse').innerHTML = quickChipsHtml(parseQuick(e.target.value), lang());
 });
+
+// Task or open item: an open item has no due date; you pick how often to be reminded to check on it.
+document.addEventListener('click', (e) => {
+  const k = e.target.closest && e.target.closest('[data-ckind]'); if (!k) return;
+  composer.title = $('cTitle') ? $('cTitle').value : composer.title;
+  composer.topic = k.dataset.ckind === 'topic'; renderComposer(); setTimeout(() => $('cTitle')?.focus(), 0);
+});
+document.addEventListener('change', (e) => { if (e.target.id === 'cCheckEvery') composer.checkEvery = Number(e.target.value) || 0; });
