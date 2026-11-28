@@ -50,7 +50,6 @@ function renderComposer() {
         <label class="c-lbl"><span>${icon('user')} ${t('waiting')}</span><input type="text" id="cPerson" dir="auto" list="cPeople" value="${esc(composer.person)}" placeholder="${t('noOne')}" autocomplete="off"></label>
         <datalist id="cPeople">${data.people.map((p) => `<option value="${esc(p.name)}"></option>`).join('')}</datalist></div>
       <label class="c-lbl"><span>${icon('list')} ${t('subtasks')}</span><textarea id="cSubs" dir="auto" rows="3" placeholder="${t('subsPh')}">${esc(composer.subs)}</textarea></label>
-      <label class="c-lbl"><span>${icon('note')} ${t('notes')}</span><textarea id="cNotes" dir="auto" rows="4" placeholder="${t('notesPh')}">${esc(composer.notes)}</textarea></label>
     </div>` : ''}
     <div class="c-foot"><span class="hint">${full ? t('composerHintFull') : t('composerHint')}</span><button class="primary" id="cAdd">${t('addBtn')}</button></div>`;
 }
@@ -79,13 +78,13 @@ function submitComposer() {
   addTask(title, { areaId: $('cArea').value || (folder && folder.id) || null, due, dueTime: ($('cDue').value && timeValue($('cDueTime'))) || p.dueTime || null, priority: composer.priority || p.priority,
     estimate: p.estimate, ...(p.person && !(full && $('cPerson').value.trim()) ? { person: p.person } : {}),
     repeat: parseRepeat($('cRepeat').value), remindBefore: $('cRemind').value === '' ? null : Number($('cRemind').value),
-    ...(full ? { start: $('cStart').value || null, person: $('cPerson').value.trim() || p.person || '', notes: $('cNotes').value.trim(),
+    ...(full ? { start: $('cStart').value || null, person: $('cPerson').value.trim() || p.person || '',
       subtasks: $('cSubs').value.split('\n').map((s) => s.trim()).filter(Boolean) } : {}) });
   // Stay open for the next one, keeping folder/date/priority — handy for adding a batch.
   composer.title = '';
   $('cTitle').value = '';
   if ($('cParse')) $('cParse').innerHTML = '';
-  if (full) { composer.notes = composer.subs = composer.person = ''; $('cNotes').value = $('cSubs').value = $('cPerson').value = ''; }
+  if (full) { composer.subs = composer.person = ''; $('cSubs').value = $('cPerson').value = ''; }
   $('cTitle').focus();
 }
 

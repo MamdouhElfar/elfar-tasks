@@ -39,7 +39,6 @@ async function openSettings(section) {
         row(t('language'), '', `<div class="seg"><button data-lang="ar" class="${s.lang === 'ar' ? 'on' : ''}">عربي</button><button data-lang="en" class="${s.lang === 'en' ? 'on' : ''}">English</button></div>`) +
         row(t('launch'), t('launchDesc'), toggle('sLogin', login)) +
         row(t('planTitle'), t('planAuto'), toggle('sPlanAuto', s.planAuto !== false)) +
-        row(t('dayHours'), t('dayHoursDesc'), `<span class="num-days"><input type="number" id="sDayHours" min="1" max="16" step="0.5" value="${s.dayHours || 6}"> ${t('hbHours')}</span>`) +
         row(t('weekStartLbl'), t('weekStartDesc'), `<div class="seg">${[6, 0, 1].map((d) => `<button data-wstart="${d}" class="${appWeekStart() === d ? 'on' : ''}">${new Date(2024, 0, 7 + d).toLocaleDateString(lang() === 'ar' ? 'ar-EG-u-nu-latn' : 'en-GB', { weekday: 'long' })}</button>`).join('')}</div>`) +
         row(t('theme'), t('themeDesc'), `<div class="seg">${['system', 'light', 'dark'].map((m) => `<button data-theme="${m}" class="${(s.theme || 'system') === m ? 'on' : ''}">${t('theme_' + m)}</button>`).join('')}</div>`) +
         row(`${t('textSize')} <span class="muted" id="sZoomVal">${zoom}%</span>`, t('textSizeDesc'), `<input type="range" id="sZoom" min="80" max="160" step="10" value="${zoom}">`)
@@ -176,7 +175,6 @@ async function openSettings(section) {
     }
   };
   $('sLogin').onchange = (e) => window.api.loginItem(e.target.checked);
-  $('sDayHours').onchange = (e) => { data.settings.dayHours = Math.max(1, Math.min(16, Number(e.target.value) || 6)); save(); };
   $('sPlanAuto').onchange = (e) => { data.settings.planAuto = e.target.checked; save(); };
   $('sZoom').oninput = (e) => { $('sZoomVal').textContent = e.target.value + '%'; };
   $('sZoom').onchange = (e) => { data.settings.zoom = Number(e.target.value) / 100; save(); };

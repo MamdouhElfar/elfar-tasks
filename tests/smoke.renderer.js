@@ -36,6 +36,17 @@
     check('people manager', document.querySelectorAll('.pm-row').length >= 1);
     closeModal(); await w(200);
   });
+  await step('edit a follow-up already written', async () => {
+    const x = data.tasks.find((y) => y.title === 'Report');
+    x.log = [{ id: 'lg1', date: todayStr(), at: todayStr() + 'T09:00', text: 'Sent to Sara' }]; touch(x);
+    select(x.id); await w(120);
+    document.querySelector('[data-log-edit="lg1"]').click(); await w(60);
+    document.getElementById('leText').value = 'Sent to Sara and Omar';
+    document.querySelector('[data-log-save="lg1"]').click(); await w(60);
+    check('log text changed', x.log[0].text === 'Sent to Sara and Omar');
+    check('no notes box on a plain task', !document.querySelector('#detail .notes-sec') && !document.querySelector('[data-dmore="notes"]'));
+    ui.selected = null; refresh();
+  });
   await step('a plain task page shows only what is used', async () => {
     const x = data.tasks.find((y) => y.title === 'Report');
     select(x.id); await w(120);
@@ -63,7 +74,7 @@
   await step('task page', async () => {
     select(added.id); await w(120);
     check('task page open', !!document.querySelector('#detail .d-title'));
-    check('estimate field', !!document.querySelector('#detail .est-field'));
+    check('no time estimate on the task page', !document.querySelector('#detail .est-field'));
     ui.selected = null; refresh();
   });
   await step('time block', async () => {

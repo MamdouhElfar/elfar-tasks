@@ -49,8 +49,7 @@ function openPlan() {
     const w = whenInfo(x);
     return `<label class="pl-row"><input type="checkbox" data-pick="${x.id}" ${picked.has(x.id) ? 'checked' : ''}>
       ${x.priority ? `<span class="pnum ${x.priority}">${PRIO_NUM[x.priority]}</span>` : '<span class="pnum none"></span>'}
-      <span class="pl-t" dir="auto">${esc(x.title)}</span>${w ? `<span class="when ${w.cls}">${w.text}</span>` : ''}
-      <select class="pl-est" data-est-for="${x.id}" title="${t('estimate')}"><option value="">⏱ ?</option>${[15, 30, 45, 60, 90, 120, 180, 240].map((m) => `<option value="${m}" ${x.estimate === m ? 'selected' : ''}>${fmtMins(m, lang())}</option>`).join('')}${x.estimate && ![15, 30, 45, 60, 90, 120, 180, 240].includes(x.estimate) ? `<option value="${x.estimate}" selected>${fmtMins(x.estimate, lang())}</option>` : ''}</select></label>`;
+      <span class="pl-t" dir="auto">${esc(x.title)}</span>${w ? `<span class="when ${w.cls}">${w.text}</span>` : ''}</label>`;
   };
   const bg = document.createElement('div');
   bg.className = 'modal-bg plan-bg';
@@ -67,7 +66,6 @@ function openPlan() {
     $('plCount').className = 'pl-count' + (n > PLAN_MAX ? ' warn' : '');
     $('plCount').textContent = n > PLAN_MAX ? t('planTooMany').replace('{n}', n) : `${t('planPicked')} ${n} / ${PLAN_MAX}`;
     $('plGo').disabled = !n;
-    $('plCap').innerHTML = capacityHtml(plannedLoad([...picked].map(taskById).filter(Boolean)));
   };
   bg.addEventListener('est-changed', count);
   count();

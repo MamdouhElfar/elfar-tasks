@@ -2025,3 +2025,11 @@ html[dir=rtl] .plan-cta.slim .pc-go { transform: scaleX(-1); }
 .hc-tiles { margin-bottom: 0; }
 .hc-main { padding: 14px 16px 12px; }
 .hc-main h4 { margin-bottom: 4px; }
+
+/* follow-up log: edit an entry in place */
+.log-acts { display: flex; gap: 2px; opacity: 0; }
+.log-item:hover .log-acts { opacity: 1; }
+.log-item.editing { display: flex; flex-direction: column; gap: 6px; align-items: stretch; padding: 8px 0; }
+.le-when { display: flex; gap: 6px; }
+.le-acts { display: flex; gap: 6px; justify-content: flex-end; }
+#leText { width: 100%; }

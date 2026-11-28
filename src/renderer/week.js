@@ -66,11 +66,6 @@ function insights() {
   data.tasks.filter((x) => !x.closure && (x.postponed || 0) >= 2).forEach((x) => { const k = areaLabel(x.areaId); put[k] = (put[k] || 0) + x.postponed; });
   const worst = Object.entries(put).sort((a, b) => b[1] - a[1])[0];
   if (worst && worst[1] >= 3) out.push({ ico: 'overdue', text: t('inPutOff').replace('{f}', worst[0]).replace('{n}', timesWord(worst[1], lang())) });
-  const est = closed.filter((x) => x.estimate && (x.focusMs || 0) >= 5 * 60000);
-  if (est.length >= 3) {
-    const r = est.reduce((n, x) => n + x.focusMs / 60000, 0) / est.reduce((n, x) => n + x.estimate, 0);
-    out.push({ ico: 'target', text: r > 1.15 ? t('inEstOver').replace('{p}', Math.round((r - 1) * 100)) : r < 0.85 ? t('inEstUnder').replace('{p}', Math.round((1 - r) * 100)) : t('inEstOk') });
-  }
   return out;
 }
 

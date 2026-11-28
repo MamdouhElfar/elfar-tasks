@@ -267,7 +267,7 @@ function rowHtml(x) {
     <div class="t-main">
       <div class="t-title" dir="auto">${focusOn ? '<span class="in-focus" title="' + t('fWorkingOn') + '">◉</span> ' : ''}${x.starred ? '<span class="star">★</span> ' : ''}${esc(x.title) || '<span class="muted">' + t('title') + '</span>'}</div>
       ${next ? `<div class="t-next" title="${t('nextStep')}"><span class="arrow">↳</span> <span dir="auto">${esc(next.title)}</span></div>` : ''}
-      <div class="t-meta">${prioNum(x)}${whenChip(x, ui.view === 'today')}${estChip(x)}${x.remindAt && isOpen(x) ? `<span class="pill remind ${x.remindAt <= nowLocal() ? 'past' : ''}">${icon('bell')} ${remindDay === todayStr() ? '' : fmtDate(remindDay, lang()) + ' '}${fmtTime(x.remindAt, lang())}</span>` : ''}${x.repeat && isOpen(x) ? `<span class="pill repeat" title="${esc(repeatLabel(x.repeat))}">${icon('repeat')}</span>` : ''}${(x.files || []).length ? `<span class="pill area">${icon('clip')} ${x.files.length}</span>` : ''}
+      <div class="t-meta">${prioNum(x)}${whenChip(x, ui.view === 'today')}${x.remindAt && isOpen(x) ? `<span class="pill remind ${x.remindAt <= nowLocal() ? 'past' : ''}">${icon('bell')} ${remindDay === todayStr() ? '' : fmtDate(remindDay, lang()) + ' '}${fmtTime(x.remindAt, lang())}</span>` : ''}${x.repeat && isOpen(x) ? `<span class="pill repeat" title="${esc(repeatLabel(x.repeat))}">${icon('repeat')}</span>` : ''}${(x.files || []).length ? `<span class="pill area">${icon('clip')} ${x.files.length}</span>` : ''}
         ${subs.length ? `<span class="progress"><span class="bar"><i style="width:${(done / subs.length) * 100}%"></i></span>${done}/${subs.length}</span>` : ''}
         ${isOpen(x) && (x.postponed || 0) >= 2 ? `<span class="postponed" title="${t('postponedTip')}">↻ ${lang() === 'ar' ? 'اتأجلت ' + timesWord(x.postponed, 'ar') : 'put off ' + timesWord(x.postponed, 'en')}</span>` : ''}
         ${isOpen(x) ? pendingOf(x).map((pw) => `<span class="pill person" title="${t('since')} ${fmtDate(pw.since, lang())}">${icon('user')} <bdi>${esc(personById(pw.personId).name)}</bdi> · ${sinceWord(pw.since)}</span>`).join('') : ''}
@@ -500,8 +500,8 @@ function renderDetail() {
   const has = { estimate: !!x.estimate || (x.focusMs || 0) >= 60000, remind: !!x.remindAt || x.remindBefore != null, repeat: !!x.repeat, prio: !!x.priority,
     people: pendingOf(x).length > 0, files: (x.files || []).length > 0, notes: !!noteText };
   const show = (k) => ui.dShowAll === x.id || has[k] || ui.dOpen[x.id + ':' + k];
-  const MORE = [['prio', 'matrix', t('priority')], ['remind', 'bell', t('reminder')], ['estimate', 'clock', t('estimate')], ['people', 'user', t('waiting')],
-    ['repeat', 'repeat', t('repeat')], ['notes', 'note', t('notes')], ['files', 'clip', t('files')]].filter(([k]) => !show(k) && !(k === 'estimate' && x.closure));
+  const MORE = [['prio', 'matrix', t('priority')], ['remind', 'bell', t('reminder')], ['people', 'user', t('waiting')],
+    ['repeat', 'repeat', t('repeat')], ['files', 'clip', t('files')]].filter(([k]) => !show(k) && !(k === 'estimate' && x.closure));
   const moreHtml = MORE.length ? `<div class="d-more"><span class="small muted">${t('dAddMore')}</span>${MORE.map(([k, ic, l]) => `<button type="button" data-dmore="${k}">＋ ${icon(ic)} ${esc(l)}</button>`).join('')}</div>` : '';
   const span = statusOf(x) === 'scheduled' ? '' : x.start ? (x.closure ? `${t('tookDays')} ${daysWord(daysBetween(x.start, x.closure), lang())}` : `${t('openedFor')} ${daysWord(Math.max(0, daysBetween(x.start, todayStr())), lang())}`) : '';
   el.innerHTML = `<div class="inner">
@@ -534,7 +534,6 @@ function renderDetail() {
       ${prioPicker(x.priority, 'data-prio', prioNames(), t('noPrio'))}
     </div>` : ''}
     ${show('remind') ? reminderFieldHtml(x) : ''}
-    ${x.closure || !show('estimate') ? '' : estimateFieldHtml(x)}
     ${show('people') ? `<div class="d-field pending-box">
       <label>${icon('user')} ${t('waiting')}</label>
       <div class="chips">
@@ -563,7 +562,7 @@ function renderDetail() {
 
     ${x.repeat ? `<div class="d-field next-note"><label>${icon('repeat')} ${t('nextNote')}</label>
       <textarea id="dNextNote" dir="auto" rows="2" placeholder="${t('nextNotePh')}">${esc(x.nextNote || '')}</textarea></div>` : ''}
-    ${show('notes') ? notesHtml(x) : ''}
+    ${has.notes ? notesHtml(x) : ''}
     ${show('files') ? attachmentsHtml(x) : ''}
 
     <div class="d-sec"><h3>${icon('log')} ${t('log')}</h3>
@@ -579,12 +578,16 @@ function renderDetail() {
       ${(x.log || []).slice().sort((a, b) => logAt(b).localeCompare(logAt(a))).map((l) => {
         const holders = (l.holders || []).map(personById).filter(Boolean);
         const owner = l.personId && personById(l.personId);
+        if (ui.logEdit === l.id) return `<div class="log-item editing" data-log-row="${l.id}">
+          <div class="le-when"><input type="date" id="leDate" value="${l.date || todayStr()}">${timeBox('leTime', (l.at || '').slice(11, 16))}</div>
+          <input type="text" id="leText" dir="auto" value="${esc(l.text)}">
+          <div class="le-acts"><button data-log-cancel>${t('cancel')}</button><button class="primary" data-log-save="${l.id}">${t('save')}</button></div></div>`;
         return `<div class="log-item ${l.handoff ? 'is-handoff' : ''}">
         <span class="ld">${fmtDate(l.date, lang())}${l.at ? `<small>${fmtTime(l.at, lang())}</small>` : ''}</span>
         <span class="lt" dir="auto">${linkify(l.text)}
           ${l.handoff ? `<span class="pill handoff">→ ${holders.length ? holders.map((p) => esc(p.name)).join('، ') : t('me')}</span>` : ''}
           ${owner && !l.handoff ? `<span class="pill person">${icon('user')} ${esc(owner.name)}</span>` : ''}</span>
-        <button class="icon x" data-log-del="${l.id}">✕</button></div>`;
+        <span class="log-acts"><button class="icon" data-log-edit="${l.id}" title="${t('edit')}">✎</button><button class="icon x" data-log-del="${l.id}" title="${t('del')}">✕</button></span></div>`;
       }).join('')}
     </div>
   </div>`;
@@ -766,6 +769,23 @@ function addLogEntry(x) {
   }
   touch(x); refresh(); $('dAddLog').focus();
 }
+
+function saveLogEdit(x, id) {
+  const l = (x.log || []).find((y) => y.id === id); if (!l) return;
+  const text = $('leText').value.trim();
+  if (!text) return $('leText').focus();
+  const day = $('leDate').value || l.date || todayStr();
+  const time = timeValue($('leTime'));
+  l.text = text; l.date = day;
+  if (time) l.at = `${day}T${time}`; else if (l.at) l.at = `${day}T${l.at.slice(11, 16)}`;
+  ui.logEdit = null; touch(x); refresh();
+}
+document.addEventListener('keydown', (e) => {
+  if (e.target.id !== 'leText') return;
+  const x = taskById(ui.selected); if (!x) return;
+  if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); saveLogEdit(x, ui.logEdit); }
+  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); ui.logEdit = null; renderDetail(); }
+}, true);
 
 // Changing the reminder time re-arms it (the main process notifies once per time).
 function setReminder(x, at) {
@@ -1053,6 +1073,12 @@ function bind() {
     if (id === 'dLogAdd') return addLogEntry(x);
     const sd = e.target.closest('[data-sub-del]');
     if (sd) { x.subtasks = x.subtasks.filter((s) => s.id !== sd.dataset.subDel); touch(x); return refresh(); }
+    // Fix a follow-up you already wrote: its words, day and time.
+    const le = e.target.closest('[data-log-edit]');
+    if (le) { ui.logEdit = le.dataset.logEdit; renderDetail(); const i = $('leText'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } return; }
+    if (e.target.closest('[data-log-cancel]')) { ui.logEdit = null; return renderDetail(); }
+    const ls = e.target.closest('[data-log-save]');
+    if (ls) return saveLogEdit(x, ls.dataset.logSave);
     const ld = e.target.closest('[data-log-del]');
     if (ld) {
       // The follow-up log is history, so removing an entry asks first.

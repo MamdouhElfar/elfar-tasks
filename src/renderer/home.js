@@ -61,7 +61,7 @@ function renderHome() {
   const sec = (title, cls, xs, extra = '') => (xs.length ? `<div class="group-title ${cls}">${title} · ${xs.length}${extra}</div>${xs.map(rowHtml).join('')}` : '');
   const planDone = planned.filter((x) => x.closure).length;
   const work = (plan
-      ? `<div class="group-title plan-title">${icon('today')} ${t('planTitle')} <span class="plan-n">${planDone}/${planned.length}</span><button class="link" data-tghours>${icon('clock')} ${t('tgPlanHours')}</button><button class="link" data-plan>${t('planEdit')}</button></div>${capacityHtml(plannedLoad(planned))}
+      ? `<div class="group-title plan-title">${icon('today')} ${t('planTitle')} <span class="plan-n">${planDone}/${planned.length}</span><button class="link" data-tghours>${icon('clock')} ${t('tgPlanHours')}</button><button class="link" data-plan>${t('planEdit')}</button></div>
          ${planned.length ? planned.filter((x) => !x.closure).map(rowHtml).join('') + doneFold(planned.filter((x) => x.closure).map(rowHtml), 'plan') : `<div class="h-empty">${t('planEmpty')}</div>`}`
       : `<button class="plan-cta slim" data-plan><span class="pc-ico">${icon('today')}</span><span><b>${t('planCta')}</b><small>${t('planCtaSub')}</small></span><span class="pc-go">›</span></button>`) +
     (() => { const hs = habitsToday(); return hs.length ? `<div class="group-title habit-title">${icon('habits')} ${t('hbToday')} · ${hs.filter((h) => hLog(h, td) === 'done').length}/${hs.length}<button class="link" data-hopen>${t('hSeeAll')}</button></div>${hs.filter((h) => hLog(h, td) !== 'done').map(habitRowHtml).join('')}${doneFold(hs.filter((h) => hLog(h, td) === 'done').map(habitRowHtml), 'habits')}` : ''; })() +
@@ -176,7 +176,7 @@ function nowCardHtml({ x, why }) {
       <button class="link now-skip" data-nowskip="${x.id}" title="${t('nowSkipTip')}">${t('nowSkip')} ›</button></div>
     <h3 dir="auto" data-task="${x.id}">${x.starred ? '<span class="star">★</span> ' : ''}${esc(x.title)}</h3>
     ${next ? `<div class="now-next"><span class="arrow">↳</span> <span dir="auto">${esc(next.title)}</span></div>` : ''}
-    <div class="now-acts"><button class="primary now-go" data-focus="${x.id}">▶ ${t('nowStart')}${left ? ` · ${fmtMins(left, lang())}` : ''}</button><button class="ok" data-check="${x.id}">✓ ${t('nowDone')}</button><button class="ghost now-defer" data-defer="${x.id}" title="${t('dfTip')}">${icon('calendar')} ${t('dfShort')}</button>${estChip(x)}</div>
+    <div class="now-acts"><button class="primary now-go" data-focus="${x.id}">▶ ${t('nowStart')}</button><button class="ok" data-check="${x.id}">✓ ${t('nowDone')}</button><button class="ghost now-defer" data-defer="${x.id}" title="${t('dfTip')}">${icon('calendar')} ${t('dfShort')}</button>${estChip(x)}</div>
   </section>`;
 }
 document.addEventListener('click', (e) => {

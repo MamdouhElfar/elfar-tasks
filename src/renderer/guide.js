@@ -17,7 +17,6 @@ const GUIDE_GROUPS = [
   ['day', ['يومك', 'Your day'], [
     ['today', 'today', { view: 'today', spot: '.tab[data-view="today"]' }, ['صفحة النهارده', 'يومك كله في صفحة واحدة', 'أول تاب'], ['The Today page', 'Your whole day on one page', 'The first tab']],
     ['focus', 'clock', { task: '#detail .focus-btn' }, ['وضع التركيز', 'تايمر بالمدة اللي تختارها على حاجة واحدة', '▶ ركّز، أو حرف F'], ['Focus mode', 'A timer you set, on one thing', '▶ Focus, or F']],
-    ['estimate', 'clock', { task: '#detail .est-field' }, ['الوقت المتوقع', 'التاسك هتاخد قد إيه، والخطة تحسب يومك', 'صفحة التاسك'], ['Time estimates', 'How long a task takes; the plan adds up your day', 'Task page']],
     ['defer', 'calendar', { task: '#detail .d-defer' }, ['مش النهارده', 'أجّل تاسك ليوم تاني فتختفي من النهارده', 'الكارت أو صفحة التاسك'], ['Not today', 'Move a task to another day', 'Card or task page']]
   ]],
   ['long', ['على المدى الطويل', 'The long run'], [
@@ -31,7 +30,6 @@ const GUIDE_GROUPS = [
     ['folders', 'folder', { view: 'today', spot: '#areasNav' }, ['الفولدرات', 'فولدرات جوه فولدرات، وبتترتب بالسحب', 'الشريط الجانبي'], ['Folders', 'Folders in folders, reordered by dragging', 'Sidebar']],
     ['people', 'user', { task: '#detail .pending-box' }, ['مستني رد من', 'تابع التاسكات اللي عند حد تاني', 'صفحة التاسك'], ['Waiting on people', "Track tasks someone else has", 'Task page']],
     ['repeat', 'repeat', { task: '#dRepeat' }, ['التكرار', 'يومي أو أسبوعي أو شهري أو سنوي', 'صفحة التاسك'], ['Repeating', 'Daily, weekly, monthly or yearly', 'Task page']],
-    ['notes', 'note', { task: '#detail .notes-sec, #detail [id^=nEd]' }, ['الملاحظات', 'صفحات منسّقة وسجل متابعة لكل تاسك', 'صفحة التاسك'], ['Notes', 'Formatted pages and a follow-up log', 'Task page']],
     ['putoff', 'overdue', { coach: true }, ['عداد التأجيل', 'بعد 3 تأجيلات الفار يسألك تعمل إيه', 'بيشتغل لوحده'], ['Put-off counter', 'After 3 put-offs the mouse asks what would help', 'Works by itself']]
   ]],
   ['anywhere', ['في أي مكان', 'Anywhere'], [
@@ -46,7 +44,6 @@ const GUIDE_GROUPS = [
 const GUIDE_MORE = {
   today: ['فوق كارت "دلوقتي" بحاجة واحدة تبدأ بيها، وتحته خطتك وعادات النهارده واللي متأخر. واللي خلص بيتلم في سطر.', 'A "Now" card with one thing to start, then your plan, today\'s habits and what\'s late. What\'s done folds into one line.'],
   focus: ['تختار المدة، والخطوة الجاية بتبقى قدامك، والفار ماسك ساعة. ولما الوقت يخلص يسألك: تكمّل ولا تستريح؟ ووقتك بيتحسب على التاسك.', 'Pick a length; the next step stays in front of you and the mouse times you. When time is up it asks: another round or a break? The time counts on the task.'],
-  estimate: ['15 دقيقة، أو ساعة، أو اللي تكتبه. الخطة بتقولك "خططت 5 ساعات من 6"، والتركيز بيقترح الباقي، ومراجعة الأسبوع بتقولك تقديرك مظبوط ولا لأ.', '15m, 1h, or your own. The plan says "Planned 5h of 6h", focus suggests what\'s left, and the weekly review tells you how good your guesses are.'],
   defer: ['بكرة، أو بعد بكرة، أو الأسبوع الجاي، أو أي يوم. بتختفي من النهارده وترجع في يومها. ولو كانت متأخرة بتتحسب تأجيل.', 'Tomorrow, the day after, next week or any day. It leaves Today and comes back on its day. If it was late it counts as put off.'],
   habits: ['3 أنواع: أيام محددة، أو مرات في الأسبوع، أو وقت في الأسبوع. دوس على أي يوم عشان تعلّم اتعملت أو إجازة، وتسجل عملت قد إيه (صفحات، دقايق، Push ups…)، ووقفت فين، وملاحظة. وتاني يوم بيقولك "وقفت عند…".', 'Three kinds: set days, times a week, or time a week. Click any day to mark it done or a day off, log how much (pages, minutes, push ups…), where you stopped and a note. The next day it tells you "You were here…".'],
   report: ['من أي تاريخ: اتقفل كام، واتضاف كام، ومين عنده حاجات متعطلة، ووقت التركيز حسب الفولدر. وتقدر تنسخه أو تطلّعه Excel.', 'From any date: closed, added, who is holding things up, focus time by folder. Copy it or export to Excel.'],
@@ -56,7 +53,6 @@ const GUIDE_MORE = {
   folders: ['اسحب الفولدر لفوق أو لتحت عشان ترتّبه، أو حطّه على فولدر تاني يبقى جواه.', 'Drag a folder up or down to reorder it, or onto another to put it inside.'],
   people: ['اكتب اسم الشخص في "معلّق عند"، والتطبيق بيعد بقالها كام يوم عنده وبيفكّرك تتابع.', 'Add a name under "Pending with"; the app counts the days and nudges you to follow up.'],
   repeat: ['كل مرة بتبقى تاسك لوحدها في يومها، ولو قفلتها المرة الجاية بتتعمل لوحدها.', 'Each round is its own task on its own day; closing one creates the next.'],
-  notes: ['عناوين ونقط وقايمة تشيك وكذا صفحة، وسجل متابعة بالتاريخ والساعة، وملفات ولينكات.', 'Headings, bullets, checklists and several pages, a dated follow-up log, files and links.'],
   putoff: ['كل ما تأخّر موعد تاسك بيتعد. وفي المرة التالتة الفار يسألك: تبدأ فيها؟ تقسّمها؟ تديها لحد؟ ولا تشيلها؟', 'Every time a due date moves later it counts. On the third time the mouse asks: start, split, hand off, or drop?'],
   widget: ['فوق كل البرامج، أو مستخبي على جنب الشاشة. وتقدر تسحب الفار من ديله عشان تحرّكه، أو تخلّيه يفتح بالدوس بس.', 'Above every app, or tucked at the screen edge. Drag the mouse by its tail to move it, or make it open on click only.'],
   quick: ['من أي برنامج دوس Ctrl+Alt+Space واكتب التاسك بالكلام: "اتصل بأحمد بكرة الساعة 3 ساعة !1 #الشغل". الميعاد والوقت والمدة والأولوية والفولدر بيتحطوا لوحدهم.', 'From any app press Ctrl+Alt+Space and type it in words: "Call Ahmed tomorrow 3pm 1h !1 #Work". The date, time, length, priority and folder are set for you.'],
